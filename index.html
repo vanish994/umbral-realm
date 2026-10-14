@@ -13,7 +13,7 @@
 <body>
   <main id="app">
     <header class="topbar">
-      <div class="brand"><span class="sigil">✦</span><div><strong>UMBRAL REALM</strong><small>Sobreviva à trilha • BUILD 09</small></div></div>
+      <div class="brand"><span class="sigil">✦</span><div><strong>UMBRAL REALM</strong><small>Sobreviva à trilha • BUILD 10</small></div></div>
       <div class="player-stats"><span id="level">Nv. 1</span><span id="coins">◈ 0</span></div>
     </header>
     <section class="hud" aria-label="Status do personagem">
@@ -25,11 +25,11 @@
     <section id="game-wrap" aria-label="Mundo do jogo">
       <div id="game"></div>
       <div class="location-pill"><span class="dot"></span><span>Trilha Velha</span></div>
-      <div class="enemy-panel"><div class="enemy-title"><span id="enemy-label">ERRANTE</span><span id="enemy-hp-label">70 / 70</span></div><div class="meter enemy-meter"><div id="enemy-hp-bar" class="meter-fill enemy-fill"></div></div></div>
+      <div class="enemy-panel"><div class="enemy-title"><span id="enemy-label">RATO ZUMBI</span><span id="enemy-hp-label">70 / 70</span></div><div class="meter enemy-meter"><div id="enemy-hp-bar" class="meter-fill enemy-fill"></div></div></div>
       <div id="toast" role="status" aria-live="polite"></div>
     </section>
     <section class="bottom-panel">
-      <div class="quest"><span class="quest-mark">!</span><div><small>OBJETIVO DO TESTE</small><strong id="quest-text">Derrote o errante e receba sua recompensa.</strong></div></div>
+      <div class="quest"><span class="quest-mark">!</span><div><small>OBJETIVO DO TESTE</small><strong id="quest-text">Derrote o rato zumbi e receba sua recompensa.</strong></div></div>
       <div class="weapon-status"><span id="combat-info">Ação próxima selecionada</span><span id="charge-label">Energia: 7 / 7</span></div>
       <div class="controls">
         <div class="dpad" aria-label="Movimento">
@@ -44,11 +44,11 @@
           <button id="attack" class="action danger"><span>✦</span><small>AGIR</small></button>
         </div>
       </div>
-      <footer><span id="status">Aproxime-se do errante para usar a ação próxima.</span><button id="save" class="save">SALVAR</button></footer>
+      <footer><span id="status">Aproxime-se do rato zumbi para usar a ação próxima.</span><button id="save" class="save">SALVAR</button></footer>
     </section>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
-  <script src="./src/game.js?v=9"></script>
-  <script>if ('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js?v=9').catch(()=>{}));</script>
+  <script src="./src/game.js?v=10"></script>
+  <script>if ('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js?v=10').catch(()=>{}));</script>
 </body>
 </html>
