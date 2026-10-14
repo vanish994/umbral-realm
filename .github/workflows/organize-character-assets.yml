@@ -25,6 +25,19 @@ jobs:
           unzip -oq "docs/The Female Adventurer - Free.zip" -d /tmp/female-pack
           cp -R "/tmp/male-pack/The Male adventurer - Free/." assets/characters/male/
           cp -R "/tmp/female-pack/The Female Adventurer - Free/." assets/characters/female/
+
+          # Extract the new gameplay sprites from docs into dedicated asset folders.
+          mkdir -p assets/enemies/zombie-rat assets/npcs/merchant
+          unzip -oq "docs/Um_rato_zombie-Idle-spritesheet.zip" -d /tmp/zombie-rat-pack
+          unzip -oq "docs/Um_npc_mercador_estilo_o-Idle-spritesheet.zip" -d /tmp/merchant-pack
+          find /tmp/zombie-rat-pack -type f -iname '*.png' -exec cp -f {} assets/enemies/zombie-rat/ \\\;
+          find /tmp/merchant-pack -type f -iname '*.png' -exec cp -f {} assets/npcs/merchant/ \\\;
+
+          echo "=== Zombie rat sprite metadata ==="
+          find assets/enemies/zombie-rat -type f -iname '*.png' -exec identify -format '%f %wx%h\\n' {} \\\;
+          echo "=== Merchant sprite metadata ==="
+          find assets/npcs/merchant -type f -iname '*.png' -exec identify -format '%f %wx%h\\n' {} \\\;
+
           cat > assets/characters/README.md <<'EOF'
           # Character assets
 
@@ -39,6 +52,14 @@ jobs:
           Combined sheets may use a different grid; check the image dimensions before loading them.
           Load the directional PNGs with Phaser 3 and create animations for idle, walk, dash, jump and death as needed.
           Asset extraction does not yet wire these sprites into the player scene.
+          EOF
+          cat > assets/enemies/zombie-rat/README.md <<'EOF'
+          # Zombie rat sprite
+          Extracted from the source archive in docs. Check the PNG dimensions before defining Phaser frame sizes.
+          EOF
+          cat > assets/npcs/merchant/README.md <<'EOF'
+          # Merchant NPC sprite
+          Extracted from the source archive in docs. Check the PNG dimensions before defining Phaser frame sizes.
           EOF
 
       - name: Commit organized assets
