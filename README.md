@@ -1,5 +1,7 @@
 # Umbral Realm
 
+📘 **Documento de design:** [GDD — Game Design Document](docs/GDD.md)
+
 MMORPG 2D de fantasia sombria, desenvolvido primeiro como jogo web instalável (PWA), com foco em Android e orçamento zero.
 
 ## Plano inicial
