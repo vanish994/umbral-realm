@@ -54,6 +54,11 @@
       this.load.spritesheet("player-walk", "./assets/characters/male/Walk/walk.png", { frameWidth: 48, frameHeight: 64 });
       this.load.spritesheet("guide-idle", "./assets/characters/female/Idle/Idle.png", { frameWidth: 48, frameHeight: 64 });
       this.load.spritesheet("guide-walk", "./assets/characters/female/Walk/walk.png", { frameWidth: 48, frameHeight: 64 });
+      // A diagonal direita-baixo usa arquivos direcionais próprios, não a linha da folha combinada.
+      this.load.spritesheet("player-idle-right-down", "./assets/characters/male/Idle/idle_right_down.png", { frameWidth: 48, frameHeight: 64 });
+      this.load.spritesheet("player-walk-right-down", "./assets/characters/male/Walk/walk_right_down.png", { frameWidth: 48, frameHeight: 64 });
+      this.load.spritesheet("guide-idle-right-down", "./assets/characters/female/Idle/Idle_Right_Down.png", { frameWidth: 48, frameHeight: 64 });
+      this.load.spritesheet("guide-walk-right-down", "./assets/characters/female/Walk/walk_Right_Down.png", { frameWidth: 48, frameHeight: 64 });
     }
     create(){
       sceneRef = this;
@@ -118,11 +123,17 @@
       // As folhas combinadas têm 8 quadros por linha e 6 direções (384x384).
       const directions=["down","left-down","left-up","right-down","right-up","up"];
       directions.forEach((dir,row)=>{
-        this.anims.create({key:"player-idle-"+dir,frames:this.anims.generateFrameNumbers("player-idle",{start:row*8,end:row*8+7}),frameRate:7,repeat:-1});
-        this.anims.create({key:"player-walk-"+dir,frames:this.anims.generateFrameNumbers("player-walk",{start:row*8,end:row*8+7}),frameRate:10,repeat:-1});
-        this.anims.create({key:"guide-idle-"+dir,frames:this.anims.generateFrameNumbers("guide-idle",{start:row*8,end:row*8+7}),frameRate:7,repeat:-1});
-        this.anims.create({key:"guide-walk-"+dir,frames:this.anims.generateFrameNumbers("guide-walk",{start:row*8,end:row*8+7}),frameRate:10,repeat:-1});
+        if(dir!=="right-down"){
+          this.anims.create({key:"player-idle-"+dir,frames:this.anims.generateFrameNumbers("player-idle",{start:row*8,end:row*8+7}),frameRate:7,repeat:-1});
+          this.anims.create({key:"player-walk-"+dir,frames:this.anims.generateFrameNumbers("player-walk",{start:row*8,end:row*8+7}),frameRate:10,repeat:-1});
+          this.anims.create({key:"guide-idle-"+dir,frames:this.anims.generateFrameNumbers("guide-idle",{start:row*8,end:row*8+7}),frameRate:7,repeat:-1});
+          this.anims.create({key:"guide-walk-"+dir,frames:this.anims.generateFrameNumbers("guide-walk",{start:row*8,end:row*8+7}),frameRate:10,repeat:-1});
+        }
       });
+      this.anims.create({key:"player-idle-right-down",frames:this.anims.generateFrameNumbers("player-idle-right-down",{start:0,end:7}),frameRate:7,repeat:-1});
+      this.anims.create({key:"player-walk-right-down",frames:this.anims.generateFrameNumbers("player-walk-right-down",{start:0,end:7}),frameRate:10,repeat:-1});
+      this.anims.create({key:"guide-idle-right-down",frames:this.anims.generateFrameNumbers("guide-idle-right-down",{start:0,end:7}),frameRate:7,repeat:-1});
+      this.anims.create({key:"guide-walk-right-down",frames:this.anims.generateFrameNumbers("guide-walk-right-down",{start:0,end:7}),frameRate:10,repeat:-1});
       guide=this.add.sprite(325,290,"guide-idle",0).setScale(1.25).setOrigin(0.5,0.82);guide.play("guide-idle-down");
       this.add.text(306,265,"MATEUS",{fontFamily:"monospace",fontSize:"10px",color:"#f0d7a0",stroke:"#161718",strokeThickness:3});
       player=this.add.sprite(470,305,"player-idle",0).setScale(1.25).setOrigin(0.5,0.82);player.play("player-idle-down");
@@ -153,12 +164,9 @@
         const dirKey = diagonal
           ? (dx<0?(dy<0?"left-up":"left-down"):(dy<0?"right-up":"right-down"))
           : (Math.abs(dx)>0 ? (dx<0?"left-down":"right-down") : (dy<0?"up":"down"));
-        // A diagonal direita-baixo usa o quadro espelhado da esquerda-baixo,
-        // pois a linha correspondente no pack está incorreta.
-        const mirroredDiagonal = dirKey === "right-down";
-        const animationDir = mirroredDiagonal ? "left-down" : dirKey;
-        player.setFlipX(mirroredDiagonal);
-        const walkKey="player-walk-"+animationDir;
+        // Usa a folha direcional original para direita-baixo, sem espelhamento.
+        player.setFlipX(false);
+        const walkKey="player-walk-"+dirKey;
         if(player.anims.currentAnim?.key!==walkKey)player.play(walkKey,true);
         const len=Math.hypot(dx,dy),step=145*delta/1000;
         const nx=Phaser.Math.Clamp(player.x+dx/len*step,25,935);
