@@ -7,7 +7,7 @@
     defeated: Boolean(saved.defeated), charges: Number(saved.charges ?? 7),
     enemyHp: Number(saved.enemyHp ?? 70), action: saved.action === "far" ? "far" : "close"
   };
-  let sceneRef, player, guide, enemy, cursors, moveKeys, toastTimer, actionReady = true;
+  let sceneRef, player, enemy, cursors, moveKeys, toastTimer, actionReady = true;
   const touch = {up:false,down:false,left:false,right:false};
   const el = id => document.getElementById(id);
   function say(message) {
@@ -137,16 +137,12 @@
       this.anims.create({key:"player-walk-right-down",frames:this.anims.generateFrameNumbers("player-walk-right-down",{start:0,end:7}),frameRate:10,repeat:-1});
       this.anims.create({key:"guide-idle-right-down",frames:this.anims.generateFrameNumbers("guide-idle-right-down",{start:0,end:7}),frameRate:7,repeat:-1});
       this.anims.create({key:"guide-walk-right-down",frames:this.anims.generateFrameNumbers("guide-walk-right-down",{start:0,end:7}),frameRate:10,repeat:-1});
-      this.anims.create({key:"zombie-rat-idle",frames:this.anims.generateFrameNumbers("zombie-rat-idle",{start:0,end:7}),frameRate:7,repeat:-1});
-      this.anims.create({key:"merchant-idle",frames:this.anims.generateFrameNumbers("merchant-idle",{start:0,end:7}),frameRate:6,repeat:-1});
-      guide=this.add.sprite(325,290,"guide-idle",0).setScale(1.25).setOrigin(0.5,0.82);guide.play("guide-idle-down");
-      this.add.text(306,265,"MATEUS",{fontFamily:"monospace",fontSize:"10px",color:"#f0d7a0",stroke:"#161718",strokeThickness:3});
-      // Mercador fica ao sul do abrigo e já usa o sprite animado fornecido em docs.
+      // Os sprites fornecidos são usados como retratos estáticos para evitar o efeito de rotação.
+      // Mercador fica ao sul do abrigo.
       this.merchant=this.add.sprite(555,365,"merchant-idle",0).setScale(1.9).setOrigin(0.5,0.82);
-      this.merchant.play("merchant-idle");
       this.merchantName=this.add.text(555,329,"MERCADOR",{fontFamily:"monospace",fontSize:"10px",color:"#f0d7a0",stroke:"#161718",strokeThickness:3}).setOrigin(0.5);
       player=this.add.sprite(470,305,"player-idle",0).setScale(1.25).setOrigin(0.5,0.82);player.play("player-idle-down");
-      enemy=this.add.sprite(555,305,"zombie-rat-idle",0).setScale(2.2).setOrigin(0.5,0.82);enemy.play("zombie-rat-idle");
+      enemy=this.add.sprite(555,305,"zombie-rat-idle",0).setScale(2.2).setOrigin(0.5,0.82);
       this.enemyName=this.add.text(0,0,"RATO ZUMBI",{fontFamily:"monospace",fontSize:"10px",color:"#e6c2ad",stroke:"#141719",strokeThickness:3}).setOrigin(0.5);
       this.physics.world.setBounds(0,0,960,640);
       this.cameras.main.setBounds(0,0,960,640);this.cameras.main.startFollow(player,true,0.12,0.12);this.cameras.main.setZoom(Math.min(1.25,this.scale.width/390));
@@ -221,8 +217,7 @@
     updateHud();
   }
   function interact(){
-    if(near(player,guide,85)){state.talked=true;el("quest-text").textContent="Derrote o rato zumbi e converse com o mercador.";say("Mateus: A trilha não está segura. Use as ações disponíveis e mantenha distância quando precisar.");}
-    else if(sceneRef?.merchant&&near(player,sceneRef.merchant,85)){say("Mercador: Tenho suprimentos para quem conseguir moedas. A loja será aberta em uma próxima etapa.");}
+    if(sceneRef?.merchant&&near(player,sceneRef.merchant,85)){say("Mercador: Tenho suprimentos para quem conseguir moedas. A loja será aberta em uma próxima etapa.");}
     else if(near(player,enemy,100)&&!state.defeated)say("Um rato zumbi bloqueia a trilha. Escolha uma ação e pressione AGIR.");
     else say("Não há ninguém por perto para conversar.");
   }
