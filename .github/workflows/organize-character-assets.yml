@@ -1,0 +1,56 @@
+name: Organize character assets
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract-and-organize:
+    if: ${{ !contains(github.event.head_commit.message, '[assets-bot]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract character packs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets/characters/male assets/characters/female
+          unzip -oq "docs/The Male adventurer - Free.zip" -d /tmp/male-pack
+          unzip -oq "docs/The Female Adventurer - Free.zip" -d /tmp/female-pack
+          cp -R "/tmp/male-pack/The Male adventurer - Free/." assets/characters/male/
+          cp -R "/tmp/female-pack/The Female Adventurer - Free/." assets/characters/female/
+          cat > assets/characters/README.md <<'EOF'
+          # Character assets
+
+          Source packs are retained in `docs/`. Extracted PNG assets are organized here for the Phaser 3 game.
+
+          ## Folders
+          - `male/`: male adventurer animations and related effects.
+          - `female/`: female adventurer animations and related effects.
+
+          ## Sprite layout
+          The supplied directional sheets are generally 384×64 px (8 frames of 48×64 px).
+          Combined sheets may use a different grid; check the image dimensions before loading them.
+          Load the directional PNGs with Phaser 3 and create animations for idle, walk, dash, jump and death as needed.
+          Asset extraction does not yet wire these sprites into the player scene.
+          EOF
+
+      - name: Commit organized assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/characters
+          if git diff --cached --quiet; then
+            echo "No character asset changes to commit."
+            exit 0
+          fi
+          git commit -m "Organize character assets [assets-bot]"
+          git push
