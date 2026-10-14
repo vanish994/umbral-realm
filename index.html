@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#11131a">
-  <meta name="description" content="Teste jogável de combate e sobrevivência zumbi em Umbral Realm.">
+  <meta name="description" content="Protótipo jogável de sobrevivência zumbi em Umbral Realm.">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./src/style.css">
-  <title>Umbral Realm — Teste de Combate</title>
+  <title>Umbral Realm — Protótipo jogável</title>
 </head>
 <body>
   <main id="app">
@@ -24,13 +24,13 @@
     </section>
     <section id="game-wrap" aria-label="Mundo do jogo">
       <div id="game"></div>
-      <div class="location-pill"><span class="dot"></span><span id="location">Trilha Velha</span></div>
-      <div class="enemy-panel"><div class="enemy-title"><span id="enemy-label">ZUMBI ERRANTE</span><span id="enemy-hp-label">70 / 70</span></div><div class="meter enemy-meter"><div id="enemy-hp-bar" class="meter-fill enemy-fill"></div></div></div>
+      <div class="location-pill"><span class="dot"></span><span>Trilha Velha</span></div>
+      <div class="enemy-panel"><div class="enemy-title"><span id="enemy-label">ERRANTE</span><span id="enemy-hp-label">70 / 70</span></div><div class="meter enemy-meter"><div id="enemy-hp-bar" class="meter-fill enemy-fill"></div></div></div>
       <div id="toast" role="status" aria-live="polite"></div>
     </section>
     <section class="bottom-panel">
-      <div class="quest"><span class="quest-mark">!</span><div><small>OBJETIVO DO TESTE</small><strong id="quest-text">Derrote o zumbi usando a faca e o revólver .38.</strong></div></div>
-      <div class="weapon-status"><span id="combat-info">Faca • curto alcance</span><span id="knife-condition">Fio 100%</span><span id="revolver-condition">Sujeira 0%</span><span id="ammo-label">7 / 7</span></div>
+      <div class="quest"><span class="quest-mark">!</span><div><small>OBJETIVO DO TESTE</small><strong id="quest-text">Derrote o errante e receba sua recompensa.</strong></div></div>
+      <div class="weapon-status"><span id="combat-info">Ação próxima selecionada</span><span id="charge-label">Energia: 7 / 7</span></div>
       <div class="controls">
         <div class="dpad" aria-label="Movimento">
           <button class="pad up" data-dir="up" aria-label="Mover para cima">▲</button>
@@ -39,12 +39,12 @@
           <button class="pad right" data-dir="right" aria-label="Mover para direita">▶</button>
         </div>
         <div class="actions">
-          <div class="weapon-select"><button id="weapon-knife" class="weapon selected" aria-pressed="true">FACA</button><button id="weapon-revolver" class="weapon" aria-pressed="false">.38</button></div>
+          <div class="weapon-select"><button id="action-close" class="weapon selected" aria-pressed="true">PRÓXIMA</button><button id="action-far" class="weapon" aria-pressed="false">DISTANTE</button></div>
           <button id="interact" class="action secondary">FALAR</button>
-          <button id="attack" class="action danger"><span>⚔</span><small>ATACAR</small></button>
+          <button id="attack" class="action danger"><span>✦</span><small>AGIR</small></button>
         </div>
       </div>
-      <footer><span id="status">Aproxime-se do zumbi e teste as duas armas.</span><button id="save" class="save">SALVAR</button></footer>
+      <footer><span id="status">Aproxime-se do errante para usar a ação próxima.</span><button id="save" class="save">SALVAR</button></footer>
     </section>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
