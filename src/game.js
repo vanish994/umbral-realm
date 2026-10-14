@@ -51,14 +51,63 @@
     create(){
       sceneRef = this;
       this.cameras.main.setBackgroundColor("#18201b");
+      this.solids = [];
       const g = this.add.graphics();
+      // REGIÃO 01 — Trilha Velha: pontos principais desenhados manualmente.
       g.fillStyle(0x26382b); g.fillRect(0,0,960,640);
-      for(let y=20;y<640;y+=32){for(let x=16;x<960;x+=32){const n=(x*13+y*7)%17;if(n<5){g.fillStyle(n%2?0x1d2c23:0x223127);g.fillRect(x,y,16,16);g.fillStyle(0x3a4932);g.fillRect(x+3,y+4,7,4);}else if(n===7){g.fillStyle(0x625742);g.fillRect(x+10,y+22,5,3);}}}
-      g.fillStyle(0x594b3b);g.fillRect(0,270,960,74);g.fillStyle(0x6c5a43);g.fillRect(0,282,960,4);g.fillRect(0,326,960,3);
-      for(let i=0;i<30;i++){const x=(i*97+31)%960,y=(i*71+43)%640;if(y>235&&y<365)continue;g.fillStyle(0x121e19);g.fillRect(x,y,24,26);g.fillStyle(i%2?0x233b2b:0x2d4430);g.fillRect(x-5,y-7,33,24);g.fillStyle(0x42543a);g.fillRect(x+3,y-3,9,5);}
-      g.fillStyle(0x777064);g.fillRect(744,208,42,48);g.fillStyle(0x3b3b3c);g.fillRect(751,216,28,32);g.fillStyle(0x15191a);g.fillRect(756,224,18,24);
-      this.add.text(735,190,"ABRIGO",{fontFamily:"monospace",fontSize:"10px",color:"#d6c49f",stroke:"#141719",strokeThickness:3});
+      for(let y=0;y<640;y+=32){
+        for(let x=0;x<960;x+=32){
+          const n=(x*13+y*7)%17;
+          g.fillStyle(n<6?0x223127:0x26382b);g.fillRect(x,y,32,32);
+          if(n<4){g.fillStyle(n%2?0x1d2c23:0x2d3c2b);g.fillRect(x+5,y+7,5,4);g.fillRect(x+20,y+21,3,3);}
+        }
+      }
+      // Estrada principal feita à mão, conectando o mapa de oeste a leste.
+      g.fillStyle(0x594b3b);g.fillRect(0,270,960,82);
+      g.fillStyle(0x6c5a43);g.fillRect(0,282,960,3);g.fillRect(0,337,960,3);
+      g.fillStyle(0x4a4033);g.fillRect(0,308,960,4);
+      // Pátio e abrigo principal.
+      g.fillStyle(0x454541);g.fillRect(700,174,150,106);
+      g.fillStyle(0x777064);g.fillRect(720,187,102,67);
+      g.fillStyle(0x55544f);g.fillRect(713,181,116,12);
+      g.fillStyle(0x303335);g.fillRect(754,211,34,43);
+      g.fillStyle(0x171b1c);g.fillRect(760,217,22,37);
+      g.fillStyle(0x9a8b6d);g.fillRect(700,174,150,5);
+      this.solids.push({x:700,y:174,w:150,h:20},{x:700,y:194,w:48,h:66},{x:794,y:194,w:56,h:66});
+      // Ruína murada ao norte: landmark fixo, com passagem aberta.
+      g.fillStyle(0x56534a);g.fillRect(135,95,190,18);g.fillRect(135,113,18,74);g.fillRect(307,113,18,74);
+      g.fillStyle(0x282d29);g.fillRect(153,113,154,62);
+      g.fillStyle(0x716b5c);g.fillRect(135,95,190,5);g.fillRect(135,183,50,7);g.fillRect(275,183,50,7);
+      this.solids.push({x:135,y:95,w:190,h:18},{x:135,y:113,w:18,h:74},{x:307,y:113,w:18,h:74});
+      // Cercas quebradas e sucata fixa junto à trilha.
+      for(let x=390;x<490;x+=18){g.fillStyle(0x4d514c);g.fillRect(x,220,3,32);g.fillRect(x+6,231,10,3);}
+      g.fillStyle(0x454a45);g.fillRect(520,390,44,25);g.fillStyle(0x65645a);g.fillRect(525,385,31,8);
+      g.fillStyle(0x494b45);g.fillRect(590,430,34,22);g.fillStyle(0x777064);g.fillRect(595,425,20,6);
+      this.solids.push({x:520,y:385,w:44,h:30},{x:590,y:425,w:34,h:27});
+      // Vegetação e destroços procedurais, sempre com a mesma seed nesta versão.
+      // A distribuição só ocupa bolsões de cenário e não bloqueia a estrada principal.
+      let seed = 20261014;
+      const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+      for(let i=0;i<58;i++){
+        const x=24+rand()*910, y=24+rand()*590;
+        if((y>255&&y<365) || (x>680&&x<865&&y>155&&y<290) || (x>120&&x<340&&y>85&&y<200)) continue;
+        const type=Math.floor(rand()*3);
+        if(type===0){
+          g.fillStyle(0x17231c);g.fillRect(x-8,y-3,27,24);
+          g.fillStyle(rand()>.5?0x29402c:0x334832);g.fillRect(x-13,y-12,34,25);
+          g.fillStyle(0x45563a);g.fillRect(x-5,y-8,9,5);
+          if(rand()>.35)this.solids.push({x:x-12,y:y-8,w:31,h:22});
+        }else if(type===1){
+          g.fillStyle(0x514d43);g.fillRect(x,y,18,12);g.fillStyle(0x777064);g.fillRect(x+3,y-3,11,4);
+          if(rand()>.45)this.solids.push({x,y:y-3,w:18,h:15});
+        }else{
+          g.fillStyle(0x3e4944);g.fillRect(x,y,20,5);g.fillRect(x+4,y-5,12,5);g.fillStyle(0x716b5c);g.fillRect(x+8,y-4,5,3);
+        }
+      }
+      // Rótulos de navegação da região.
+      this.add.text(735,157,"ABRIGO",{fontFamily:"monospace",fontSize:"10px",color:"#d6c49f",stroke:"#141719",strokeThickness:3});
       this.add.text(70,365,"TRILHA VELHA",{fontFamily:"monospace",fontSize:"10px",color:"#d6c49f",stroke:"#141719",strokeThickness:3});
+      this.add.text(170,72,"RUÍNAS DO NORTE",{fontFamily:"monospace",fontSize:"10px",color:"#b9b09b",stroke:"#141719",strokeThickness:3});
       guide=this.add.container(325,290);this.drawPerson(guide,0x9b8a62,0x493b32);
       this.add.text(306,265,"MATEUS",{fontFamily:"monospace",fontSize:"10px",color:"#f0d7a0",stroke:"#161718",strokeThickness:3});
       player=this.add.container(470,305);this.drawPerson(player,0x667b91,0x303744);
@@ -84,7 +133,14 @@
       if(cursors.up.isDown||moveKeys.W.isDown||touch.up)dy=-1;else if(cursors.down.isDown||moveKeys.S.isDown||touch.down)dy=1;
       const target=player.getData("tapTarget");
       if(!dx&&!dy&&target){dx=target.x-player.x;dy=target.y-player.y;if(Math.hypot(dx,dy)<8){player.setData("tapTarget",null);dx=dy=0;}else{const l=Math.hypot(dx,dy);dx/=l;dy/=l;}}
-      if(dx||dy){const len=Math.hypot(dx,dy);player.x+=dx/len*145*delta/1000;player.y+=dy/len*145*delta/1000;player.x=Phaser.Math.Clamp(player.x,25,935);player.y=Phaser.Math.Clamp(player.y,35,610);}
+      if(dx||dy){
+        const len=Math.hypot(dx,dy),step=145*delta/1000;
+        const nx=Phaser.Math.Clamp(player.x+dx/len*step,25,935);
+        const ny=Phaser.Math.Clamp(player.y+dy/len*step,35,610);
+        const blocked=(x,y)=>this.solids.some(r=>x+10>r.x&&x-10<r.x+r.w&&y+8>r.y&&y-8<r.y+r.h);
+        if(!blocked(nx,player.y))player.x=nx;
+        if(!blocked(player.x,ny))player.y=ny;
+      }
       if(this.enemyName&&enemy&&enemy.visible){this.enemyName.setPosition(enemy.x,enemy.y-39);}
       if(enemy&&enemy.visible&&!state.defeated&&state.hp>0){
         const distance=Phaser.Math.Distance.Between(player.x,player.y,enemy.x,enemy.y);
