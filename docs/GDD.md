@@ -1,316 +1,381 @@
 # Umbral Realm — Game Design Document (GDD)
 
-**Versão:** 0.1 — visão inicial  
-**Estado:** documento de direção; várias funcionalidades ainda são propostas, não implementadas.  
+**Versão:** 0.2 — visão consolidada de design  
+**Estado:** documento de direção. As regras descritas aqui são decisões de design ou propostas de balanceamento; ainda não significam que estejam implementadas.  
 **Plataforma-alvo:** Android primeiro, via jogo web instalável (PWA).  
-**Tecnologia atual do protótipo:** HTML, CSS, JavaScript e Phaser 3.  
+**Tecnologia do protótipo:** HTML, CSS, JavaScript e Phaser 3.  
+**Orientação:** horizontal (landscape).  
 **Orçamento:** zero; priorizar ferramentas gratuitas e assets próprios ou com licença compatível.
 
 ## 1. Visão do jogo
 
-**Umbral Realm** é um MMORPG 2D de fantasia sombria em um mundo pós-apocalíptico devastado por uma praga de mortos-vivos e forças sobrenaturais. Civilizações ruíram, estradas foram tomadas por hordas e os sobreviventes se agarram a assentamentos fortificados entre regiões contaminadas.
+**Umbral Realm** é um RPG de ação 2D com ambição de se tornar um MMORPG, ambientado num apocalipse zumbi. O jogador é um sobrevivente num mundo de cidades arruinadas, áreas residenciais abandonadas, florestas, instalações esquecidas e masmorras tomadas pela infecção.
 
-A fantasia central não é ser um herói clássico que salva um reino intacto. É **sobreviver, adaptar-se e conquistar espaço em um mundo que já acabou**. O personagem começa vulnerável e torna-se conhecido por suas escolhas, equipamentos, cicatrizes, conhecimentos e especializações.
+A identidade do jogo é sobrevivência, exploração, combate em tempo real, coleta de recursos e especialização. **Não há magia nem classes tradicionais de fantasia.** A variedade vem das armas, das habilidades desenvolvidas pelo personagem, dos equipamentos, dos tipos de zumbis e das escolhas do jogador.
+
+O projeto será desenvolvido primeiro como experiência individual/offline. O multiplayer só entra depois que o núcleo local estiver divertido, estável e testado.
 
 ### Pilares de design
 
-1. **Apocalipse em cada detalhe:** cenário, criaturas, itens, arquitetura, sons e missões devem refletir o colapso.
-2. **Sobrevivência com escolhas:** recursos, risco, preparação e exploração importam; não transformar tudo em punição ou grind.
-3. **Identidade não convencional:** sem depender do pacote tradicional de guerreiro, mago, paladino e arqueiro.
-4. **Exploração contínua:** regiões conectadas por caminhos, assentamentos, florestas mortas, ruínas e masmorras.
-5. **Combate legível e responsivo:** ação em tempo real, feedback visual claro e controles adequados ao toque.
-6. **MMO por etapas:** primeiro construir um jogo local divertido e confiável; depois introduzir multiplayer com autoridade no servidor.
-7. **Escopo sustentável:** desenvolver pelo Android, usando serviços gratuitos sempre que possível, sem assumir custos recorrentes.
+1. **Apocalipse zumbi:** cenário, criaturas, itens, arquitetura e narrativa devem refletir o colapso da sociedade.
+2. **Skills acima do nível geral:** a habilidade com a arma é a principal fonte de eficiência e dano; o nível do personagem oferece vantagens gerais.
+3. **Sobrevivência com escolhas:** munição, ouro, manutenção, saque e preparação importam sem transformar o jogo em punição constante.
+4. **Combate legível e responsivo:** ação em tempo real, feedback visual claro e controles adequados ao toque.
+5. **Progressão sem grind burro:** não exigir horas atacando repetidamente o mesmo inimigo. Vida dos mobs, respawn, experiência e recompensas devem funcionar em conjunto.
+6. **MMO por etapas:** primeiro jogo local/offline; depois multiplayer com autoridade no servidor.
+7. **Escopo sustentável:** desenvolver pelo Android, usando ferramentas gratuitas e sem assumir custos recorrentes.
 
 ## 2. Gênero, câmera e apresentação
 
-- **Gênero:** MMORPG 2D de ação, fantasia sombria e sobrevivência pós-apocalíptica.
-- **Câmera:** visão superior (top-down), com mapas exploráveis e leitura clara do entorno.
-- **Arte:** pixel art sombria, silhuetas fortes, paleta de cores contida, iluminação localizada e ambientes decadentes.
-- **Orientação móvel:** horizontal (landscape), com mapa ocupando a maior área e HUD/controles nas laterais.
-- **Ritmo:** exploração, encontros de combate, coleta, interação, retorno a áreas seguras e progressão.
-- **Movimento:** controle direto do personagem; não é um idle game.
-- **Escopo visual inicial:** arte procedural e placeholders podem ser usados no protótipo, mas devem ser substituídos ou refinados antes de considerar o visual final.
+- **Gênero:** RPG 2D de ação e sobrevivência pós-apocalíptica, com objetivo futuro de MMORPG.
+- **Câmera:** visão superior (top-down), com áreas conectadas.
+- **Arte:** pixel art sombria, silhuetas legíveis, ambientes decadentes e efeitos moderados.
+- **Orientação móvel:** horizontal, com mapa ocupando a maior área e HUD/controles que não cubram o combate.
+- **Ritmo:** explorar, combater, coletar, voltar ao comerciante ou a uma área segura e decidir onde investir recursos.
+- **Movimento:** controle direto do personagem; não é um jogo idle.
+- **Compatibilidade:** priorizar Android e celulares modestos, interface responsiva e PWA instalável pela tela inicial.
 
 ## 3. Mundo e ambientação
 
-O mundo foi atingido por uma calamidade conhecida provisoriamente como **A Queda do Véu**. Uma praga reanimou os mortos e deformou a vida; ao mesmo tempo, fendas sobrenaturais começaram a alterar lugares e pessoas. A origem exata deve ser revelada por exploração e narrativa, não explicada toda no início.
+A sociedade entrou em colapso devido a uma infecção que transforma pessoas e animais em mortos-vivos. A história será revelada por locais, objetos, registros e encontros, sem despejar toda a explicação no início.
 
-### Regiões propostas
+### Tipos de região planejados
 
-- **Bosque das Cinzas:** zona inicial, trilhas abandonadas, árvores retorcidas e sinais de contaminação.
-- **Vila do Último Sino:** assentamento fortificado, comércio limitado, sobreviventes desconfiados e rumores.
-- **Distrito Afogado:** ruas em ruínas, edifícios parcialmente submersos e infectados escondidos.
-- **Campos de Carniça:** terreno aberto tomado por hordas e restos de caravanas.
-- **Hospital de Santa Véspera:** masmorra de horror, experimentos interrompidos e registros sobre a praga.
-- **Fenda do Véu:** região sobrenatural de alto risco, com regras ambientais e criaturas anômalas.
+- **Bairros e cidades arruinadas:** casas, lojas, ruas bloqueadas e edifícios abandonados.
+- **Florestas e estradas:** rotas de exploração, áreas de risco e recursos.
+- **Esgotos e instalações subterrâneas:** espaços apertados, ratos zumbis e pouca visibilidade.
+- **Instalações abandonadas:** hospitais, depósitos, oficinas e antigos postos de segurança.
+- **Masmorras e zonas de alto risco:** concentrações de zumbis mais perigosos, mutações e materiais raros.
+- **Áreas seguras:** locais de descanso, interação e comércio com NPCs.
 
-Esses nomes e lugares são propostas de design, não conteúdo já construído. O mundo deve ser dividido em áreas conectadas, evitando um mapa único tão grande que fique vazio ou caro de manter.
-
-### Facções possíveis
-
-- **Vigias do Sino:** protegem assentamentos, mas cobram caro por segurança.
-- **Coletores de Cinza:** recuperam tecnologia, ferramentas e materiais das ruínas.
-- **A Irmandade da Última Luz:** grupo religioso dividido entre proteger os vivos e explorar o sobrenatural.
-- **Os Despertos:** sobreviventes alterados pela contaminação; nem todos são hostis.
-- **Culto da Boca Negra:** facção antagonista que vê a praga como uma nova etapa da existência.
-
-Facções devem ter objetivos conflitantes e consequências no mundo. Nenhuma precisa ser inteiramente boa ou má.
+Nomes específicos de cidades, facções e regiões serão definidos mais tarde. A ambientação deve permanecer pós-apocalíptica, sem magia ou criaturas de fantasia tradicional.
 
 ## 4. Personagem e progressão
 
-Não haverá classes medievais convencionais como estrutura obrigatória. O personagem começa como um sobrevivente e desenvolve uma identidade por meio de **arquétipos, habilidades, equipamentos e escolhas**.
+### Sem classes fixas
 
-### Arquétipos iniciais propostos
+O jogador não escolhe uma classe tradicional. A identidade do personagem surge das skills que desenvolve, das armas que usa e do equipamento que consegue obter. Cada categoria de habilidade progride separadamente.
 
-| Arquétipo | Identidade de jogo |
-|---|---|
-| **Catador das Ruínas** | Recuperação de recursos, improvisação, armadilhas e ferramentas. |
-| **Pestilento** | Toxinas, doenças e manipulação arriscada da contaminação. |
-| **Marcado pelo Véu** | Poderes sobrenaturais com custos ou efeitos colaterais. |
-| **Estripador** | Combate brutal de curta distância e pressão sobre inimigos próximos. |
-| **Rastreador de Mortos** | Rastreamento, preparação de emboscadas e conhecimento de criaturas. |
+### Nível do personagem
 
-Os arquétipos são referências para estilos de jogo, não classes fechadas já implementadas. O objetivo é permitir combinações e especializações sem criar combinações ilimitadas difíceis de balancear.
+O nível geral importa, mas não substitui a especialização. Ele deve oferecer:
+- aumento da vida máxima;
+- aumento da velocidade de movimento;
+- bônus de dano geral moderado, sem superar a importância da skill usada.
 
-### Progressão planejada
+Os valores e fórmulas exatos serão definidos por testes de balanceamento.
 
-- Ganhar experiência por combate, exploração, missões e descobertas relevantes.
-- Desbloquear habilidades e especializações em marcos claros.
-- Melhorar equipamento por reparo, fabricação, saque e descoberta.
-- Obter títulos, cicatrizes, reputação e registros de feitos.
-- Fazer escolhas que abram ou fechem relações com facções.
-- Evitar que o poder dependa apenas de horas repetindo a mesma atividade.
+### Skills — principal fonte de eficiência ofensiva
 
-**Princípio de balanceamento:** equipamentos e habilidades devem criar opções, não tornar o personagem invulnerável. O conteúdo de grupo deve recompensar cooperação sem tornar a experiência solo inviável.
+As skills são mais importantes para o dano do que o nível geral. Por exemplo, um personagem de nível menor com alta skill de Armas de Fogo pode causar mais dano com um revólver do que um personagem de nível maior com pouca prática nessa categoria.
 
-## 5. Combate
+Categorias confirmadas até agora:
+- **Armas de Fogo:** evolui usando armas de fogo em combate.
+- **Lâminas:** evolui usando facas e outras armas de lâmina.
 
-O combate é em tempo real, com resposta imediata aos comandos. O protótipo deve validar primeiro um conjunto pequeno de ações.
+Outras categorias podem ser acrescentadas quando houver armas que as justifiquem. Não haverá skill de estilingue nem armas artificiais de treino no design atual.
 
-### Loop básico
+### Progressão de dificuldade crescente
 
-1. Identificar ameaça e distância.
-2. Aproximar-se, reposicionar-se ou usar o ambiente.
-3. Atacar, esquivar ou ativar uma habilidade.
-4. Ler o feedback do golpe e a reação do inimigo.
-5. Recolher recompensas e decidir se continua ou recua.
+O custo para avançar de nível de skill cresce de forma exponencial ou aproximadamente exponencial: os primeiros níveis são mais acessíveis, enquanto os níveis altos exigem investimento prolongado.
 
-### Categorias de armas e ferramentas
+**Proposta técnica inicial, ainda não definitiva:** usar uma curva de custo proporcional a A multiplicado por r elevado a (L−1), com r maior que 1. O multiplicador e o custo inicial devem ser calibrados por testes; não são números finais.
 
-- Armas improvisadas e ferramentas pesadas.
-- Lâminas curtas, facões e armas de impacto.
-- Armas de alcance limitado, como bestas improvisadas.
-- Artefatos contaminados e instrumentos ritualísticos.
-- Armadilhas, iscas e itens de distração.
+Para evitar abuso:
+- ações precisam ser válidas e atingir alvos apropriados;
+- atacar o vazio não concede progresso;
+- repetir ações contra inimigos muito fracos rende progressivamente menos;
+- a progressão deve favorecer jogar, explorar e enfrentar desafios variados, não ficar parado repetindo o mesmo alvo.
 
-Armas de fogo, se forem incluídas futuramente, devem ser raras, barulhentas e balanceadas por munição e risco — não a solução universal.
+## 5. Combate e equipamentos
 
-### Tipos de ameaça
+O combate é em tempo real. O protótipo deve validar primeiro movimento, alcance, ataques, dano, estados dos inimigos, loot e feedback visual.
 
-- **Errantes:** lentos, perigosos em grupo.
-- **Corredores:** rápidos, frágeis e capazes de punir distrações.
-- **Brutos:** resistentes, com ataques previsíveis e pesados.
-- **Esporos:** contaminam áreas e controlam espaço.
-- **Mímicos:** usam som, silhueta ou comportamento para atrair sobreviventes.
-- **Aberrações do Véu:** inimigos sobrenaturais com padrões únicos.
-- **Chefes:** encontros com fases ou mudanças de comportamento, não apenas muita vida.
+### Equipamento inicial do personagem
 
-No primeiro protótipo, implementar somente um personagem, um inimigo comum e uma criatura especial. O catálogo completo vem depois.
+1. **Faca de cozinha de 10 polegadas (25,4 cm):** arma de lâmina inicial. Seu fio se desgasta com o uso.
+2. **Revólver calibre .38 com tambor de sete câmaras:** começa com exatamente sete munições, sem munição reserva.
 
-## 6. Sobrevivência, recursos e fabricação
+O jogador terá de procurar munição no mundo ou farmar ouro para comprar mais do comerciante. Não há pacote inicial de balas extras.
 
-A sobrevivência deve apoiar a exploração, não virar uma lista exaustiva de barras. O primeiro ciclo deve focar em vida, experiência, moedas e saque. Fome, sede, infecção, durabilidade e fabricação avançada ficam para fases posteriores.
+### Fio da faca
 
-### Recursos propostos
+A faca não deixa de funcionar por desgaste, mas perde eficiência conforme o fio se deteriora:
+- o dano diminui progressivamente;
+- o efeito de sangramento enfraquece em estados intermediários;
+- quando o fio chega a zero, a faca não causa sangramento e causa 30% menos dano do que em boas condições.
 
-- Sucata, tecido, madeira, metal e componentes.
-- Ervas, reagentes, antissépticos e antídotos.
-- Munição e materiais de reparo, caso essas mecânicas sejam introduzidas.
-- Relíquias, fragmentos e amostras contaminadas.
+**Proposta de balanceamento para testes:** usar estágios claros de condição, com desempenho aproximado de 100%, 95%, 85% e 70% do dano de referência. O efeito de sangramento também terá estágios; as probabilidades e durações finais ainda serão calibradas. Afiar deve recuperar o fio, mas o método e o custo serão definidos durante o desenvolvimento.
 
-### Fabricação futura
+### Sujeira e lubrificação do revólver
 
-Receitas devem exigir descoberta, estação de trabalho ou conhecimento. A fabricação não deve criar recursos do nada: a economia depende de saque, coleta, comércio e risco de expedição.
+O revólver não tem durabilidade e não quebra por desgaste. Em vez disso, acumula sujeira e precisa de limpeza/lubrificação. Quanto mais sujo, menos confiável fica:
+- limpo: chance de acerto normal;
+- estados intermediários: penalidade gradual de precisão;
+- muito sujo/estado crítico: penalidade de precisão relevante.
 
-## 7. Missões e narrativa
+**Proposta inicial de balanceamento para testes:** multiplicadores de chance-base de 100%, 98%, 93% e 85% conforme o estado. Assim, por exemplo, uma chance-base de 80% multiplicada por 85% resulta em 68%. Esses multiplicadores são provisórios e serão revistos em testes.
 
-A narrativa é ambiental e emergente, com histórias locais, personagens ambíguos e consequências. O jogador deve descobrir o que ocorreu por meio de registros, locais, diálogos e mudanças nas regiões.
+A manutenção deve ser gradual e previsível, sem obrigar o jogador a limpar a arma a cada poucos minutos nem tornar o combate impossível quando estiver sem dinheiro.
 
-### Tipos de missão
+### Outras regras de combate
 
-- **Sobrevivência:** recuperar suprimentos, escoltar ou resgatar alguém.
-- **Caçada:** rastrear uma criatura e descobrir seu padrão.
-- **Exploração:** mapear ruínas, localizar entradas ou recuperar registros.
-- **Facção:** entregar recursos, negociar ou escolher um lado.
-- **Mistério:** reconstruir acontecimentos a partir de evidências.
-- **Eventos de mundo:** hordas, rotas bloqueadas ou áreas temporariamente contaminadas.
+- Armas de fogo não têm durabilidade convencional.
+- Armas de lâmina podem perder o fio.
+- A munição é um recurso importante, especialmente no começo.
+- Armas e equipamentos devem ter funções distintas e não tornar uma opção universalmente superior em todos os cenários.
+- Não adicionar magia ou armas de treino de dano 1 ao escopo atual.
 
-Missões não devem ser apenas “mate X inimigos”. Sempre que possível, oferecer contexto, decisão ou uma consequência visível.
+## 6. Inimigos: espécies zumbis
 
-## 8. Mundo compartilhado e multiplayer
+Todos os mobs de combate pertencem à temática zumbi. A diversidade vem de espécies infectadas, mutações, comportamento e habilidades, não de monstros de fantasia tradicional.
 
-O jogo será primeiro offline/local. O multiplayer vem somente após validar movimento, combate, salvamento e estrutura de áreas.
+### Progressão inicial proposta
 
-### Arquitetura-alvo
+- **Ratos zumbis:** inimigos pequenos e relativamente frágeis, adequados às primeiras áreas e a esgotos/becos.
+- **Cães zumbis:** mais rápidos e agressivos, capazes de pressionar o jogador e perseguir por distâncias maiores.
+- **Zumbis humanos comuns:** inimigos básicos de áreas urbanas, com comportamento e resistência próprios.
+- **Espécies mutantes e especiais:** inimigos de nível mais alto com melhorias e habilidades diferentes, como investidas, resistência específica, ataques em área ou chamar outros zumbis.
+- **Variantes de elite e chefes:** encontros raros com padrões reconhecíveis e habilidades próprias; não devem ser apenas inimigos comuns com mais vida.
 
-- **Cliente:** PWA com Phaser, responsável por renderizar e enviar comandos.
-- **Servidor autoritativo:** valida posição, combate, dano, inventário, recompensas e estado compartilhado.
-- **Persistência remota:** contas/personagens e progresso online quando houver backend viável.
-- **Salvamento local:** útil para prototipagem; não será autoridade em partidas online.
-- **Comunicação:** WebSocket ou tecnologia equivalente quando o servidor multiplayer for implementado.
+As habilidades especiais precisam de sinais visuais ou animações legíveis para permitir reação do jogador. A lista final de espécies será criada depois; estas são diretrizes, não um catálogo implementado.
 
-O cliente nunca deve decidir sozinho resultados importantes em multiplayer. O servidor valida ações para reduzir trapaças e divergência de estado.
+### Vida e respawn
 
-### Fases do online
+- Inimigos iniciais terão vida relativamente baixa.
+- O respawn será moderado/lento, evitando ciclos instantâneos de farm.
+- Vida, tempo de respawn, risco, experiência e drops serão balanceados em conjunto.
+- O objetivo é incentivar exploração de outras áreas e combate variado, em vez de atacar repetidamente o mesmo inimigo por horas.
 
-1. Protótipo local jogável.
-2. Áreas e transições estáveis.
-3. Backend mínimo e identidade de jogador.
-4. Teste com dois clientes na mesma área.
-5. Sincronização de movimento e presença.
-6. Combate e loot validados pelo servidor.
-7. Persistência, reconexão, chat e ferramentas de moderação.
-8. Testes de carga antes de ampliar o número de jogadores.
+## 7. Drops, ouro e economia
 
-Não prometer “muitos jogadores” antes de medir a capacidade real do servidor gratuito. Serviços gratuitos podem ter limites, suspensão por inatividade e quotas.
+O farm é parte central da progressão. Cada espécie terá sua própria tabela de recompensas, com quantidades de ouro e probabilidades de obter partes ou materiais.
 
-## 9. Interface e controles
+### Regras de drops
 
-A interface horizontal deve reservar a maior parte do espaço ao mapa. HUD e controles precisam permanecer legíveis em telas pequenas.
+- Inimigos podem soltar uma quantidade aleatória de ouro.
+- Cada espécie terá chances próprias de soltar partes e materiais coerentes com ela.
+- Ouro e materiais terão sorteios independentes: receber ouro não garante um drop raro.
+- Espécies mais perigosas poderão ter recompensas esperadas maiores e materiais exclusivos.
+- Drops raros não serão obrigatórios para progredir na experiência básica.
+- Quantidades e probabilidades devem ser configuráveis para facilitar o balanceamento.
 
-- **Topo:** nome do jogo, nível, moedas e status resumido.
-- **Área principal:** mundo explorável, personagens, criaturas, sinais de interação e indicadores de local.
-- **Painel lateral:** vida, experiência, missão atual e ações.
-- **Controles touch:** direcional virtual ou joystick e botões contextuais de ataque/interação.
-- **Menus futuros:** inventário, equipamentos, habilidades, mapa, missões, social e configurações.
+Exemplos conceituais: ratos zumbis podem soltar materiais pequenos; cães zumbis, dentes ou outros materiais; zumbis humanos, objetos e materiais recuperáveis; mutantes, componentes mais raros. A lista e os valores definitivos ainda serão desenvolvidos.
 
-Todos os botões devem ter estados pressionado/desabilitado claros. Textos de missão não podem cobrir a área de jogo. A interface precisa ser testada com diferentes proporções de tela e recortes do Android.
+### Comerciante NPC
 
-## 10. Direção de arte e áudio
+No início, haverá um comerciante NPC que atende à experiência individual e funciona como principal ponto de compra e venda. Ele:
+- vende munição, incluindo balas para o revólver;
+- vende armas, equipamentos, medicamentos, ferramentas e os demais itens disponíveis no jogo;
+- compra partes e materiais recolhidos dos inimigos;
+- permite converter drops em ouro para financiar novas expedições.
+
+O jogador também poderá encontrar munição e outros recursos durante a exploração. O comércio entre jogadores fica para uma fase posterior, quando o multiplayer existir.
+
+### Controle da inflação e do farm
+
+- O ouro obtido diretamente dos inimigos será controlado por tabelas de recompensa.
+- Os preços de venda dos materiais ao NPC devem ser calibrados em relação às recompensas e ao custo dos itens comprados.
+- Vender um material e comprar o mesmo item não deve criar um ciclo de lucro infinito.
+- Munição, manutenção, medicamentos e outros suprimentos podem funcionar como saídas de ouro.
+- Recompensas devem compensar o risco e o custo de combate, mas não tornar o dinheiro irrelevante.
+- O equilíbrio será avaliado por testes de sessões de farm e acompanhamento da renda/despesa média.
+
+## 8. Campo de treinamento de skills
+
+Haverá um campo de treinamento pago em ouro. O jogador escolhe a skill e a quantidade de horas de treinamento, paga e deixa o treino avançar com o tempo, inclusive enquanto estiver offline.
+
+### Regras planejadas
+
+- O treinamento custa ouro.
+- O jogador escolhe qual skill treinar e por quanto tempo.
+- Existe um limite diário de horas que o personagem pode deixar em treinamento.
+- O limite é compartilhado entre as skills, para que o jogador precise escolher onde investir o tempo de treino.
+- Skills mais altas custam mais tempo e/ou ouro para avançar.
+- Treinar Armas de Fogo não aumenta Lâminas, e vice-versa.
+- O campo complementa a progressão jogando, não deve substituir totalmente o combate e a exploração.
+
+**Proposta inicial para testar:** limite de oito horas de treinamento por dia, compartilhado entre todas as skills. Esse número não está fechado e poderá mudar após testes. O treinamento offline deverá usar tempo transcorrido validado; quando houver multiplayer, o servidor será a autoridade para evitar abuso do relógio local.
+
+## 9. Sobrevivência, recursos e manutenção
+
+O jogo deve fazer os recursos importarem sem virar uma lista excessiva de barras ou tarefas repetitivas.
+
+Sistemas já previstos na direção de design:
+- vida e progressão;
+- munição;
+- ouro e saque;
+- fio da faca;
+- sujeira/lubrificação do revólver;
+- manutenção de equipamentos que tenham desgaste específico.
+
+Fome, sede, fabricação avançada, infecção como sistema de personagem e outros medidores não estão definidos para o MVP. Não adicionar esses sistemas automaticamente sem validar que melhoram o ciclo principal.
+
+## 10. Missões e narrativa
+
+A narrativa será contada por ambientes, objetos, registros, diálogos e encontros com sobreviventes. A história deve reforçar o colapso e a luta por recursos, sem recorrer a magia.
+
+Tipos de missão possíveis:
+- recuperar suprimentos;
+- localizar sobreviventes ou objetos;
+- explorar ruínas;
+- eliminar uma ameaça específica;
+- encontrar uma rota segura;
+- recuperar materiais para um NPC.
+
+Missões não devem ser apenas “mate X inimigos”: quando possível, precisam de contexto, exploração ou consequência.
+
+## 11. Interface e controles
+
+A interface horizontal deve reservar a maior parte do espaço ao mapa, sem cobrir o combate.
+
+- **HUD:** vida, nível, experiência, ouro e estado resumido do equipamento.
+- **Área principal:** mundo, personagem, inimigos, itens coletáveis e sinais de interação.
+- **Controles touch:** joystick/direcional e botões de ataque e interação.
+- **Menus planejados:** inventário, equipamento, skills, mapa, missões e configurações.
+- **Feedback:** indicar dano, sangramento, condição da faca, sujeira do revólver e coleta de drops de forma clara, sem poluir a tela.
+
+Testar em diferentes proporções de tela e em celulares Android modestos.
+
+## 12. Direção de arte e áudio
 
 ### Direção visual
-
-- Paleta: carvão, cinza frio, verde doentio, ferrugem e dourado envelhecido em pequenos acentos.
-- Silhuetas distintas para leitura rápida de inimigos.
-- Animações curtas e legíveis: andar, atacar, receber golpe, morrer e interagir.
-- Cenários com sinais de abandono, barricadas, marcas de luta e luzes isoladas.
-- Evitar fantasia medieval limpa, armaduras brilhantes e aparência colorida de RPG genérico.
+- Pixel art de apocalipse zumbi.
+- Paleta de carvão, cinza frio, verde doentio, ferrugem e pequenos acentos quentes.
+- Ruas abandonadas, barricadas, edifícios deteriorados e vegetação invadindo construções.
+- Silhuetas distintas para ratos, cães, zumbis humanos e mutantes.
+- Animações curtas e legíveis para movimento, ataque, dano, morte, coleta e interação.
+- Evitar fantasia medieval tradicional, magia, armaduras brilhantes e aparência de RPG genérico.
 
 ### Áudio futuro
+- Ambiência de vento, estruturas rangendo e ruídos distantes.
+- Sons de ameaça que ofereçam pistas, sem depender exclusivamente do áudio.
+- Impactos diferenciados por arma e criatura.
+- Opções de volume e respeito às preferências do dispositivo.
 
-- Ambiência de vento, madeira, estruturas rangendo e ruídos distantes.
-- Sons de ameaça que deem pistas, sem depender exclusivamente de áudio.
-- Impactos diferenciados por material e criatura.
-- Música discreta em exploração e mais intensa em perigo.
-- Opção de volume e respeito às preferências do dispositivo.
+Usar apenas arte e áudio próprios ou com licença documentada para uso e redistribuição.
 
-Usar apenas áudio e arte próprios ou com licença documentada para uso e redistribuição.
+## 13. Mundo compartilhado e multiplayer
 
-## 11. Economia e jogo justo
+O jogo será primeiro individual/offline. O multiplayer só será iniciado após validar movimento, combate, drops, economia e salvamento local.
 
-A economia deve nascer de recursos escassos, saque, fabricação e comércio entre jogadores. O comércio entre jogadores só será implementado depois de existir validação de inventário no servidor.
+### Arquitetura-alvo
+- **Cliente:** PWA com Phaser, responsável por renderizar e enviar comandos.
+- **Servidor autoritativo:** quando houver online, valida movimento, combate, dano, inventário, drops, treinamento e estado compartilhado.
+- **Persistência:** salvamento local para o protótipo; persistência remota para personagens online em fase posterior.
+- **Comunicação:** WebSocket ou tecnologia equivalente quando o multiplayer for implementado.
 
-- Sem venda de poder como requisito de progressão.
-- Sem mecânicas pagas, pois o orçamento inicial é zero.
-- Evitar itens duplicáveis e transações não validadas no servidor.
-- A raridade deve comunicar utilidade e contexto, não apenas cor.
-- Recompensas devem refletir risco, tempo e contribuição.
+### Fases do online
+1. Protótipo individual jogável.
+2. Áreas e transições estáveis.
+3. Backend e identidade de jogador.
+4. Teste com dois clientes na mesma área.
+5. Sincronização de movimento e presença.
+6. Combate, drops, economia e treinamento validados pelo servidor.
+7. Persistência, reconexão, chat e moderação.
+8. Testes de carga antes de ampliar a quantidade de jogadores.
 
-## 12. Escopo do MVP
+Não prometer muitos jogadores antes de medir a capacidade real da hospedagem gratuita.
 
-O objetivo do primeiro MVP é provar que andar, explorar, lutar, interagir e progredir é divertido no Android em modo horizontal.
+## 14. Escopo do MVP
 
-### Incluído no MVP
+O objetivo do primeiro MVP é provar que explorar, lutar, coletar, interagir e progredir é divertido no Android em modo horizontal.
 
+### Prioridades para o MVP
 - PWA instalável e carregamento confiável.
-- Mapa inicial top-down com identidade de apocalipse zumbi.
+- Mapa top-down com identidade pós-apocalíptica.
 - Movimento por toque e teclado para teste.
 - Uma zona segura simples e uma área de exploração conectada.
-- Um NPC com diálogo e uma missão curta.
-- Um inimigo comum e um inimigo especial.
-- Ataque básico, vida, experiência e recompensa.
-- Interação, feedback de combate e salvamento local.
-- Layout horizontal responsivo.
+- Um NPC comerciante com compra/venda simples.
+- Pelo menos um inimigo zumbi básico e um segundo tipo com comportamento distinto.
+- Ataque, vida, drops, ouro e salvamento local.
+- Uma arma inicial de lâmina e o revólver .38, quando o combate e o inventário suportarem.
+- Layout horizontal responsivo e feedback claro de combate.
 
-### Fora do MVP
-
+### Fora do primeiro MVP
 - MMORPG online com muitos jogadores.
 - Chat global, guildas, grupos e comércio entre jogadores.
 - Mundo persistente compartilhado.
-- Grande catálogo de criaturas e habilidades.
-- PvP, temporadas, ranking e eventos massivos.
-- Sistema completo de fome, sede, infecção e durabilidade.
-- Arte final para todas as regiões e animações.
+- Catálogo completo de espécies, mutações e habilidades.
+- PvP, temporadas, rankings e eventos massivos.
+- Sistemas extensos de fome, sede, fabricação e infecção antes de validar o núcleo.
 
-## 13. Plano de desenvolvimento
+## 15. Plano de desenvolvimento
 
 **Fase 0 — Fundação**
-- Consolidar este GDD e manter o escopo do MVP explícito.
+- Consolidar o GDD e manter explícito o que é decisão, proposta ou implementação.
 - Organizar o código em módulos e documentar como testar pelo Android.
 - Garantir deploy automático sem workflows duplicados.
 
 **Fase 1 — Protótipo jogável**
-- Movimento e colisões.
-- Mapa inicial com limites e objetos sólidos.
+- Movimento, colisões e mapa.
 - Combate funcional, dano recebido e estados de inimigo.
-- NPC, missão e feedback visual.
-- Salvamento e recuperação de progresso.
+- Primeiro loop de loot, ouro e salvamento.
+- NPC e interação básica.
 
-**Fase 2 — Vertical slice**
-- Uma pequena região com começo, objetivo e conclusão.
+**Fase 2 — Ciclo de sobrevivência**
+- Inventário básico, comerciante e preços configuráveis.
+- Primeiras armas e munição.
+- Drops por espécie.
+- Testes de farm, respawn e economia.
+
+**Fase 3 — Progressão**
+- Nível geral e skills independentes.
+- Curva crescente de experiência de skill.
+- Condição do fio da faca e sujeira do revólver.
+- Campo de treinamento pago, com limite diário.
+- Testes de balanceamento repetíveis.
+
+**Fase 4 — Conteúdo**
+- Novas espécies de zumbis e mutações.
+- Regiões conectadas, missões, equipamentos e recursos.
 - Melhorias de pixel art e animações essenciais.
-- Inventário básico, saque e equipamento simples.
-- Testes em diferentes celulares e tamanhos de tela.
 
-**Fase 3 — Estrutura de RPG**
-- Progressão, habilidades, itens e missões orientadas por dados.
-- Mais inimigos, locais e encontros.
-- Balanceamento com testes repetíveis.
-
-**Fase 4 — Preparação online**
-- Escolher hospedagem gratuita com base em limites reais.
-- Implementar identidade, servidor autoritativo e persistência.
+**Fase 5 — Preparação online**
+- Escolher hospedagem com base em limites reais.
+- Implementar servidor autoritativo e persistência.
 - Testar com dois clientes antes de expandir.
 
-**Fase 5 — Alfa multiplayer**
+**Fase 6 — Alfa multiplayer**
 - Sincronização, reconexão, segurança básica e moderação.
 - Testes de latência, carga e recuperação de falhas.
-- Expandir o mundo apenas quando o núcleo estiver estável.
 
-## 14. Critérios de aceitação do MVP
+## 16. Critérios de aceitação do MVP
 
-O MVP não será considerado pronto apenas porque o site abre. Deve cumprir:
-
-- O jogo carrega em Android sem erro fatal.
-- A orientação horizontal tem layout utilizável.
-- O personagem move-se de forma consistente e não atravessa obstáculos.
-- Ataques só atingem alvos dentro do alcance e respeitam o tempo de ação.
-- Inimigos têm estados e podem ser derrotados de maneira consistente.
-- Vida, experiência e recompensas atualizam corretamente.
-- A missão pode ser iniciada e concluída.
-- Salvar e recarregar preserva o progresso esperado.
-- A interface continua utilizável em telas baixas e largas.
+- O jogo carrega no Android sem erro fatal.
+- A orientação horizontal é utilizável.
+- O personagem move-se de forma consistente e respeita obstáculos.
+- Ataques respeitam alcance e tempo de ação.
+- Inimigos podem ser derrotados de forma consistente.
+- Vida, ouro, drops e progresso atualizam corretamente.
+- Comprar e vender com o NPC atualiza inventário e saldo corretamente.
+- O salvamento preserva o progresso esperado.
+- A interface continua utilizável em diferentes telas.
 - A versão publicada corresponde ao commit esperado e não há workflows concorrentes de deploy.
 
-## 15. Riscos e decisões em aberto
+## 17. Decisões e balanceamento ainda em aberto
 
-- **Arte:** criar sprites próprios ou selecionar packs gratuitos com licença compatível.
-- **Multiplayer gratuito:** disponibilidade, quotas e latência precisam ser avaliadas antes de escolher hospedagem.
-- **Escopo:** não adicionar sistemas grandes antes de o ciclo principal estar divertido.
-- **Performance:** limitar efeitos, texturas e processamento para celulares modestos.
-- **Persistência:** definir quando o salvamento local será migrado para o servidor.
-- **Contaminação:** decidir se é recurso, risco ambiental, sistema de transformação ou combinação dos três.
-- **Morte e perda:** definir penalidades que criem tensão sem apagar arbitrariamente o progresso.
-- **Progressão:** testar arquétipos híbridos antes de fixar árvores de habilidades.
-- **Mundo persistente:** definir quais mudanças são individuais, por grupo ou globais quando o multiplayer estiver próximo.
+Os seguintes detalhes precisam de protótipos e testes antes de se tornarem valores definitivos:
+- fórmulas de dano, vida e velocidade por nível;
+- fórmula e multiplicador exato da progressão de skills;
+- duração, chance e força do sangramento da faca;
+- ritmo de desgaste do fio;
+- ritmo de acúmulo de sujeira e custo/frequência da limpeza do revólver;
+- vida e tempo de respawn de cada espécie;
+- quantidade e probabilidades de ouro e materiais por inimigo;
+- preços do NPC e renda média por sessão;
+- limite diário e preço por hora do campo de treinamento;
+- quais materiais cada espécie pode deixar;
+- detalhes de morte, perda e recuperação de itens.
 
-## 16. Regra de ouro do projeto
+Os números sugeridos neste documento são pontos de partida para testes, não compromissos finais. O balanceamento deve ser medido no jogo e ajustado em conjunto: combate, munição, drops, respawn, economia e treinamento afetam uns aos outros.
 
-**Não construir um MMORPG enorme e vazio. Construir primeiro uma pequena região sombria que seja divertida de explorar, perigosa de atravessar e interessante de revisitar.** Cada sistema novo deve melhorar esse ciclo ou preparar uma necessidade real do multiplayer.
+## 18. Regra de ouro do projeto
+
+**Não construir um MMORPG enorme e vazio. Construir primeiro uma pequena região sombria que seja divertida de explorar, perigosa de atravessar e interessante de revisitar.** Cada sistema novo deve melhorar o ciclo de exploração, combate, loot e progressão ou preparar uma necessidade real do multiplayer.
 
 ---
 
 ### Estado atual do projeto
 
-O repositório contém um protótipo inicial PWA com Phaser, interface de HUD, controles, interação simples, combate básico contra uma criatura, progressão simples e salvamento local. Isso ainda não constitui um MMORPG completo. O documento descreve a visão e o plano, separando explicitamente o que existe do que ainda será desenvolvido.
+O repositório contém um protótipo inicial PWA com Phaser, HUD, controles, interação simples, combate básico e salvamento local. Isso ainda não constitui um MMORPG completo. Este GDD descreve a direção de design e o plano; a inclusão de uma regra neste documento não significa que ela já esteja programada.
