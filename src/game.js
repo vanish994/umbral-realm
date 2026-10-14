@@ -141,8 +141,10 @@
       this.merchant=this.add.sprite(555,365,"merchant-idle",0).setFrame(0).setScale(1.9).setOrigin(0.5,0.82);
       this.merchantName=this.add.text(555,329,"MERCADOR",{fontFamily:"monospace",fontSize:"10px",color:"#f0d7a0",stroke:"#161718",strokeThickness:3}).setOrigin(0.5);
       player=this.add.sprite(470,305,"player-idle",0).setScale(1.25).setOrigin(0.5,0.82);player.play("player-idle-down");
-      // O rato também fica preso ao primeiro quadro; só muda de posição ao perseguir o jogador.
-      enemy=this.add.sprite(555,305,"zombie-rat-idle",0).setFrame(0).setScale(2.2).setOrigin(0.5,0.82);
+      // A folha do rato contém 8 poses direcionais (não 8 quadros de caminhada).
+      // O frame é escolhido pela direção do alvo; nunca animamos a folha inteira em loop.
+      enemy=this.add.sprite(555,305,"zombie-rat-idle",4).setFrame(4).setScale(2.2).setOrigin(0.5,0.82);
+      this.enemyBobOffset=0;
       this.enemyName=this.add.text(0,0,"RATO ZUMBI",{fontFamily:"monospace",fontSize:"10px",color:"#e6c2ad",stroke:"#141719",strokeThickness:3}).setOrigin(0.5);
       this.physics.world.setBounds(0,0,960,640);
       this.cameras.main.setBounds(0,0,960,640);this.cameras.main.startFollow(player,true,0.12,0.12);this.cameras.main.setZoom(Math.min(1.25,this.scale.width/390));
@@ -183,7 +185,35 @@
       if(this.merchantName&&this.merchant){this.merchantName.setPosition(this.merchant.x,this.merchant.y-34);}
       if(enemy&&enemy.visible&&!state.defeated&&state.hp>0){
         const distance=Phaser.Math.Distance.Between(player.x,player.y,enemy.x,enemy.y);
-        if(distance<185){const a=Math.atan2(player.y-enemy.y,player.x-enemy.x);if(distance>27){enemy.x+=Math.cos(a)*24*delta/1000;enemy.y+=Math.sin(a)*24*delta/1000;}else if(!this.enemyAttackAt||this.time.now>=this.enemyAttackAt){this.enemyAttackAt=this.time.now+1150;state.hp=Math.max(0,state.hp-5);updateHud();say("O rato zumbi atingiu você: -5 de vitalidade.");if(state.hp===0){state.hp=Math.floor(maxHp()/2);player.setPosition(470,305);enemy.setPosition(555,305);say("Você conseguiu se afastar e recuperar o fôlego.");updateHud();}}}
+        if(distance<185){
+          const a=Math.atan2(player.y-enemy.y,player.x-enemy.x);
+          // A folha está organizada em oito direções: cima, diagonais e lados.
+          // Selecionar uma pose direcional impede o efeito de "girar" causado pelo loop.
+          const facing=((Math.round(a/(Math.PI/4)+2)%8)+8)%8;
+          enemy.setFrame(facing);
+          if(distance>27){
+            enemy.x+=Math.cos(a)*24*delta/1000;
+            enemy.y+=Math.sin(a)*24*delta/1000;
+            // A arte disponível não inclui ciclo de caminhada; um balanço sutil evita o deslize rígido.
+            const bob=Math.sin(this.time.now/78)*1.15;
+            enemy.y+=bob-this.enemyBobOffset;
+            this.enemyBobOffset=bob;
+          }else{
+            enemy.y-=this.enemyBobOffset;
+            this.enemyBobOffset=0;
+            if(!this.enemyAttackAt||this.time.now>=this.enemyAttackAt){
+              this.enemyAttackAt=this.time.now+1150;
+              state.hp=Math.max(0,state.hp-5);updateHud();say("O rato zumbi atingiu você: -5 de vitalidade.");
+              if(state.hp===0){
+                state.hp=Math.floor(maxHp()/2);player.setPosition(470,305);enemy.setPosition(555,305);
+                this.enemyBobOffset=0;say("Você conseguiu se afastar e recuperar o fôlego.");updateHud();
+              }
+            }
+          }
+        }else if(this.enemyBobOffset){
+          enemy.y-=this.enemyBobOffset;
+          this.enemyBobOffset=0;
+        }
       }
     }
   }
