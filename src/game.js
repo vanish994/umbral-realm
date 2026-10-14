@@ -1,5 +1,5 @@
 (() => {
-  const STORAGE_KEY = "umbral-realm-playtest-v4";
+  const STORAGE_KEY = "umbral-realm-playtest-v5";
   const saved = (() => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { return {}; } })();
   const state = {
     hp: Number(saved.hp ?? 100), xp: Number(saved.xp ?? 0), level: Number(saved.level ?? 1),
@@ -221,7 +221,7 @@
     updateHud();
   }
   function interact(){
-    if(near(player,guide,85)){state.talked=true;el("quest-text").textContent="Supere o errante e explore a trilha.";say("Mateus: A trilha não está segura. Use as ações disponíveis e mantenha distância quando precisar.");}
+    if(near(player,guide,85)){state.talked=true;el("quest-text").textContent="Derrote o rato zumbi e converse com o mercador.";say("Mateus: A trilha não está segura. Use as ações disponíveis e mantenha distância quando precisar.");}
     else if(sceneRef?.merchant&&near(player,sceneRef.merchant,85)){say("Mercador: Tenho suprimentos para quem conseguir moedas. A loja será aberta em uma próxima etapa.");}
     else if(near(player,enemy,100)&&!state.defeated)say("Um rato zumbi bloqueia a trilha. Escolha uma ação e pressione AGIR.");
     else say("Não há ninguém por perto para conversar.");
