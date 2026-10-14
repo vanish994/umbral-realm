@@ -1,5 +1,5 @@
 (() => {
-  const STORAGE_KEY = "umbral-realm-playtest-v5";
+  const STORAGE_KEY = "umbral-realm-playtest-v6";
   const saved = (() => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { return {}; } })();
   const state = {
     hp: Number(saved.hp ?? 100), xp: Number(saved.xp ?? 0), level: Number(saved.level ?? 1),
@@ -137,12 +137,12 @@
       this.anims.create({key:"player-walk-right-down",frames:this.anims.generateFrameNumbers("player-walk-right-down",{start:0,end:7}),frameRate:10,repeat:-1});
       this.anims.create({key:"guide-idle-right-down",frames:this.anims.generateFrameNumbers("guide-idle-right-down",{start:0,end:7}),frameRate:7,repeat:-1});
       this.anims.create({key:"guide-walk-right-down",frames:this.anims.generateFrameNumbers("guide-walk-right-down",{start:0,end:7}),frameRate:10,repeat:-1});
-      // Os sprites fornecidos são usados como retratos estáticos para evitar o efeito de rotação.
-      // Mercador fica ao sul do abrigo.
-      this.merchant=this.add.sprite(555,365,"merchant-idle",0).setScale(1.9).setOrigin(0.5,0.82);
+      // Mostra apenas o primeiro quadro dos sprites; não executa animação no mercador.
+      this.merchant=this.add.sprite(555,365,"merchant-idle",0).setFrame(0).setScale(1.9).setOrigin(0.5,0.82);
       this.merchantName=this.add.text(555,329,"MERCADOR",{fontFamily:"monospace",fontSize:"10px",color:"#f0d7a0",stroke:"#161718",strokeThickness:3}).setOrigin(0.5);
       player=this.add.sprite(470,305,"player-idle",0).setScale(1.25).setOrigin(0.5,0.82);player.play("player-idle-down");
-      enemy=this.add.sprite(555,305,"zombie-rat-idle",0).setScale(2.2).setOrigin(0.5,0.82);
+      // O rato também fica preso ao primeiro quadro; só muda de posição ao perseguir o jogador.
+      enemy=this.add.sprite(555,305,"zombie-rat-idle",0).setFrame(0).setScale(2.2).setOrigin(0.5,0.82);
       this.enemyName=this.add.text(0,0,"RATO ZUMBI",{fontFamily:"monospace",fontSize:"10px",color:"#e6c2ad",stroke:"#141719",strokeThickness:3}).setOrigin(0.5);
       this.physics.world.setBounds(0,0,960,640);
       this.cameras.main.setBounds(0,0,960,640);this.cameras.main.startFollow(player,true,0.12,0.12);this.cameras.main.setZoom(Math.min(1.25,this.scale.width/390));
