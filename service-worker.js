@@ -1,4 +1,4 @@
-const CACHE = "umbral-realm-shell-v2";
+const CACHE = "umbral-realm-combat-v3";
 const SHELL = ["./","./index.html","./src/style.css","./src/game.js","./manifest.webmanifest","./icons/icon.svg"];
 self.addEventListener("install",event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener("activate",event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
