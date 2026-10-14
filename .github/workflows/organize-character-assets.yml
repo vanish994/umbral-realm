@@ -30,13 +30,13 @@ jobs:
           mkdir -p assets/enemies/zombie-rat assets/npcs/merchant
           unzip -oq "docs/Um_rato_zombie-Idle-spritesheet.zip" -d /tmp/zombie-rat-pack
           unzip -oq "docs/Um_npc_mercador_estilo_o-Idle-spritesheet.zip" -d /tmp/merchant-pack
-          find /tmp/zombie-rat-pack -type f -iname '*.png' -exec cp -f {} assets/enemies/zombie-rat/ \\\;
-          find /tmp/merchant-pack -type f -iname '*.png' -exec cp -f {} assets/npcs/merchant/ \\\;
+          find /tmp/zombie-rat-pack -type f -iname '*.png' -exec cp -f {} assets/enemies/zombie-rat/ \;
+          find /tmp/merchant-pack -type f -iname '*.png' -exec cp -f {} assets/npcs/merchant/ \;
 
           echo "=== Zombie rat sprite metadata ==="
-          find assets/enemies/zombie-rat -type f -iname '*.png' -exec identify -format '%f %wx%h\\n' {} \\\;
+          find assets/enemies/zombie-rat -type f -iname '*.png' -exec identify -format '%f %wx%h\\n' {} \;
           echo "=== Merchant sprite metadata ==="
-          find assets/npcs/merchant -type f -iname '*.png' -exec identify -format '%f %wx%h\\n' {} \\\;
+          find assets/npcs/merchant -type f -iname '*.png' -exec identify -format '%f %wx%h\\n' {} \;
 
           cat > assets/characters/README.md <<'EOF'
           # Character assets
@@ -68,7 +68,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/characters
+          git add assets/characters assets/enemies assets/npcs
           if git diff --cached --quiet; then
             echo "No character asset changes to commit."
             exit 0
