@@ -1,0 +1,14 @@
+{
+  "name": "Umbral Realm",
+  "short_name": "Umbral Realm",
+  "description": "Um RPG 2D de fantasia sombria.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#11131a",
+  "theme_color": "#11131a",
+  "icons": [
+    {"src":"./icons/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}
