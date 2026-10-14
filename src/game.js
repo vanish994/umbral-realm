@@ -33,7 +33,7 @@
     el("action-close").setAttribute("aria-pressed", String(state.action === "close"));
     el("action-far").setAttribute("aria-pressed", String(state.action === "far"));
     const alive = !state.defeated && state.enemyHp > 0;
-    el("enemy-label").textContent = alive ? "ERRANTE" : "ÁREA SEGURA";
+    el("enemy-label").textContent = alive ? "RATO ZUMBI" : "ÁREA SEGURA";
     el("enemy-hp-label").textContent = alive ? Math.ceil(state.enemyHp) + " / 70" : "Superado";
     el("enemy-hp-bar").style.width = (alive ? Math.max(0,state.enemyHp) / 70 * 100 : 0) + "%";
     el("combat-info").textContent = state.action === "close" ? "Ação próxima • sem custo" : "Ação distante • consome energia";
@@ -59,6 +59,9 @@
       this.load.spritesheet("player-walk-right-down", "./assets/characters/male/Walk/walk_right_down.png", { frameWidth: 48, frameHeight: 64 });
       this.load.spritesheet("guide-idle-right-down", "./assets/characters/female/Idle/Idle_Right_Down.png", { frameWidth: 48, frameHeight: 64 });
       this.load.spritesheet("guide-walk-right-down", "./assets/characters/female/Walk/walk_Right_Down.png", { frameWidth: 48, frameHeight: 64 });
+      // Sprites novos: folhas de 256x32, com 8 quadros de 32x32.
+      this.load.spritesheet("zombie-rat-idle", "./assets/enemies/zombie-rat/Um_rato_zombie-Idle.png", { frameWidth: 32, frameHeight: 32 });
+      this.load.spritesheet("merchant-idle", "./assets/npcs/merchant/Um_npc_mercador_estilo_o-Idle.png", { frameWidth: 32, frameHeight: 32 });
     }
     create(){
       sceneRef = this;
@@ -134,10 +137,17 @@
       this.anims.create({key:"player-walk-right-down",frames:this.anims.generateFrameNumbers("player-walk-right-down",{start:0,end:7}),frameRate:10,repeat:-1});
       this.anims.create({key:"guide-idle-right-down",frames:this.anims.generateFrameNumbers("guide-idle-right-down",{start:0,end:7}),frameRate:7,repeat:-1});
       this.anims.create({key:"guide-walk-right-down",frames:this.anims.generateFrameNumbers("guide-walk-right-down",{start:0,end:7}),frameRate:10,repeat:-1});
+      this.anims.create({key:"zombie-rat-idle",frames:this.anims.generateFrameNumbers("zombie-rat-idle",{start:0,end:7}),frameRate:7,repeat:-1});
+      this.anims.create({key:"merchant-idle",frames:this.anims.generateFrameNumbers("merchant-idle",{start:0,end:7}),frameRate:6,repeat:-1});
       guide=this.add.sprite(325,290,"guide-idle",0).setScale(1.25).setOrigin(0.5,0.82);guide.play("guide-idle-down");
       this.add.text(306,265,"MATEUS",{fontFamily:"monospace",fontSize:"10px",color:"#f0d7a0",stroke:"#161718",strokeThickness:3});
+      // Mercador fica ao sul do abrigo e já usa o sprite animado fornecido em docs.
+      this.merchant=this.add.sprite(790,300,"merchant-idle",0).setScale(1.55).setOrigin(0.5,0.82);
+      this.merchant.play("merchant-idle");
+      this.merchantName=this.add.text(790,264,"MERCADOR",{fontFamily:"monospace",fontSize:"10px",color:"#f0d7a0",stroke:"#161718",strokeThickness:3}).setOrigin(0.5);
       player=this.add.sprite(470,305,"player-idle",0).setScale(1.25).setOrigin(0.5,0.82);player.play("player-idle-down");
-      enemy=this.add.container(635,305);this.drawEnemy(enemy);
+      enemy=this.add.sprite(635,305,"zombie-rat-idle",0).setScale(1.65).setOrigin(0.5,0.82);enemy.play("zombie-rat-idle");
+      this.enemyName=this.add.text(0,0,"RATO ZUMBI",{fontFamily:"monospace",fontSize:"10px",color:"#e6c2ad",stroke:"#141719",strokeThickness:3}).setOrigin(0.5);
       this.physics.world.setBounds(0,0,960,640);
       this.cameras.main.setBounds(0,0,960,640);this.cameras.main.startFollow(player,true,0.12,0.12);this.cameras.main.setZoom(Math.min(1.25,this.scale.width/390));
       cursors=this.input.keyboard.createCursorKeys();moveKeys=this.input.keyboard.addKeys("W,A,S,D,SPACE,E");
@@ -147,10 +157,6 @@
     }
     drawPerson(container,coat,skin){
       const s=this.add.graphics();s.fillStyle(0x11140f,0.45);s.fillEllipse(0,12,25,9);s.fillStyle(coat);s.fillRect(-8,-9,16,20);s.fillStyle(skin);s.fillRect(-6,-18,12,11);s.fillStyle(0x171a20);s.fillRect(-7,-20,14,5);container.add(s);
-    }
-    drawEnemy(container){
-      const s=this.add.graphics();s.fillStyle(0x10120f,0.55);s.fillEllipse(0,13,29,9);s.fillStyle(0x52634b);s.fillRect(-10,-8,20,20);s.fillStyle(0x6b8060);s.fillRect(-8,-19,16,13);s.fillStyle(0x222a21);s.fillRect(-9,-22,18,5);s.fillStyle(0xd8c36e);s.fillRect(-5,-12,3,3);s.fillRect(3,-12,3,3);s.fillStyle(0x7e3e39);s.fillRect(5,-1,7,3);container.add(s);
-      this.enemyName=this.add.text(0,0,"ERRANTE",{fontFamily:"monospace",fontSize:"10px",color:"#e6c2ad",stroke:"#141719",strokeThickness:3}).setOrigin(0.5);
     }
     update(_,delta){
       if(!player)return;
@@ -177,10 +183,11 @@
       } else if(player.anims.currentAnim?.key?.startsWith("player-walk-")) {
         const previous=player.anims.currentAnim.key.replace("player-walk-","player-idle-");player.play(previous,true);
       }
-      if(this.enemyName&&enemy&&enemy.visible){this.enemyName.setPosition(enemy.x,enemy.y-39);}
+      if(this.enemyName&&enemy&&enemy.visible){this.enemyName.setPosition(enemy.x,enemy.y-31);}
+      if(this.merchantName&&this.merchant){this.merchantName.setPosition(this.merchant.x,this.merchant.y-34);}
       if(enemy&&enemy.visible&&!state.defeated&&state.hp>0){
         const distance=Phaser.Math.Distance.Between(player.x,player.y,enemy.x,enemy.y);
-        if(distance<185){const a=Math.atan2(player.y-enemy.y,player.x-enemy.x);if(distance>27){enemy.x+=Math.cos(a)*24*delta/1000;enemy.y+=Math.sin(a)*24*delta/1000;}else if(!this.enemyAttackAt||this.time.now>=this.enemyAttackAt){this.enemyAttackAt=this.time.now+1150;state.hp=Math.max(0,state.hp-5);updateHud();say("O errante atingiu você: -5 de vitalidade.");if(state.hp===0){state.hp=Math.floor(maxHp()/2);player.setPosition(470,305);enemy.setPosition(635,305);say("Você conseguiu se afastar e recuperar o fôlego.");updateHud();}}}
+        if(distance<185){const a=Math.atan2(player.y-enemy.y,player.x-enemy.x);if(distance>27){enemy.x+=Math.cos(a)*24*delta/1000;enemy.y+=Math.sin(a)*24*delta/1000;}else if(!this.enemyAttackAt||this.time.now>=this.enemyAttackAt){this.enemyAttackAt=this.time.now+1150;state.hp=Math.max(0,state.hp-5);updateHud();say("O rato zumbi atingiu você: -5 de vitalidade.");if(state.hp===0){state.hp=Math.floor(maxHp()/2);player.setPosition(470,305);enemy.setPosition(635,305);say("Você conseguiu se afastar e recuperar o fôlego.");updateHud();}}}
       }
     }
   }
@@ -190,14 +197,14 @@
   function selectAction(action){state.action=action;updateHud();say(action==="close"?"Ação próxima selecionada: chegue perto do errante.":"Ação distante selecionada: consome uma carga de energia.");}
   function resolveAction(){
     if(!actionReady||state.hp<=0)return;
-    if(!enemy||state.defeated||state.enemyHp<=0){say("Área segura! Você já superou o errante.");return;}
+    if(!enemy||state.defeated||state.enemyHp<=0){say("Área segura! Você já superou o rato zumbi.");return;}
     const distance=Phaser.Math.Distance.Between(player.x,player.y,enemy.x,enemy.y);
     let damage,cooldown;
     if(state.action==="close"){
-      if(distance>58){say("Você está longe demais. Aproxime-se do errante.");return;}
+      if(distance>58){say("Você está longe demais. Aproxime-se do rato zumbi.");return;}
       damage=13;cooldown=500;
     }else{
-      if(distance>285){say("O errante está longe demais até para a ação distante.");return;}
+      if(distance>285){say("O rato zumbi está longe demais até para a ação distante.");return;}
       if(state.charges<=0){say("Sua energia acabou. Use a ação próxima ou reinicie o teste.");return;}
       state.charges--;damage=24;cooldown=700;
     }
@@ -207,15 +214,16 @@
     say("Ação concluída: "+damage+" de impacto.");
     if(state.enemyHp<=0){
       state.defeated=true;enemy.setVisible(false);state.xp+=50;state.coins+=8;
-      el("quest-text").textContent="Trilha segura! Explore o abrigo e teste a movimentação.";
-      if(state.xp>=state.level*100){state.xp-=state.level*100;state.level++;state.hp=maxHp();say("Errante superado! +50 XP, +8 moedas. Nível "+state.level+"!");}
-      else say("Errante superado! +50 XP e +8 moedas.");
+      el("quest-text").textContent="Rato zumbi derrotado! Explore o abrigo e converse com o mercador.";
+      if(state.xp>=state.level*100){state.xp-=state.level*100;state.level++;state.hp=maxHp();say("Rato zumbi derrotado! +50 XP, +8 moedas. Nível "+state.level+"!");}
+      else say("Rato zumbi derrotado! +50 XP e +8 moedas.");
     }
     updateHud();
   }
   function interact(){
     if(near(player,guide,85)){state.talked=true;el("quest-text").textContent="Supere o errante e explore a trilha.";say("Mateus: A trilha não está segura. Use as ações disponíveis e mantenha distância quando precisar.");}
-    else if(near(player,enemy,100)&&!state.defeated)say("Um errante bloqueia a trilha. Escolha uma ação e pressione AGIR.");
+    else if(sceneRef?.merchant&&near(player,sceneRef.merchant,85)){say("Mercador: Tenho suprimentos para quem conseguir moedas. A loja será aberta em uma próxima etapa.");}
+    else if(near(player,enemy,100)&&!state.defeated)say("Um rato zumbi bloqueia a trilha. Escolha uma ação e pressione AGIR.");
     else say("Não há ninguém por perto para conversar.");
   }
   document.querySelectorAll("[data-dir]").forEach(button=>{
