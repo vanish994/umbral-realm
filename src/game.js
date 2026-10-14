@@ -149,9 +149,10 @@
       const target=player.getData("tapTarget");
       if(!dx&&!dy&&target){dx=target.x-player.x;dy=target.y-player.y;if(Math.hypot(dx,dy)<8){player.setData("tapTarget",null);dx=dy=0;}else{const l=Math.hypot(dx,dy);dx/=l;dy/=l;}}
       if(dx||dy){
-        const direction = Math.abs(dx)>Math.abs(dy) ? (dx<0?"left":"right") : (dy<0?"up":"down");
         const diagonal = Math.abs(dx)>0 && Math.abs(dy)>0;
-        const dirKey = diagonal ? (dx<0?(dy<0?"left-up":"left-down"):(dy<0?"right-up":"right-down")) : direction;
+        const dirKey = diagonal
+          ? (dx<0?(dy<0?"left-up":"left-down"):(dy<0?"right-up":"right-down"))
+          : (Math.abs(dx)>0 ? (dx<0?"left-down":"right-down") : (dy<0?"up":"down"));
         const walkKey="player-walk-"+dirKey;
         if(player.anims.currentAnim?.key!==walkKey)player.play(walkKey,true);
         const len=Math.hypot(dx,dy),step=145*delta/1000;
