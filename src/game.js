@@ -115,13 +115,17 @@
       this.add.text(735,157,"ABRIGO",{fontFamily:"monospace",fontSize:"10px",color:"#d6c49f",stroke:"#141719",strokeThickness:3});
       this.add.text(70,365,"TRILHA VELHA",{fontFamily:"monospace",fontSize:"10px",color:"#d6c49f",stroke:"#141719",strokeThickness:3});
       this.add.text(170,72,"RUÍNAS DO NORTE",{fontFamily:"monospace",fontSize:"10px",color:"#b9b09b",stroke:"#141719",strokeThickness:3});
-      this.anims.create({key:"player-idle",frames:this.anims.generateFrameNumbers("player-idle",{start:0,end:7}),frameRate:7,repeat:-1});
-      this.anims.create({key:"player-walk",frames:this.anims.generateFrameNumbers("player-walk",{start:0,end:7}),frameRate:10,repeat:-1});
-      this.anims.create({key:"guide-idle",frames:this.anims.generateFrameNumbers("guide-idle",{start:0,end:7}),frameRate:7,repeat:-1});
-      this.anims.create({key:"guide-walk",frames:this.anims.generateFrameNumbers("guide-walk",{start:0,end:7}),frameRate:10,repeat:-1});
-      guide=this.add.sprite(325,290,"guide-idle",0).setScale(0.72).setOrigin(0.5,0.82);guide.play("guide-idle");
+      // As folhas combinadas têm 8 quadros por linha e 6 direções (384x384).
+      const directions=["down","left-down","left-up","right-down","right-up","up"];
+      directions.forEach((dir,row)=>{
+        this.anims.create({key:"player-idle-"+dir,frames:this.anims.generateFrameNumbers("player-idle",{start:row*8,end:row*8+7}),frameRate:7,repeat:-1});
+        this.anims.create({key:"player-walk-"+dir,frames:this.anims.generateFrameNumbers("player-walk",{start:row*8,end:row*8+7}),frameRate:10,repeat:-1});
+        this.anims.create({key:"guide-idle-"+dir,frames:this.anims.generateFrameNumbers("guide-idle",{start:row*8,end:row*8+7}),frameRate:7,repeat:-1});
+        this.anims.create({key:"guide-walk-"+dir,frames:this.anims.generateFrameNumbers("guide-walk",{start:row*8,end:row*8+7}),frameRate:10,repeat:-1});
+      });
+      guide=this.add.sprite(325,290,"guide-idle",0).setScale(0.72).setOrigin(0.5,0.82);guide.play("guide-idle-down");
       this.add.text(306,265,"MATEUS",{fontFamily:"monospace",fontSize:"10px",color:"#f0d7a0",stroke:"#161718",strokeThickness:3});
-      player=this.add.sprite(470,305,"player-idle",0).setScale(0.72).setOrigin(0.5,0.82);player.play("player-idle");
+      player=this.add.sprite(470,305,"player-idle",0).setScale(0.72).setOrigin(0.5,0.82);player.play("player-idle-down");
       enemy=this.add.container(635,305);this.drawEnemy(enemy);
       this.physics.world.setBounds(0,0,960,640);
       this.cameras.main.setBounds(0,0,960,640);this.cameras.main.startFollow(player,true,0.12,0.12);this.cameras.main.setZoom(Math.min(1.1,this.scale.width/390));
@@ -145,14 +149,20 @@
       const target=player.getData("tapTarget");
       if(!dx&&!dy&&target){dx=target.x-player.x;dy=target.y-player.y;if(Math.hypot(dx,dy)<8){player.setData("tapTarget",null);dx=dy=0;}else{const l=Math.hypot(dx,dy);dx/=l;dy/=l;}}
       if(dx||dy){
-        if(player.anims.currentAnim?.key!=="player-walk")player.play("player-walk",true);
+        const direction = Math.abs(dx)>Math.abs(dy) ? (dx<0?"left":"right") : (dy<0?"up":"down");
+        const diagonal = Math.abs(dx)>0 && Math.abs(dy)>0;
+        const dirKey = diagonal ? (dx<0?(dy<0?"left-up":"left-down"):(dy<0?"right-up":"right-down")) : direction;
+        const walkKey="player-walk-"+dirKey;
+        if(player.anims.currentAnim?.key!==walkKey)player.play(walkKey,true);
         const len=Math.hypot(dx,dy),step=145*delta/1000;
         const nx=Phaser.Math.Clamp(player.x+dx/len*step,25,935);
         const ny=Phaser.Math.Clamp(player.y+dy/len*step,35,610);
         const blocked=(x,y)=>this.solids.some(r=>x+10>r.x&&x-10<r.x+r.w&&y+8>r.y&&y-8<r.y+r.h);
         if(!blocked(nx,player.y))player.x=nx;
         if(!blocked(player.x,ny))player.y=ny;
-      } else if(player.anims.currentAnim?.key!=="player-idle"){player.play("player-idle",true);}
+      } else if(player.anims.currentAnim?.key?.startsWith("player-walk-")) {
+        const previous=player.anims.currentAnim.key.replace("player-walk-","player-idle-");player.play(previous,true);
+      }
       if(this.enemyName&&enemy&&enemy.visible){this.enemyName.setPosition(enemy.x,enemy.y-39);}
       if(enemy&&enemy.visible&&!state.defeated&&state.hp>0){
         const distance=Phaser.Math.Distance.Between(player.x,player.y,enemy.x,enemy.y);
