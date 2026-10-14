@@ -137,6 +137,9 @@
       this.anims.create({key:"player-walk-right-down",frames:this.anims.generateFrameNumbers("player-walk-right-down",{start:0,end:7}),frameRate:10,repeat:-1});
       this.anims.create({key:"guide-idle-right-down",frames:this.anims.generateFrameNumbers("guide-idle-right-down",{start:0,end:7}),frameRate:7,repeat:-1});
       this.anims.create({key:"guide-walk-right-down",frames:this.anims.generateFrameNumbers("guide-walk-right-down",{start:0,end:7}),frameRate:10,repeat:-1});
+      // O rato tem animações laterais em dois sentidos, não oito poses direcionais.
+      this.anims.create({key:"zombie-rat-walk-right",frames:[1,2,3].map(frame=>({key:"zombie-rat-idle",frame})),frameRate:8,repeat:-1});
+      this.anims.create({key:"zombie-rat-walk-left",frames:[5,6,7].map(frame=>({key:"zombie-rat-idle",frame})),frameRate:8,repeat:-1});
       // Mostra apenas o primeiro quadro dos sprites; não executa animação no mercador.
       this.merchant=this.add.sprite(555,365,"merchant-idle",0).setFrame(0).setScale(1.9).setOrigin(0.5,0.82);
       this.merchantName=this.add.text(555,329,"MERCADOR",{fontFamily:"monospace",fontSize:"10px",color:"#f0d7a0",stroke:"#161718",strokeThickness:3}).setOrigin(0.5);
@@ -194,22 +197,17 @@
           // Mapeamento explícito evita usar pose inferior ao perseguir pela diagonal superior.
           // A pose é escolhida pelo ângulo real até o jogador. Não inverter o ângulo: isso faz o rato mostrar as costas durante a perseguição.
           const angle=((a%(Math.PI*2))+(Math.PI*2))%(Math.PI*2);
-          let facing;
-          // Phaser usa coordenadas de tela: Y cresce para BAIXO. Portanto atan2()
-          // coloca baixo em PI/2 e cima em 3PI/2. O mapeamento anterior invertia
-          // todas as diagonais e também cima/baixo.
-          // Ordem visual confirmada da folha: baixo, baixo-direita, direita,
-          // cima-direita, cima, cima-esquerda, esquerda, baixo-esquerda.
-          // Phaser: 0 rad aponta para a direita e PI/2 para baixo.
-          if(angle>=Math.PI*7/8 && angle<Math.PI*9/8) facing=6;          // esquerda
-          else if(angle>=Math.PI*5/8 && angle<Math.PI*7/8) facing=7;    // baixo-esquerda
-          else if(angle>=Math.PI*3/8 && angle<Math.PI*5/8) facing=0;    // baixo
-          else if(angle>=Math.PI/8 && angle<Math.PI*3/8) facing=1;      // baixo-direita
-          else if(angle>=Math.PI*15/8 || angle<Math.PI/8) facing=2;     // direita
-          else if(angle>=Math.PI*13/8 && angle<Math.PI*15/8) facing=3;  // cima-direita
-          else if(angle>=Math.PI*11/8 && angle<Math.PI*13/8) facing=4;  // cima
-          else facing=5;                                                 // cima-esquerda
-          enemy.setFrame(facing);
+          // Esta imagem NÃO é uma folha de oito direções: são poses frontais
+          // nos quadros 0/4 e ciclos laterais nos quadros 1-3 e 5-7.
+          // Por isso, usar um frame como se cada um fosse uma direção causava moonwalk.
+          const horizontal = Math.abs(Math.cos(a)) > Math.abs(Math.sin(a));
+          if(horizontal){
+            const walkKey = Math.cos(a) >= 0 ? "zombie-rat-walk-right" : "zombie-rat-walk-left";
+            if(enemy.anims.currentAnim?.key !== walkKey) enemy.play(walkKey, true);
+          }else{
+            enemy.anims.stop();
+            enemy.setFrame(Math.sin(a) >= 0 ? 0 : 4);
+          }
           if(distance>27){
             enemy.x+=Math.cos(a)*24*delta/1000;
             enemy.y+=Math.sin(a)*24*delta/1000;
