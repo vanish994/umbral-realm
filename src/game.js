@@ -48,6 +48,13 @@
   }
   class WorldScene extends Phaser.Scene {
     constructor(){ super("world"); }
+    preload(){
+      // Spritesheets reais do personagem (8 quadros de 48x64, conforme o pack).
+      this.load.spritesheet("player-idle", "./assets/characters/male/Idle/idle.png", { frameWidth: 48, frameHeight: 64 });
+      this.load.spritesheet("player-walk", "./assets/characters/male/Walk/walk.png", { frameWidth: 48, frameHeight: 64 });
+      this.load.spritesheet("guide-idle", "./assets/characters/female/Idle/Idle.png", { frameWidth: 48, frameHeight: 64 });
+      this.load.spritesheet("guide-walk", "./assets/characters/female/Walk/walk.png", { frameWidth: 48, frameHeight: 64 });
+    }
     create(){
       sceneRef = this;
       this.cameras.main.setBackgroundColor("#18201b");
@@ -108,9 +115,13 @@
       this.add.text(735,157,"ABRIGO",{fontFamily:"monospace",fontSize:"10px",color:"#d6c49f",stroke:"#141719",strokeThickness:3});
       this.add.text(70,365,"TRILHA VELHA",{fontFamily:"monospace",fontSize:"10px",color:"#d6c49f",stroke:"#141719",strokeThickness:3});
       this.add.text(170,72,"RUÍNAS DO NORTE",{fontFamily:"monospace",fontSize:"10px",color:"#b9b09b",stroke:"#141719",strokeThickness:3});
-      guide=this.add.container(325,290);this.drawPerson(guide,0x9b8a62,0x493b32);
+      this.anims.create({key:"player-idle",frames:this.anims.generateFrameNumbers("player-idle",{start:0,end:7}),frameRate:7,repeat:-1});
+      this.anims.create({key:"player-walk",frames:this.anims.generateFrameNumbers("player-walk",{start:0,end:7}),frameRate:10,repeat:-1});
+      this.anims.create({key:"guide-idle",frames:this.anims.generateFrameNumbers("guide-idle",{start:0,end:7}),frameRate:7,repeat:-1});
+      this.anims.create({key:"guide-walk",frames:this.anims.generateFrameNumbers("guide-walk",{start:0,end:7}),frameRate:10,repeat:-1});
+      guide=this.add.sprite(325,290,"guide-idle",0).setScale(0.72).setOrigin(0.5,0.82);guide.play("guide-idle");
       this.add.text(306,265,"MATEUS",{fontFamily:"monospace",fontSize:"10px",color:"#f0d7a0",stroke:"#161718",strokeThickness:3});
-      player=this.add.container(470,305);this.drawPerson(player,0x667b91,0x303744);
+      player=this.add.sprite(470,305,"player-idle",0).setScale(0.72).setOrigin(0.5,0.82);player.play("player-idle");
       enemy=this.add.container(635,305);this.drawEnemy(enemy);
       this.physics.world.setBounds(0,0,960,640);
       this.cameras.main.setBounds(0,0,960,640);this.cameras.main.startFollow(player,true,0.12,0.12);this.cameras.main.setZoom(Math.min(1.1,this.scale.width/390));
@@ -134,13 +145,14 @@
       const target=player.getData("tapTarget");
       if(!dx&&!dy&&target){dx=target.x-player.x;dy=target.y-player.y;if(Math.hypot(dx,dy)<8){player.setData("tapTarget",null);dx=dy=0;}else{const l=Math.hypot(dx,dy);dx/=l;dy/=l;}}
       if(dx||dy){
+        if(player.anims.currentAnim?.key!=="player-walk")player.play("player-walk",true);
         const len=Math.hypot(dx,dy),step=145*delta/1000;
         const nx=Phaser.Math.Clamp(player.x+dx/len*step,25,935);
         const ny=Phaser.Math.Clamp(player.y+dy/len*step,35,610);
         const blocked=(x,y)=>this.solids.some(r=>x+10>r.x&&x-10<r.x+r.w&&y+8>r.y&&y-8<r.y+r.h);
         if(!blocked(nx,player.y))player.x=nx;
         if(!blocked(player.x,ny))player.y=ny;
-      }
+      } else if(player.anims.currentAnim?.key!=="player-idle"){player.play("player-idle",true);}
       if(this.enemyName&&enemy&&enemy.visible){this.enemyName.setPosition(enemy.x,enemy.y-39);}
       if(enemy&&enemy.visible&&!state.defeated&&state.hp>0){
         const distance=Phaser.Math.Distance.Between(player.x,player.y,enemy.x,enemy.y);
