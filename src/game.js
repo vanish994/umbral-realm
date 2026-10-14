@@ -143,7 +143,7 @@
       player=this.add.sprite(470,305,"player-idle",0).setScale(1.25).setOrigin(0.5,0.82);player.play("player-idle-down");
       // A folha do rato contém 8 poses direcionais (não 8 quadros de caminhada).
       // O frame é escolhido pela direção do alvo; nunca animamos a folha inteira em loop.
-      enemy=this.add.sprite(555,305,"zombie-rat-idle",4).setFrame(4).setScale(1.15).setOrigin(0.5,0.82);
+      enemy=this.add.sprite(555,305,"zombie-rat-idle",4).setFrame(4).setScale(0.72).setOrigin(0.5,0.82);
       this.enemyBobOffset=0;
       this.enemyName=this.add.text(0,0,"RATO ZUMBI",{fontFamily:"monospace",fontSize:"10px",color:"#e6c2ad",stroke:"#141719",strokeThickness:3}).setOrigin(0.5);
       this.physics.world.setBounds(0,0,960,640);
@@ -194,14 +194,17 @@
           // Mapeamento explícito evita usar pose inferior ao perseguir pela diagonal superior.
           const angle=((a%(Math.PI*2))+(Math.PI*2))%(Math.PI*2);
           let facing;
+          // Phaser usa coordenadas de tela: Y cresce para BAIXO. Portanto atan2()
+          // coloca baixo em PI/2 e cima em 3PI/2. O mapeamento anterior invertia
+          // todas as diagonais e também cima/baixo.
           if(angle>=Math.PI*7/8 && angle<Math.PI*9/8) facing=1;          // esquerda
-          else if(angle>=Math.PI*5/8 && angle<Math.PI*7/8) facing=2;    // cima-esquerda
-          else if(angle>=Math.PI*3/8 && angle<Math.PI*5/8) facing=4;    // cima
-          else if(angle>=Math.PI/8 && angle<Math.PI*3/8) facing=5;     // cima-direita
-          else if(angle>=Math.PI*15/8 || angle<Math.PI/8) facing=6;    // direita
-          else if(angle>=Math.PI*13/8 && angle<Math.PI*15/8) facing=7;// baixo-direita
-          else if(angle>=Math.PI*11/8 && angle<Math.PI*13/8) facing=0;// baixo
-          else facing=3;                                                // baixo-esquerda
+          else if(angle>=Math.PI*5/8 && angle<Math.PI*7/8) facing=3;    // baixo-esquerda
+          else if(angle>=Math.PI*3/8 && angle<Math.PI*5/8) facing=0;    // baixo
+          else if(angle>=Math.PI/8 && angle<Math.PI*3/8) facing=7;      // baixo-direita
+          else if(angle>=Math.PI*15/8 || angle<Math.PI/8) facing=6;     // direita
+          else if(angle>=Math.PI*13/8 && angle<Math.PI*15/8) facing=5;  // cima-direita
+          else if(angle>=Math.PI*11/8 && angle<Math.PI*13/8) facing=4;  // cima
+          else facing=2;                                                 // cima-esquerda
           enemy.setFrame(facing);
           if(distance>27){
             enemy.x+=Math.cos(a)*24*delta/1000;
