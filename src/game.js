@@ -192,11 +192,8 @@
           // O spritesheet contém 8 poses: frente, diagonais inferiores, laterais,
           // diagonais superiores e costas. A ordem visual do arquivo não é a ordem angular.
           // Mapeamento explícito evita usar pose inferior ao perseguir pela diagonal superior.
-          // O pack do rato usa poses orientadas no sentido oposto ao vetor de perseguição:
-          // sem compensação, ele mostra as costas quando se aproxima do jogador.
-          // Invertemos SOMENTE a direção usada para escolher o frame; o movimento continua
-          // usando "a", portanto o rato continua perseguindo corretamente.
-          const angle=((((a + Math.PI)%(Math.PI*2))+(Math.PI*2))%(Math.PI*2));
+          // A pose é escolhida pelo ângulo real até o jogador. Não inverter o ângulo: isso faz o rato mostrar as costas durante a perseguição.
+          const angle=((a%(Math.PI*2))+(Math.PI*2))%(Math.PI*2);
           let facing;
           // Phaser usa coordenadas de tela: Y cresce para BAIXO. Portanto atan2()
           // coloca baixo em PI/2 e cima em 3PI/2. O mapeamento anterior invertia
