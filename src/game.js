@@ -153,7 +153,12 @@
         const dirKey = diagonal
           ? (dx<0?(dy<0?"left-up":"left-down"):(dy<0?"right-up":"right-down"))
           : (Math.abs(dx)>0 ? (dx<0?"left-down":"right-down") : (dy<0?"up":"down"));
-        const walkKey="player-walk-"+dirKey;
+        // A diagonal direita-baixo usa o quadro espelhado da esquerda-baixo,
+        // pois a linha correspondente no pack está incorreta.
+        const mirroredDiagonal = dirKey === "right-down";
+        const animationDir = mirroredDiagonal ? "left-down" : dirKey;
+        player.setFlipX(mirroredDiagonal);
+        const walkKey="player-walk-"+animationDir;
         if(player.anims.currentAnim?.key!==walkKey)player.play(walkKey,true);
         const len=Math.hypot(dx,dy),step=145*delta/1000;
         const nx=Phaser.Math.Clamp(player.x+dx/len*step,25,935);
