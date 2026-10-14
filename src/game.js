@@ -198,14 +198,17 @@
           // Phaser usa coordenadas de tela: Y cresce para BAIXO. Portanto atan2()
           // coloca baixo em PI/2 e cima em 3PI/2. O mapeamento anterior invertia
           // todas as diagonais e também cima/baixo.
-          if(angle>=Math.PI*7/8 && angle<Math.PI*9/8) facing=1;          // esquerda
-          else if(angle>=Math.PI*5/8 && angle<Math.PI*7/8) facing=3;    // baixo-esquerda
+          // Ordem visual confirmada da folha: baixo, baixo-direita, direita,
+          // cima-direita, cima, cima-esquerda, esquerda, baixo-esquerda.
+          // Phaser: 0 rad aponta para a direita e PI/2 para baixo.
+          if(angle>=Math.PI*7/8 && angle<Math.PI*9/8) facing=6;          // esquerda
+          else if(angle>=Math.PI*5/8 && angle<Math.PI*7/8) facing=7;    // baixo-esquerda
           else if(angle>=Math.PI*3/8 && angle<Math.PI*5/8) facing=0;    // baixo
-          else if(angle>=Math.PI/8 && angle<Math.PI*3/8) facing=7;      // baixo-direita
-          else if(angle>=Math.PI*15/8 || angle<Math.PI/8) facing=6;     // direita
-          else if(angle>=Math.PI*13/8 && angle<Math.PI*15/8) facing=5;  // cima-direita
+          else if(angle>=Math.PI/8 && angle<Math.PI*3/8) facing=1;      // baixo-direita
+          else if(angle>=Math.PI*15/8 || angle<Math.PI/8) facing=2;     // direita
+          else if(angle>=Math.PI*13/8 && angle<Math.PI*15/8) facing=3;  // cima-direita
           else if(angle>=Math.PI*11/8 && angle<Math.PI*13/8) facing=4;  // cima
-          else facing=2;                                                 // cima-esquerda
+          else facing=5;                                                 // cima-esquerda
           enemy.setFrame(facing);
           if(distance>27){
             enemy.x+=Math.cos(a)*24*delta/1000;
