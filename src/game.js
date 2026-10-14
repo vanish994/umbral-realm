@@ -142,11 +142,11 @@
       guide=this.add.sprite(325,290,"guide-idle",0).setScale(1.25).setOrigin(0.5,0.82);guide.play("guide-idle-down");
       this.add.text(306,265,"MATEUS",{fontFamily:"monospace",fontSize:"10px",color:"#f0d7a0",stroke:"#161718",strokeThickness:3});
       // Mercador fica ao sul do abrigo e já usa o sprite animado fornecido em docs.
-      this.merchant=this.add.sprite(790,300,"merchant-idle",0).setScale(1.55).setOrigin(0.5,0.82);
+      this.merchant=this.add.sprite(555,365,"merchant-idle",0).setScale(1.9).setOrigin(0.5,0.82);
       this.merchant.play("merchant-idle");
-      this.merchantName=this.add.text(790,264,"MERCADOR",{fontFamily:"monospace",fontSize:"10px",color:"#f0d7a0",stroke:"#161718",strokeThickness:3}).setOrigin(0.5);
+      this.merchantName=this.add.text(555,329,"MERCADOR",{fontFamily:"monospace",fontSize:"10px",color:"#f0d7a0",stroke:"#161718",strokeThickness:3}).setOrigin(0.5);
       player=this.add.sprite(470,305,"player-idle",0).setScale(1.25).setOrigin(0.5,0.82);player.play("player-idle-down");
-      enemy=this.add.sprite(635,305,"zombie-rat-idle",0).setScale(1.65).setOrigin(0.5,0.82);enemy.play("zombie-rat-idle");
+      enemy=this.add.sprite(555,305,"zombie-rat-idle",0).setScale(2.2).setOrigin(0.5,0.82);enemy.play("zombie-rat-idle");
       this.enemyName=this.add.text(0,0,"RATO ZUMBI",{fontFamily:"monospace",fontSize:"10px",color:"#e6c2ad",stroke:"#141719",strokeThickness:3}).setOrigin(0.5);
       this.physics.world.setBounds(0,0,960,640);
       this.cameras.main.setBounds(0,0,960,640);this.cameras.main.startFollow(player,true,0.12,0.12);this.cameras.main.setZoom(Math.min(1.25,this.scale.width/390));
@@ -187,7 +187,7 @@
       if(this.merchantName&&this.merchant){this.merchantName.setPosition(this.merchant.x,this.merchant.y-34);}
       if(enemy&&enemy.visible&&!state.defeated&&state.hp>0){
         const distance=Phaser.Math.Distance.Between(player.x,player.y,enemy.x,enemy.y);
-        if(distance<185){const a=Math.atan2(player.y-enemy.y,player.x-enemy.x);if(distance>27){enemy.x+=Math.cos(a)*24*delta/1000;enemy.y+=Math.sin(a)*24*delta/1000;}else if(!this.enemyAttackAt||this.time.now>=this.enemyAttackAt){this.enemyAttackAt=this.time.now+1150;state.hp=Math.max(0,state.hp-5);updateHud();say("O rato zumbi atingiu você: -5 de vitalidade.");if(state.hp===0){state.hp=Math.floor(maxHp()/2);player.setPosition(470,305);enemy.setPosition(635,305);say("Você conseguiu se afastar e recuperar o fôlego.");updateHud();}}}
+        if(distance<185){const a=Math.atan2(player.y-enemy.y,player.x-enemy.x);if(distance>27){enemy.x+=Math.cos(a)*24*delta/1000;enemy.y+=Math.sin(a)*24*delta/1000;}else if(!this.enemyAttackAt||this.time.now>=this.enemyAttackAt){this.enemyAttackAt=this.time.now+1150;state.hp=Math.max(0,state.hp-5);updateHud();say("O rato zumbi atingiu você: -5 de vitalidade.");if(state.hp===0){state.hp=Math.floor(maxHp()/2);player.setPosition(470,305);enemy.setPosition(555,305);say("Você conseguiu se afastar e recuperar o fôlego.");updateHud();}}}
       }
     }
   }
