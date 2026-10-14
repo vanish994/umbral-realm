@@ -123,12 +123,12 @@
         this.anims.create({key:"guide-idle-"+dir,frames:this.anims.generateFrameNumbers("guide-idle",{start:row*8,end:row*8+7}),frameRate:7,repeat:-1});
         this.anims.create({key:"guide-walk-"+dir,frames:this.anims.generateFrameNumbers("guide-walk",{start:row*8,end:row*8+7}),frameRate:10,repeat:-1});
       });
-      guide=this.add.sprite(325,290,"guide-idle",0).setScale(0.72).setOrigin(0.5,0.82);guide.play("guide-idle-down");
+      guide=this.add.sprite(325,290,"guide-idle",0).setScale(1.25).setOrigin(0.5,0.82);guide.play("guide-idle-down");
       this.add.text(306,265,"MATEUS",{fontFamily:"monospace",fontSize:"10px",color:"#f0d7a0",stroke:"#161718",strokeThickness:3});
-      player=this.add.sprite(470,305,"player-idle",0).setScale(0.72).setOrigin(0.5,0.82);player.play("player-idle-down");
+      player=this.add.sprite(470,305,"player-idle",0).setScale(1.25).setOrigin(0.5,0.82);player.play("player-idle-down");
       enemy=this.add.container(635,305);this.drawEnemy(enemy);
       this.physics.world.setBounds(0,0,960,640);
-      this.cameras.main.setBounds(0,0,960,640);this.cameras.main.startFollow(player,true,0.12,0.12);this.cameras.main.setZoom(Math.min(1.1,this.scale.width/390));
+      this.cameras.main.setBounds(0,0,960,640);this.cameras.main.startFollow(player,true,0.12,0.12);this.cameras.main.setZoom(Math.min(1.25,this.scale.width/390));
       cursors=this.input.keyboard.createCursorKeys();moveKeys=this.input.keyboard.addKeys("W,A,S,D,SPACE,E");
       this.input.on("pointerdown",pointer=>{if(pointer.event.target.closest("button"))return;const p=this.cameras.main.getWorldPoint(pointer.x,pointer.y);if(Math.hypot(p.x-player.x,p.y-player.y)>22)player.setData("tapTarget",{x:p.x,y:p.y});});
       updateHud();
