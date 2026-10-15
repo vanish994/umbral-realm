@@ -7,7 +7,7 @@
   <meta name="description" content="Protótipo jogável de sobrevivência zumbi em Umbral Realm.">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./src/style.css?v=31">
+  <link rel="stylesheet" href="./src/style.css?v=32">
   <title>Umbral Realm — Protótipo jogável</title>
 </head>
 <body>
@@ -29,15 +29,22 @@
       <div id="toast" role="status" aria-live="polite"></div>
       <div class="game-controls" aria-label="Controles do jogo">
         <div id="joystick" class="joystick" role="application" aria-label="Joystick virtual para movimentar o personagem"><div class="joystick-ring"><div id="joystick-knob" class="joystick-knob"></div></div></div>
+        <div class="touch-actions" aria-label="Armas e interação">
+          <div class="touch-weapons" role="group" aria-label="Selecionar arma">
+            <button id="touch-action-close" class="touch-command selected" type="button" aria-pressed="true">FACA</button>
+            <button id="touch-action-far" class="touch-command" type="button" aria-pressed="false">.38</button>
+          </div>
+          <button id="touch-interact" class="touch-command interact-command" type="button">FALAR</button>
+        </div>
         <button id="attack" class="action danger game-attack" aria-label="Atacar"><span>✦</span><small>ATACAR</small></button>
       </div>
     </section>
     <section class="bottom-panel">
       <div class="quest"><span class="quest-mark">!</span><div><small>OBJETIVO DO TESTE</small><strong id="quest-text">Derrote o rato zumbi e receba sua recompensa.</strong></div></div>
-      <div class="weapon-status"><span id="combat-info">Ação próxima selecionada</span><span id="charge-label">Energia: 7 / 7</span></div>
+      <div class="weapon-status"><span id="combat-info">Faca de cozinha • alcance curto</span><span id="charge-label">Munição .38: 7 / 7</span></div>
       <div class="controls">
         <div class="actions">
-          <div class="weapon-select"><button id="action-close" class="weapon selected" aria-pressed="true">PRÓXIMA</button><button id="action-far" class="weapon" aria-pressed="false">DISTANTE</button></div>
+          <div class="weapon-select"><button id="action-close" class="weapon selected" aria-pressed="true">FACA</button><button id="action-far" class="weapon" aria-pressed="false">REVÓLVER .38</button></div>
           <button id="interact" class="action secondary">FALAR</button>
         </div>
       </div>
@@ -45,8 +52,9 @@
     </section>
   </main>
   <script src="./vendor/phaser/phaser-3.80.1.min.js"></script>
+  <script src="./src/game-state.js?v=32"></script>
   <div id="rotate-overlay" class="rotate-overlay" role="dialog" aria-modal="true" aria-label="Gire o dispositivo"><div class="rotate-card"><span class="rotate-icon">↻</span><strong>JOGUE NA HORIZONTAL</strong><p>Gire o celular para a horizontal para entrar no Umbral Realm.</p><button id="rotate-fullscreen" type="button">TELA CHEIA</button></div></div>
-  <script src="./src/game.js?v=31"></script>
-  <script>if ('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js?v=31').catch(()=>{}));</script>
+  <script src="./src/game.js?v=32"></script>
+  <script>if ('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js?v=32').catch(()=>{}));</script>
 </body>
 </html>

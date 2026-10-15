@@ -51,6 +51,13 @@ test("all Phaser preload assets are available offline", () => {
   }
 });
 
+test("landscape scene exposes essential touch commands", () => {
+  const html = read("index.html");
+  for (const id of ["joystick", "touch-action-close", "touch-action-far", "touch-interact", "attack"]) {
+    assert.match(html, new RegExp(`id="${id}"`), `missing touch control ${id}`);
+  }
+});
+
 test("manifest exposes installable PNG icon sizes and landscape mode", () => {
   const manifest = JSON.parse(read("manifest.webmanifest"));
   assert.equal(manifest.orientation, "landscape");

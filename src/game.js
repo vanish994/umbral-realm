@@ -1,12 +1,9 @@
 (() => {
   const STORAGE_KEY = "umbral-realm-playtest-v6";
   const saved = (() => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { return {}; } })();
-  const state = {
-    hp: Number(saved.hp ?? 100), xp: Number(saved.xp ?? 0), level: Number(saved.level ?? 1),
-    coins: Number(saved.coins ?? 0), talked: Boolean(saved.talked),
-    defeated: Boolean(saved.defeated), charges: Number(saved.charges ?? 7),
-    enemyHp: Number(saved.enemyHp ?? 70), action: saved.action === "far" ? "far" : "close"
-  };
+  const State = window.UmbralState;
+  if (!State) throw new Error("O módulo de estado do jogo não carregou.");
+  const state = State.normalize(saved);
   let sceneRef, player, enemy, cursors, moveKeys, toastTimer, actionReady = true;
   const touch = {x:0,y:0};
   const el = id => document.getElementById(id);
@@ -17,7 +14,7 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => el("toast").classList.remove("show"), 2300);
   }
-  function maxHp(){ return 100 + (state.level - 1) * 10; }
+  function maxHp(){ return State.maxHp(state.level); }
   function updateHud() {
     state.hp = Math.max(0, Math.min(maxHp(), state.hp));
     el("hp-label").textContent = state.hp + " / " + maxHp();
@@ -27,21 +24,28 @@
     el("xp-bar").style.width = (state.xp / next * 100) + "%";
     el("level").textContent = "Nv. " + state.level;
     el("coins").textContent = "◈ " + state.coins;
-    el("charge-label").textContent = "Energia: " + state.charges + " / 7";
-    el("action-close").classList.toggle("selected", state.action === "close");
-    el("action-far").classList.toggle("selected", state.action === "far");
-    el("action-close").setAttribute("aria-pressed", String(state.action === "close"));
-    el("action-far").setAttribute("aria-pressed", String(state.action === "far"));
+    el("charge-label").textContent = "Munição .38: " + state.charges + " / " + State.MAX_AMMO;
+    ["action-close", "touch-action-close"].forEach(id => el(id)?.classList.toggle("selected", state.action === "close"));
+    ["action-far", "touch-action-far"].forEach(id => el(id)?.classList.toggle("selected", state.action === "far"));
+    ["action-close", "touch-action-close"].forEach(id => el(id)?.setAttribute("aria-pressed", String(state.action === "close")));
+    ["action-far", "touch-action-far"].forEach(id => el(id)?.setAttribute("aria-pressed", String(state.action === "far")));
     const alive = !state.defeated && state.enemyHp > 0;
     el("enemy-label").textContent = alive ? "RATO ZUMBI" : "ÁREA SEGURA";
     el("enemy-hp-label").textContent = alive ? Math.ceil(state.enemyHp) + " / 70" : "Superado";
     el("enemy-hp-bar").style.width = (alive ? Math.max(0,state.enemyHp) / 70 * 100 : 0) + "%";
-    el("combat-info").textContent = state.action === "close" ? "Ação próxima • sem custo" : "Ação distante • consome energia";
+    el("combat-info").textContent = state.action === "close" ? "Faca de cozinha • alcance curto" : "Revólver .38 • consome munição";
   }
-  function saveGame() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); say("Progresso salvo neste dispositivo."); }
-    catch { say("Não foi possível salvar neste navegador."); }
+  function persistGame(showFeedback = false) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      if (showFeedback) say("Progresso salvo neste dispositivo.");
+      return true;
+    } catch {
+      if (showFeedback) say("Não foi possível salvar neste navegador.");
+      return false;
+    }
   }
+  function saveGame() { persistGame(true); }
   if (!window.Phaser) {
     el("game").innerHTML = '<p style="padding:20px;color:#e7dfd0">O motor do jogo não carregou. Confira a conexão e recarregue.</p>';
     return;
@@ -173,11 +177,15 @@
         this.enemyAttackAt=0;
         el("quest-text").textContent="O rato zumbi voltou! Derrote-o para ganhar mais XP e moedas.";
         updateHud();
+        persistGame();
         say("Um novo rato zumbi apareceu na Trilha Velha!");
       });
     }
     drawPerson(container,coat,skin){
       const s=this.add.graphics();s.fillStyle(0x11140f,0.45);s.fillEllipse(0,12,25,9);s.fillStyle(coat);s.fillRect(-8,-9,16,20);s.fillStyle(skin);s.fillRect(-6,-18,12,11);s.fillStyle(0x171a20);s.fillRect(-7,-20,14,5);container.add(s);
+    }
+    isBlocked(x,y,halfWidth=10,halfHeight=8){
+      return this.solids.some(r=>x+halfWidth>r.x&&x-halfWidth<r.x+r.w&&y+halfHeight>r.y&&y-halfHeight<r.y+r.h);
     }
     update(_,delta){
       if(!player)return;
@@ -198,15 +206,16 @@
         const len=Math.hypot(dx,dy),step=145*delta/1000;
         const nx=Phaser.Math.Clamp(player.x+dx/len*step,25,935);
         const ny=Phaser.Math.Clamp(player.y+dy/len*step,35,610);
-        const blocked=(x,y)=>this.solids.some(r=>x+10>r.x&&x-10<r.x+r.w&&y+8>r.y&&y-8<r.y+r.h);
-        if(!blocked(nx,player.y))player.x=nx;
-        if(!blocked(player.x,ny))player.y=ny;
+        if(!this.isBlocked(nx,player.y))player.x=nx;
+        if(!this.isBlocked(player.x,ny))player.y=ny;
       } else if(player.anims.currentAnim?.key?.startsWith("player-walk-")) {
         const previous=player.anims.currentAnim.key.replace("player-walk-","player-idle-");player.play(previous,true);
       }
       if(this.enemyName&&enemy&&enemy.visible){this.enemyName.setPosition(enemy.x,enemy.y-31);}
       if(this.merchantName&&this.merchant){this.merchantName.setPosition(this.merchant.x,this.merchant.y-34);}
       if(enemy&&enemy.visible&&!state.defeated&&state.hp>0){
+        // O balanço visual nunca participa da posição lógica nem da colisão.
+        if(this.enemyBobOffset){enemy.y-=this.enemyBobOffset;this.enemyBobOffset=0;}
         const distance=Phaser.Math.Distance.Between(player.x,player.y,enemy.x,enemy.y);
         if(distance<185){
           // O JSON original define a ordem real dos quadros:
@@ -224,15 +233,17 @@
           enemy.setFrame(ratFrameByAngle[angleSector]);
           if(distance>27){
             const a = Math.atan2(toPlayerY, toPlayerX);
-            enemy.x+=Math.cos(a)*24*delta/1000;
-            enemy.y+=Math.sin(a)*24*delta/1000;
-            // A arte disponível não inclui ciclo de caminhada; um balanço sutil evita o deslize rígido.
+            const step=24*delta/1000;
+            const nx=Phaser.Math.Clamp(enemy.x+Math.cos(a)*step,12,948);
+            const ny=Phaser.Math.Clamp(enemy.y+Math.sin(a)*step,12,628);
+            // Inimigos respeitam os mesmos obstáculos e deslizam pelos eixos em vez de atravessá-los.
+            if(!this.isBlocked(nx,enemy.y,8,6))enemy.x=nx;
+            if(!this.isBlocked(enemy.x,ny,8,6))enemy.y=ny;
+            // A arte disponível não inclui ciclo de caminhada; o balanço é somente visual.
             const bob=Math.sin(this.time.now/78)*1.15;
-            enemy.y+=bob-this.enemyBobOffset;
+            enemy.y+=bob;
             this.enemyBobOffset=bob;
           }else{
-            enemy.y-=this.enemyBobOffset;
-            this.enemyBobOffset=0;
             if(!this.enemyAttackAt||this.time.now>=this.enemyAttackAt){
               this.enemyAttackAt=this.time.now+1150;
               state.hp=Math.max(0,state.hp-5);updateHud();say("O rato zumbi atingiu você: -5 de vitalidade.");
@@ -240,11 +251,9 @@
                 state.hp=Math.floor(maxHp()/2);player.setPosition(470,305);enemy.setPosition(555,305);
                 this.enemyBobOffset=0;say("Você conseguiu se afastar e recuperar o fôlego.");updateHud();
               }
+              persistGame();
             }
           }
-        }else if(this.enemyBobOffset){
-          enemy.y-=this.enemyBobOffset;
-          this.enemyBobOffset=0;
         }
       }
     }
@@ -252,7 +261,12 @@
   const config={type:Phaser.AUTO,parent:"game",width:390,height:520,backgroundColor:"#18201b",pixelArt:true,roundPixels:true,scale:{mode:Phaser.Scale.RESIZE,autoCenter:Phaser.Scale.CENTER_BOTH},physics:{default:"arcade",arcade:{debug:false}},scene:[WorldScene]};
   new Phaser.Game(config);
   function near(a,b,range=75){return a&&b&&Phaser.Math.Distance.Between(a.x,a.y,b.x,b.y)<=range;}
-  function selectAction(action){state.action=action;updateHud();say(action==="close"?"Ação próxima selecionada: chegue perto do errante.":"Ação distante selecionada: consome uma carga de energia.");}
+  function selectAction(action){
+    state.action=action;
+    updateHud();
+    persistGame();
+    say(action==="close"?"Faca selecionada: aproxime-se para atacar.":"Revólver .38 selecionado: cada disparo consome uma munição.");
+  }
   function resolveAction(){
     if(!actionReady||state.hp<=0)return;
     if(!enemy||state.defeated||state.enemyHp<=0){say("Área segura! Você já superou o rato zumbi.");return;}
@@ -263,20 +277,22 @@
       damage=13;cooldown=500;
     }else{
       if(distance>285){say("O rato zumbi está longe demais até para a ação distante.");return;}
-      if(state.charges<=0){say("Sua energia acabou. Use a ação próxima ou reinicie o teste.");return;}
+      if(state.charges<=0){say("O revólver está sem munição. Selecione a faca.");return;}
       state.charges--;damage=24;cooldown=700;
     }
     actionReady=false;setTimeout(()=>actionReady=true,cooldown);
     state.enemyHp=Math.max(0,state.enemyHp-damage);
     enemy.setAlpha(.35);setTimeout(()=>{if(enemy)enemy.setAlpha(1);},130);
-    say("Ação concluída: "+damage+" de impacto.");
+    say((state.action==="close"?"Golpe de faca":"Disparo")+": "+damage+" de dano.");
     if(state.enemyHp<=0){
-      state.defeated=true;enemy.setVisible(false);state.xp+=50;state.coins+=8;
+      state.defeated=true;enemy.setVisible(false);state.coins+=8;
+      const levelsGained=State.grantXp(state,50);
       el("quest-text").textContent="Rato zumbi derrotado! Explore o abrigo e converse com o mercador.";
-      if(state.xp>=state.level*100){state.xp-=state.level*100;state.level++;state.hp=maxHp();say("Rato zumbi derrotado! +50 XP, +8 moedas. Nível "+state.level+"!");}
+      if(levelsGained>0){state.hp=maxHp();say("Rato zumbi derrotado! +50 XP, +8 moedas. Nível "+state.level+"!");}
       else say("Rato zumbi derrotado! +50 XP e +8 moedas.");
     }
     updateHud();
+    persistGame();
     if(state.enemyHp<=0&&sceneRef)sceneRef.scheduleRatRespawn();
   }
   function interact(){
@@ -301,11 +317,15 @@
   joystick.addEventListener("pointerdown",event=>{event.preventDefault();joystickPointer=event.pointerId;joystick.setPointerCapture(event.pointerId);moveJoystick(event);});
   joystick.addEventListener("pointermove",moveJoystick);
   ["pointerup","pointercancel","lostpointercapture"].forEach(name=>joystick.addEventListener(name,event=>{if(joystickPointer===event.pointerId)resetJoystick();}));
-  el("action-close").addEventListener("click",()=>selectAction("close"));
-  el("action-far").addEventListener("click",()=>selectAction("far"));
-  el("interact").addEventListener("click",interact);el("attack").addEventListener("click",resolveAction);el("save").addEventListener("click",saveGame);
+  ["action-close", "touch-action-close"].forEach(id => el(id)?.addEventListener("click",()=>selectAction("close")));
+  ["action-far", "touch-action-far"].forEach(id => el(id)?.addEventListener("click",()=>selectAction("far")));
+  ["interact", "touch-interact"].forEach(id => el(id)?.addEventListener("click",interact));
+  el("attack").addEventListener("click",resolveAction);el("save").addEventListener("click",saveGame);
   document.addEventListener("keydown",e=>{if(e.code==="Space"){e.preventDefault();resolveAction();}if(e.key.toLowerCase()==="e")interact();if(e.key==="1")selectAction("close");if(e.key==="2")selectAction("far");});
   updateHud();
+  persistGame();
+  window.addEventListener("pagehide",()=>persistGame());
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")persistGame();});
 
   async function enterFullscreenAndLandscape(){
     try {
