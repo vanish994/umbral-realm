@@ -7,14 +7,14 @@
   <meta name="description" content="Protótipo jogável de sobrevivência zumbi em Umbral Realm.">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./src/style.css?v=29">
+  <link rel="stylesheet" href="./src/style.css?v=30">
   <title>Umbral Realm — Protótipo jogável</title>
 </head>
 <body>
   <main id="app">
     <header class="topbar">
       <div class="brand"><span class="sigil">✦</span><div><strong>UMBRAL REALM</strong><small>Sobreviva à trilha • BUILD 20</small></div></div>
-      <div class="player-stats"><span id="level">Nv. 1</span><span id="coins">◈ 0</span></div>
+      <div class="player-stats"><span id="level">Nv. 1</span><span id="coins">◈ 0</span><button id="fullscreen" class="fullscreen-button" type="button" aria-label="Ativar tela cheia">⛶ TELA CHEIA</button></div>
     </header>
     <section class="hud" aria-label="Status do personagem">
       <div class="health-row"><span>VITALIDADE</span><span id="hp-label">100 / 100</span></div>
@@ -45,7 +45,8 @@
     </section>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
-  <script src="./src/game.js?v=29"></script>
-  <script>if ('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js?v=29').catch(()=>{}));</script>
+  <div id="rotate-overlay" class="rotate-overlay" role="dialog" aria-modal="true" aria-label="Gire o dispositivo"><div class="rotate-card"><span class="rotate-icon">↻</span><strong>JOGUE NA HORIZONTAL</strong><p>Gire o celular para a horizontal para entrar no Umbral Realm.</p><button id="rotate-fullscreen" type="button">TELA CHEIA</button></div></div>
+  <script src="./src/game.js?v=30"></script>
+  <script>if ('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js?v=30').catch(()=>{}));</script>
 </body>
 </html>
