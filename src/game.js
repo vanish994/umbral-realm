@@ -146,12 +146,12 @@
       // esquerda, esquerda-cima, cima, direita-cima.
       this.ratDirectionFrames = ratDirectionFrames;
       // Mostra apenas o primeiro quadro dos sprites; não executa animação no mercador.
-      this.merchant=this.add.sprite(555,365,"merchant-idle",0).setFrame(0).setScale(1.9).setOrigin(0.5,0.82);
+      this.merchant=this.add.sprite(555,365,"merchant-idle",0).setFrame(0).setScale(1.6).setOrigin(0.5,0.82);
       this.merchantName=this.add.text(555,329,"MERCADOR",{fontFamily:"monospace",fontSize:"10px",color:"#f0d7a0",stroke:"#161718",strokeThickness:3}).setOrigin(0.5);
-      player=this.add.sprite(470,305,"player-idle",0).setScale(1.25).setOrigin(0.5,0.82);player.play("player-idle-down");
+      player=this.add.sprite(470,305,"player-idle",0).setScale(1.35).setOrigin(0.5,0.82);player.play("player-idle-down");
       // A folha do rato contém 8 poses direcionais (não 8 quadros de caminhada).
       // O frame é escolhido pela direção do alvo; nunca animamos a folha inteira em loop.
-      enemy=this.add.sprite(555,305,"zombie-rat-idle",4).setFrame(4).setScale(0.55).setOrigin(0.5,0.5);
+      enemy=this.add.sprite(555,305,"zombie-rat-idle",4).setFrame(4).setScale(0.62).setOrigin(0.5,0.5);
       this.enemyBobOffset=0;
       this.enemyName=this.add.text(0,0,"RATO ZUMBI",{fontFamily:"monospace",fontSize:"10px",color:"#e6c2ad",stroke:"#141719",strokeThickness:3}).setOrigin(0.5);
       this.physics.world.setBounds(0,0,960,640);
