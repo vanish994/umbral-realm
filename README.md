@@ -1,21 +1,25 @@
 # Umbral Realm
 
-📘 **Documento de design:** [GDD — Game Design Document](docs/GDD.md)
+**Leia primeiro:** [Regras obrigatórias para agentes de IA](AGENTS.md)  
+📘 **Documento principal de design:** [GDD — Game Design Document](docs/GDD.md)
 
-MMORPG 2D de fantasia sombria, desenvolvido primeiro como jogo web instalável (PWA), com foco em Android e orçamento zero.
+RPG de ação e sobrevivência 2D top-down em um apocalipse zumbi. O desenvolvimento começa por um protótipo local/offline; o objetivo de longo prazo é multiplayer, somente depois que o núcleo local estiver divertido, estável e validado.
 
-## Plano inicial
+## Direção técnica
 
-- Protótipo offline jogável com Phaser 3.
-- Exploração top-down, vila, floresta e entrada de masmorra.
-- Controles touch e teclado.
-- Estado local salvo no navegador.
-- Multiplayer autoritativo no servidor somente depois de validar o protótipo.
+- Plataforma prioritária: Android.
+- Formato: jogo web instalável (PWA).
+- Tecnologia do protótipo: HTML, CSS, JavaScript e Phaser 3.
+- Orientação: horizontal (landscape).
+- Orçamento: zero; priorizar ferramentas gratuitas e assets com licença compatível.
+- Câmera top-down, controles por toque e salvamento local.
 
 ## Executar
 
 Abra `index.html` por um servidor estático. Para testar pelo celular, publique o repositório no GitHub Pages (Settings → Pages → Deploy from a branch → `main` / root). O Phaser é carregado por CDN, então a primeira abertura precisa de internet.
 
-## Nota de escopo
+## Escopo e status
 
-Este é o protótipo inicial. Arte final, colisões refinadas, missões e multiplayer ainda serão desenvolvidos. Use somente assets com licença compatível e registre as licenças antes de distribuir.
+O GDD descreve a direção desejada; ele **não comprova que os sistemas já estejam implementados**. Consulte o código, os testes e os workflows antes de afirmar o estado real. Arte final, colisões refinadas, missões e multiplayer só devem ser considerados prontos após implementação e validação.
+
+Use somente assets com licença compatível e registre as licenças antes de distribuir.
