@@ -123,3 +123,38 @@
 - A ordem de linhas das folhas direcionais foi confirmada comparando cada linha com os PNGs individuais do pack (`idle_down.png`, `idle_left_down.png`, ...). Antes, a linha `up` lia a arte de `right-down`; `src/animation-rules.js` passou a ser a única fonte da tabela e `test/animation-rules.test.js` protege essa ordem.
 - O save inválido com vida zero é recuperado para um estado jogável; mortes válidas são resolvidas em runtime após a animação e então persistidas com a penalidade aplicada.
 - O balanço do rato é visual e removido antes de calcular movimento/colisão, evitando que a oscilação altere sua posição lógica.
+
+
+---
+
+## Auditoria de regressão — execução em 2026-10-15
+
+**Revisão do repositório:** `7cb9562af5c9e19ea390ae1ba6968992c6bf1a9a`  
+**Workflow de regressão:** [Execução #1 — sucesso](https://github.com/vanish994/umbral-realm/actions/runs/38809152550)  
+**Deploy Pages do mesmo commit:** [Execução](https://github.com/vanish994/umbral-realm/actions/runs/38809152699)
+
+### Verificações executadas automaticamente
+
+- `npm run check`: passou, incluindo verificações de sintaxe JavaScript e a suíte `node --test`.
+- **89 testes passaram; 0 falharam, 0 cancelados, 0 ignorados.**
+- Integridade do Phaser local e do arquivo de licença: passou.
+- Os testes estáticos existentes verificam referências locais do HTML/CSS, recursos pré-cacheados, spritesheets do jogador, áudio, sprites de inimigos, perfis visuais, ordem dos spawns, limites/colisões declarados do mapa, vila segura e galerias subterrâneas.
+- Foi adicionado `.github/workflows/regression-audit.yml` para repetir estas verificações automaticamente em pushes para `main`, pull requests e execução manual.
+
+### Limites do resultado
+
+A aprovação confirma a lógica testada e a integridade estática dos recursos no commit acima. **Não confirma** uma sessão visual no Chrome Android, instalação PWA, uso simultâneo dos controles de toque, orientação/tela cheia no aparelho, comportamento visual real das direções dos inimigos, desempenho sustentado ou retomada offline após instalação. Esses pontos exigem teste de navegador/dispositivo; não devem ser marcados como aprovados com base apenas nos 89 testes.
+
+### Pendências de regressão que permanecem
+
+1. **Direção e escala do rato no jogo real:** conferir aproximação em todas as diagonais, frente/costas e tamanho relativo ao personagem. Os testes atuais validam a ordem de quadros e metadados, mas não fazem comparação visual automatizada da animação renderizada.
+2. **Inimigos sem ciclo de caminhada dedicado:** as texturas atuais são poses direcionais; a cena muda o quadro para indicar direção, mas não existe animação de patas/caminhada específica para as espécies.
+3. **IA de combate por espécie:** saqueador e mutante ainda não têm os comportamentos próprios previstos (tiro/patrulha para saqueador; investida/ataque em área para mutante).
+4. **Feedback do tiro:** projétil visível e sincronização do dano com o quadro do disparo continuam pendentes.
+5. **Ciclo completo de vida do jogo:** executar no Android a sequência mover → atacar → receber dano → morrer → reaparecer → fechar/reabrir → verificar XP, equipamentos, munição, inimigos e drops.
+6. **Identificação visual da versão:** o cabeçalho do `index.html` mostra `BUILD 40`, enquanto o CSS e o cache do service worker usam `v61`. Isso não prova falha funcional, mas pode confundir a identificação da versão durante a validação; definir uma convenção única e atualizar em conjunto.
+7. **Licenças e autoria dos assets:** manter o registro de procedência/autorização para cada pack de personagem, inimigo, armas, ambiente e música antes de distribuição pública ampla.
+
+### Critério de encerramento
+
+Uma pendência só pode ser marcada como corrigida quando houver: (a) causa identificada, (b) mudança de código/asset, (c) teste de regressão automatizado quando aplicável e (d) confirmação visual no navegador ou Android para os defeitos de renderização/controle. Não usar o sucesso de deploy como prova de que o gameplay foi validado.
