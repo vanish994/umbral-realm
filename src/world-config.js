@@ -7,11 +7,13 @@
   const playerSpawn = { x: 100, y: 360 };
   const merchant = { x: 1120, y: 340 };
   const campfire = { x: 1035, y: 385 };
-  const ratSpawns = [
-    { x: 300, y: 350 },
-    { x: 505, y: 300 },
-    { x: 690, y: 370 },
-    { x: 865, y: 350 }
+  const enemySpawns = [
+    { id: "rat-1", x: 275, y: 350 },
+    { id: "rat-2", x: 440, y: 300 },
+    { id: "wolf-5", x: 605, y: 370 },
+    { id: "wolf-6", x: 755, y: 320 },
+    { id: "slow-zombie-10", x: 875, y: 390 },
+    { id: "slow-zombie-12", x: 955, y: 300 }
   ];
 
   // Obstáculos autorais: posicionamento fixo, separado da arte que os representa.
@@ -55,5 +57,5 @@
     [810, 75], [920, 620], [1040, 125], [1160, 610], [1250, 80], [1080, 535]
   ];
 
-  return { world, playerSpawn, merchant, campfire, ratSpawns, solids, props, groundDetails };
+  return { world, playerSpawn, merchant, campfire, enemySpawns, solids, props, groundDetails };
 });

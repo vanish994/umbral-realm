@@ -1,6 +1,6 @@
 # Auditoria técnica do protótipo
 
-**Data da revisão:** 2026-10-14
+**Data da revisão:** 2026-10-15
 **Base analisada:** `9083e56` e assets versionados no repositório  
 **Escopo:** estado real do protótipo local/PWA; o GDD continua sendo a fonte da direção de design.
 
@@ -8,12 +8,22 @@
 
 ### Implementado
 
-- Uma cena Phaser 3 local com mapa de 960×640 desenhado por `Graphics`, câmera, movimento por teclado, toque no mapa e joystick virtual.
-- Colisão manual do jogador com retângulos de cenário. A perseguição do rato agora usa os mesmos obstáculos e limites do mundo.
-- Sprites direcionais do jogador e poses direcionais do rato. As folhas foram conferidas: personagem combinado 384×384 (6 linhas de 8 quadros de 48×64); rato e mercador 256×32 (8 direções de 32×32). O rato não possui ciclo de caminhada no asset atual.
-- Quatro ratos zumbis distribuídos antes da clareira, cada um com vida e persistência independentes, perseguição com território, dano por contato, recompensa direta e respawn de doze segundos.
-- Faca e revólver `.38` representados pelas duas ações de combate preexistentes. Ao atacar com a faca fora do alcance, o personagem segue o rato vivo mais próximo e executa um golpe ao alcançá-lo; joystick, teclado, toque no mapa ou troca de arma cancelam a aproximação. O revólver mantém capacidade persistida de sete munições, mas a flag temporária `DEVELOPMENT_INFINITE_AMMO` evita consumo durante o desenvolvimento. O dano varia por golpe, recebe bônus moderado da skill correspondente e tem 8% de crítico com multiplicador 1,75; todos os valores continuam provisórios.
-- HUD de vida, XP, nível, moedas, munição e inimigo; controles de arma, ataque e interação acessíveis sobre a cena na orientação horizontal. O botão MENU abre uma composição autoral de mesa em CSS com a moldura de smartphone do Smart UI ampliada ao centro e pausa a cena, aproximando-se da referência promocional fornecida. O dispositivo usa uma proporção visual mais larga que o PNG-base para dar legibilidade aos dados e alvos de toque no Android horizontal. A página Status usa retrato, vida, equipamento rápido e detalhes de combate; Skills permanece funcional com progressão e faixas de dano. Inventário, Mapa e Missões aparecem na navegação como módulos explicitamente em desenvolvimento. Cada rato também possui barra de vida no mundo. Dano comum aparece em vermelho e crítico em dourado com texto, flash e tremor; XP geral ganho aparece em branco sobre o jogador e ouro atualiza silenciosamente. Avisos visuais e toast foram removidos, mantendo somente uma região invisível para leitores de tela. A apresentação ativa usa painéis, botões, barras e ícones selecionados do `Humble Gift - Smart UI.zip`; a moldura de smartphone está preservada para futuros menus.
+- Uma cena Phaser 3 local com mapa de 1280×720 desenhado por `Graphics`, câmera, movimento por teclado, toque no mapa e joystick virtual.
+- Colisão manual do jogador com retângulos de cenário. A perseguição dos inimigos usa os mesmos obstáculos e limites do mundo.
+- Sprites direcionais do jogador e poses direcionais dos inimigos. As folhas foram conferidas: personagem combinado 384×384 (6 linhas de 8 quadros de 48×64); rato e lobo zumbi têm 8 direções de 32×32; zumbi lento tem 8 direções de 48×48; mercador tem 8 direções de 32×32. Os inimigos não possuem ciclo de caminhada nos assets atuais.
+- Seis encontros persistentes antes da clareira: ratos níveis 1–2, lobos zumbis níveis 5–6 e zumbis lentos níveis 10 e 12. Cada definição configura vida, dano, velocidade, território, recarga, XP, ouro e respawn independentemente em `src/enemy-rules.js`.
+
+| Inimigo | Nível | Vida | Dano | XP | Ouro | Respawn |
+|---|---:|---:|---:|---:|---:|---:|
+| Rato zumbi | 1 | 45 | 4 | 30 | 4 | 12 s |
+| Rato zumbi | 2 | 58 | 5 | 40 | 5 | 13 s |
+| Lobo zumbi | 5 | 92 | 8 | 80 | 9 | 18 s |
+| Lobo zumbi | 6 | 108 | 9 | 95 | 11 | 20 s |
+| Zumbi lento | 10 | 155 | 12 | 140 | 16 | 26 s |
+| Zumbi lento | 12 | 190 | 14 | 175 | 20 | 30 s |
+
+- Faca e revólver `.38` representados pelas duas ações de combate preexistentes. Ao atacar com a faca fora do alcance, o personagem segue o inimigo vivo mais próximo e executa um golpe ao alcançá-lo; joystick, teclado, toque no mapa ou troca de arma cancelam a aproximação. O revólver mantém capacidade persistida de sete munições, mas a flag temporária `DEVELOPMENT_INFINITE_AMMO` evita consumo durante o desenvolvimento. O dano varia por golpe, recebe bônus moderado da skill correspondente e tem 8% de crítico com multiplicador 1,75; todos os valores continuam provisórios.
+- HUD de vida, XP, nível, moedas, munição e inimigo; controles de arma, ataque e interação acessíveis sobre a cena na orientação horizontal. O botão MENU abre uma composição autoral de mesa em CSS com a moldura de smartphone do Smart UI ampliada ao centro e pausa a cena, aproximando-se da referência promocional fornecida. O dispositivo usa uma proporção visual mais larga que o PNG-base para dar legibilidade aos dados e alvos de toque no Android horizontal. A página Status usa retrato, vida, equipamento rápido e detalhes de combate; Skills permanece funcional com progressão e faixas de dano. Inventário, Mapa e Missões aparecem na navegação como módulos explicitamente em desenvolvimento. Cada inimigo exibe nome, nível e barra de vida individual no mundo. Dano comum aparece em vermelho e crítico em dourado com texto, flash e tremor; XP geral ganho aparece em branco sobre o jogador e ouro atualiza silenciosamente. Avisos visuais e toast foram removidos, mantendo somente uma região invisível para leitores de tela. A apresentação ativa usa painéis, botões, barras e ícones selecionados do `Humble Gift - Smart UI.zip`; a moldura de smartphone está preservada para futuros menus.
 - Mercador visível e diálogo simples, mas sem loja.
 - Salvamento local do estado numérico, agora normalizado contra campos ausentes/corrompidos e acionado também após alterações relevantes e ao ocultar/sair da página.
 - Manifesto, orientação horizontal e service worker. Phaser, shell e sprites usados pela cena são locais e pré-carregados para uso após a primeira visita.
@@ -22,17 +32,17 @@
 
 ### Parcial ou provisório
 
-- A Trilha dos Infectados é um mapa inicial autoral de 1280×720: saída a oeste, quatro territórios de ratos, ruínas e uma clareira segura a leste com fogueira e mercador. Terreno e props selecionados do pack autorizado foram integrados; algumas estruturas continuam desenhadas com formas enquanto seus tiles não forem montados e validados.
+- A Trilha dos Infectados é um mapa inicial autoral de 1280×720: saída a oeste, seis territórios ordenados por nível, ruínas e uma clareira segura a leste com fogueira e mercador. Terreno e props selecionados do pack autorizado foram integrados; algumas estruturas continuam desenhadas com formas enquanto seus tiles não forem montados e validados.
 - Combate respeita alcance e recarga e reproduz efeitos distintos quando faca ou revólver acertam. A música `Wasteland`, de We Are All Astronauts, começa em volume baixo após a primeira interação e repete em loop. Ainda não há controles de volume, animações de ataque, projétil, chance de acerto, sangramento, fio da faca ou sujeira do revólver.
 - A “morte” recupera metade da vida e reposiciona o jogador; perda/recuperação ainda é uma decisão aberta no GDD.
-- XP geral e skills independentes de Lâminas e Armas de Fogo existem e são salvas. Cada acerto válido concede 4 XP à skill usada; o requisito parte de 20 e cresce por fator aproximado de 1,45 por nível. Cada nível adiciona 4% à faixa de dano-base da categoria. Esses números não foram validados por balanceamento.
+- XP geral e skills independentes de Lâminas e Armas de Fogo existem e são salvas. Cada acerto válido concede 4 XP à skill usada; o requisito parte de 20 e cresce por fator aproximado de 1,45 por nível. Cada nível adiciona 4% à faixa de dano-base da categoria; cada nível geral adiciona 1,5%, mantendo a skill como influência principal. A vida máxima do jogador parte de 100 e cresce 12 por nível. Esses números receberam testes de coerência, mas ainda não foram validados por playtest prolongado.
 - A recompensa é creditada diretamente; não existem entidades coletáveis, inventário nem tabelas de drop.
 - O save preserva progresso e combate, mas não posição do jogador nem tempo restante de respawn.
 - Em telas horizontais baixas, o painel detalhado é ocultado para liberar o mapa; os comandos essenciais permanecem sobre a cena.
 
 ### Ausente em relação ao MVP do GDD
 
-- Segunda espécie de inimigo com comportamento distinto.
+- Estados e animações dedicadas de ataque/morte para as três espécies de inimigo.
 - Inventário, drops coletáveis e tabelas por espécie.
 - Compra e venda no mercador.
 - Medicamentos, munição encontrada/comprada e recarga.
@@ -47,13 +57,13 @@
 3. **Save não confiável:** números inválidos podiam produzir `NaN`, vida zero carregada podia bloquear ações, e alterações só eram persistidas pelo botão oculto no modo horizontal. Corrigido com normalização testável e autosave dos eventos atuais.
 4. **Inimigo atravessava cenário:** a perseguição alterava coordenadas sem consultar obstáculos ou limites. Corrigido usando colisão por eixo e limites do mundo; falta teste visual em navegador/dispositivo.
 5. **Arquitetura concentrada:** cena, IA, combate, DOM, entrada e persistência permanecem em `src/game.js`. `src/game-state.js` é o primeiro recorte testável; novas extrações devem ocorrer apenas junto de funcionalidades concretas.
-6. **Proveniência incompleta:** Phaser tem licença versionada, e a autorização específica do titular para o ambiente está documentada. A origem/autorização dos sprites de personagem, rato, mercador e pacotes de armas ainda precisa ser consolidada antes de distribuição ampla.
+6. **Proveniência incompleta:** Phaser tem licença versionada, e a autorização específica do titular para o ambiente está documentada. A origem/autorização dos sprites de personagem, rato, lobo zumbi, zumbi lento, mercador e pacotes de armas ainda precisa ser consolidada antes de distribuição ampla.
 7. **Workflow de assets escreve em `main`:** o job extrai e tenta commitar em todo push para `main`. A proteção contra loop existe, mas conceder `contents: write` e manter arquivos compactados duplicados aumenta risco e tamanho; revisar somente após confirmar o fluxo desejado pelo mantenedor.
 
 ## Backlog ordenado por dependência
 
 1. **Validar e estabilizar o loop atual em navegador/Android:** carga, landscape, joystick, todos os botões, colisões do jogador e rato, morte, respawn, reload e modo offline. Corrigir qualquer regressão antes de ampliar sistemas.
-2. **Modelar inimigo e combate em dados testáveis:** separar configuração do rato, dano, alcance, cooldown, recompensa e respawn; adicionar testes de regras sem Phaser.
+2. **Validar balanceamento dos inimigos em playtest:** as definições e testes puros existem; medir tempo para matar, dano recebido, progressão e espaço de perseguição no Android.
 3. **Implementar drops coletáveis e inventário mínimo:** recompensa física configurável, coleta explícita e persistência. Isso é pré-requisito para vender materiais.
 4. **Implementar comerciante mínimo:** compra de munição e venda dos materiais existentes, com transações atômicas e testes contra saldo/estoque inválidos.
 5. **Adicionar segundo inimigo:** somente depois que o modelo de inimigo e drops for reutilizável; deve ter comportamento realmente distinto.

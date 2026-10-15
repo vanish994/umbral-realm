@@ -6,11 +6,12 @@
   const Targeting = window.UmbralTargeting;
   const CombatFeedback = window.UmbralCombatFeedback;
   const CombatRules = window.UmbralCombatRules;
-  if (!State || !World || !Targeting || !CombatFeedback || !CombatRules) throw new Error("Os módulos do jogo não carregaram.");
+  const EnemyRules = window.UmbralEnemyRules;
+  if (!State || !World || !Targeting || !CombatFeedback || !CombatRules || !EnemyRules) throw new Error("Os módulos do jogo não carregaram.");
 
   const state = State.normalize(saved);
-  let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeRatId = null, menuOpen = false;
-  const rats = [];
+  let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeEnemyIndex = null, menuOpen = false;
+  const enemies = [];
   const touch = { x: 0, y: 0 };
   const el = id => document.getElementById(id);
 
@@ -21,16 +22,16 @@
   }
 
   function maxHp() { return State.maxHp(state.level); }
-  function livingRatCount() { return state.rats.filter(rat => rat.hp > 0).length; }
-  function nearestRat(maxRange = Infinity) {
+  function livingEnemyCount() { return state.enemies.filter(enemy => enemy.hp > 0).length; }
+  function nearestEnemy(maxRange = Infinity) {
     if (!player) return null;
-    const candidates = rats.map(rat => ({
-      x: rat.x,
-      y: rat.y,
-      rat,
-      available: rat.visible && state.rats[rat.ratId].hp > 0
+    const candidates = enemies.map(enemy => ({
+      x: enemy.x,
+      y: enemy.y,
+      enemy,
+      available: enemy.visible && state.enemies[enemy.enemyIndex].hp > 0
     }));
-    return Targeting.findNearest(player, candidates, maxRange)?.rat || null;
+    return Targeting.findNearest(player, candidates, maxRange)?.enemy || null;
   }
 
   function updateHud() {
@@ -56,7 +57,7 @@
     for (const [skillName, action] of [["blades", "close"], ["firearms", "far"]]) {
       const skill = state.skills[skillName];
       const required = CombatRules.skillXpNeeded(skill.level);
-      const range = CombatRules.damageRange(action, skill.level);
+      const range = CombatRules.damageRange(action, skill.level, state.level);
       el(`${skillName}-level`).textContent = `Nv. ${skill.level}`;
       el(`${skillName}-xp`).textContent = `${skill.xp} / ${required} XP`;
       el(`${skillName}-bar`).style.width = `${skill.xp / required * 100}%`;
@@ -65,12 +66,13 @@
     el("critical-chance").textContent = `${Math.round(CombatRules.CRITICAL_CHANCE * 100)}%`;
     el("critical-multiplier").textContent = `${String(CombatRules.CRITICAL_MULTIPLIER).replace(".", ",")}×`;
 
-    const target = nearestRat();
-    const remaining = livingRatCount();
-    el("enemy-label").textContent = target ? `RATO ZUMBI • ${remaining} RESTANTE${remaining === 1 ? "" : "S"}` : "CLAREIRA SEGURA";
-    el("enemy-hp-label").textContent = target ? `${state.rats[target.ratId].hp} / ${State.ENEMY_MAX_HP}` : "Sem ameaça";
-    el("enemy-hp-bar").style.width = `${target ? state.rats[target.ratId].hp / State.ENEMY_MAX_HP * 100 : 0}%`;
-    el("combat-info").textContent = state.action === "close" ? "Faca de cozinha • alcance curto" : "Revólver .38 • consome munição";
+    const target = nearestEnemy();
+    const remaining = livingEnemyCount();
+    const targetDefinition = target ? EnemyRules.definition(target.definitionId) : null;
+    el("enemy-label").textContent = targetDefinition ? `${targetDefinition.name} • NV. ${targetDefinition.level} • ${remaining} RESTANTE${remaining === 1 ? "" : "S"}` : "CLAREIRA SEGURA";
+    el("enemy-hp-label").textContent = targetDefinition ? `${state.enemies[target.enemyIndex].hp} / ${targetDefinition.maxHp}` : "Sem ameaça";
+    el("enemy-hp-bar").style.width = `${targetDefinition ? state.enemies[target.enemyIndex].hp / targetDefinition.maxHp * 100 : 0}%`;
+    el("combat-info").textContent = state.action === "close" ? "Faca de cozinha • alcance curto" : CombatRules.DEVELOPMENT_INFINITE_AMMO ? "Revólver .38 • munição infinita" : "Revólver .38 • consome munição";
   }
 
   function persistGame(showFeedback = false) {
@@ -98,6 +100,8 @@
       this.load.spritesheet("player-idle-right-down", "./assets/characters/male/Idle/idle_right_down.png", { frameWidth: 48, frameHeight: 64 });
       this.load.spritesheet("player-walk-right-down", "./assets/characters/male/Walk/walk_right_down.png", { frameWidth: 48, frameHeight: 64 });
       this.load.spritesheet("zombie-rat-idle", "./assets/enemies/zombie-rat/Um_rato_zombie-Idle.png", { frameWidth: 32, frameHeight: 32 });
+      this.load.spritesheet("zombie-wolf-idle", "./assets/enemies/zombie-wolf/idle.png", { frameWidth: 32, frameHeight: 32 });
+      this.load.spritesheet("slow-zombie-idle", "./assets/enemies/slow-zombie/idle.png", { frameWidth: 48, frameHeight: 48 });
       this.load.spritesheet("merchant-idle", "./assets/npcs/merchant/Um_npc_mercador_estilo_o-Idle.png", { frameWidth: 32, frameHeight: 32 });
       ["ground-dark", "ground-detail", "small-oak", "bush", "tires-grass", "tire", "brick-debris", "garbage-bin", "barrel-rust-red", "destroyed-wall-corner", "destroyed-wall"].forEach(key => {
         this.load.image(key, `./assets/environment/trail/${key}.png`);
@@ -159,7 +163,7 @@
 
       player = this.add.sprite(World.playerSpawn.x, World.playerSpawn.y, "player-idle", 0).setScale(1.6).setOrigin(0.5, 0.82).setDepth(World.playerSpawn.y);
       player.play("player-idle-down");
-      this.createRats();
+      this.createEnemies();
 
       this.physics.world.setBounds(0, 0, World.world.width, World.world.height);
       this.cameras.main.setBounds(0, 0, World.world.width, World.world.height);
@@ -171,7 +175,7 @@
         if (menuOpen || pointer.event.target.closest("button,.game-controls")) return;
         const point = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
         if (Math.hypot(point.x - player.x, point.y - player.y) > 22) {
-          pendingMeleeRatId = null;
+          pendingMeleeEnemyIndex = null;
           player.setData("tapTarget", { x: point.x, y: point.y });
         }
       });
@@ -263,50 +267,63 @@
       });
     }
 
-    updateRatIndicators(rat) {
-      rat.healthBar.clear();
-      if (!rat.visible || state.rats[rat.ratId].hp <= 0) return;
-      const ratio = CombatFeedback.healthRatio(state.rats[rat.ratId].hp, State.ENEMY_MAX_HP);
-      const x = Math.round(rat.x - 17), y = Math.round(rat.y - 27);
-      rat.healthBar.fillStyle(0x090a0e, 0.92).fillRect(x, y, 34, 6);
-      rat.healthBar.fillStyle(0x3a1115, 1).fillRect(x + 1, y + 1, 32, 4);
-      rat.healthBar.fillStyle(ratio > 0.45 ? 0xc74646 : 0xf06a3b, 1).fillRect(x + 1, y + 1, Math.round(32 * ratio), 4);
-      rat.nameLabel.setPosition(rat.x, rat.y - 37);
+    updateEnemyIndicators(enemy) {
+      enemy.healthBar.clear();
+      if (!enemy.visible || state.enemies[enemy.enemyIndex].hp <= 0) return;
+      const definition = EnemyRules.definition(enemy.definitionId);
+      const ratio = CombatFeedback.healthRatio(state.enemies[enemy.enemyIndex].hp, definition.maxHp);
+      const width = definition.species === "slow-zombie" ? 44 : 38;
+      const y = Math.round(enemy.y - enemy.indicatorOffset);
+      const x = Math.round(enemy.x - width / 2);
+      enemy.healthBar.fillStyle(0x090a0e, 0.92).fillRect(x, y, width, 6);
+      enemy.healthBar.fillStyle(0x3a1115, 1).fillRect(x + 1, y + 1, width - 2, 4);
+      enemy.healthBar.fillStyle(ratio > 0.45 ? 0xc74646 : 0xf06a3b, 1).fillRect(x + 1, y + 1, Math.round((width - 2) * ratio), 4);
+      enemy.nameLabel.setPosition(enemy.x, y - 10);
     }
 
-    createRats() {
-      World.ratSpawns.forEach((spawn, ratId) => {
-        const rat = this.add.sprite(spawn.x, spawn.y, "zombie-rat-idle", 4).setOrigin(0.5).setDepth(spawn.y);
-        rat.ratId = ratId;
-        rat.spawnX = spawn.x;
-        rat.spawnY = spawn.y;
-        rat.bobOffset = 0;
-        rat.attackAt = 0;
-        rat.healthBar = this.add.graphics().setDepth(999);
-        rat.nameLabel = this.add.text(spawn.x, spawn.y - 37, `RATO ${ratId + 1}`, this.labelStyle("#e6c2ad")).setOrigin(0.5).setDepth(1000);
-        rats.push(rat);
-        if (state.rats[ratId].hp <= 0) {
-          rat.setVisible(false);
-          rat.nameLabel.setVisible(false);
-          this.scheduleRatRespawn(rat);
+    createEnemies() {
+      const spriteConfig = {
+        rat: { key: "zombie-rat-idle", scale: 1, offset: 27 },
+        wolf: { key: "zombie-wolf-idle", scale: 1.25, offset: 31 },
+        "slow-zombie": { key: "slow-zombie-idle", scale: 1.2, offset: 43 }
+      };
+      World.enemySpawns.forEach((spawn, enemyIndex) => {
+        const definition = EnemyRules.definition(spawn.id);
+        const visual = spriteConfig[definition.species];
+        const enemy = this.add.sprite(spawn.x, spawn.y, visual.key, 4).setScale(visual.scale).setOrigin(0.5, 0.76).setDepth(spawn.y);
+        enemy.enemyIndex = enemyIndex;
+        enemy.definitionId = definition.id;
+        enemy.spawnX = spawn.x;
+        enemy.spawnY = spawn.y;
+        enemy.indicatorOffset = visual.offset;
+        enemy.bobOffset = 0;
+        enemy.attackAt = 0;
+        enemy.healthBar = this.add.graphics().setDepth(999);
+        enemy.nameLabel = this.add.text(spawn.x, spawn.y - visual.offset - 10, `${definition.name} • NV. ${definition.level}`, this.labelStyle("#e6c2ad")).setOrigin(0.5).setDepth(1000);
+        enemies.push(enemy);
+        if (state.enemies[enemyIndex].hp <= 0) {
+          enemy.setVisible(false);
+          enemy.nameLabel.setVisible(false);
+          this.scheduleEnemyRespawn(enemy);
         }
-        this.updateRatIndicators(rat);
+        this.updateEnemyIndicators(enemy);
       });
     }
 
-    scheduleRatRespawn(rat) {
-      if (rat.respawnTimer) return;
-      rat.respawnTimer = this.time.delayedCall(12000, () => {
-        rat.respawnTimer = null;
-        state.rats[rat.ratId].hp = State.ENEMY_MAX_HP;
-        rat.setPosition(rat.spawnX, rat.spawnY).setAlpha(1).setVisible(true).setFrame(4);
-        rat.nameLabel.setVisible(true);
-        rat.bobOffset = 0;
-        rat.attackAt = 0;
-        this.updateRatIndicators(rat);
+    scheduleEnemyRespawn(enemy) {
+      if (enemy.respawnTimer) return;
+      const definition = EnemyRules.definition(enemy.definitionId);
+      enemy.respawnTimer = this.time.delayedCall(definition.respawnMs, () => {
+        enemy.respawnTimer = null;
+        state.enemies[enemy.enemyIndex].hp = definition.maxHp;
+        enemy.setPosition(enemy.spawnX, enemy.spawnY).setAlpha(1).setVisible(true).setFrame(4);
+        enemy.nameLabel.setVisible(true);
+        enemy.bobOffset = 0;
+        enemy.attackAt = 0;
+        this.updateEnemyIndicators(enemy);
         updateHud();
         persistGame();
-        announce("Um rato zumbi voltou à trilha.");
+        announce(`${definition.name} nível ${definition.level} voltou à trilha.`);
       });
     }
 
@@ -320,19 +337,19 @@
       if (cursors.up.isDown || moveKeys.W.isDown) dy = -1; else if (cursors.down.isDown || moveKeys.S.isDown) dy = 1; else dy = touch.y;
       const manualInput = Boolean(dx || dy);
       if (manualInput) {
-        pendingMeleeRatId = null;
+        pendingMeleeEnemyIndex = null;
         player.setData("tapTarget", null);
       }
 
-      if (!manualInput && pendingMeleeRatId !== null) {
-        const meleeTarget = rats.find(rat => rat.ratId === pendingMeleeRatId);
-        if (!meleeTarget?.visible || state.rats[pendingMeleeRatId].hp <= 0 || state.action !== "close") {
-          pendingMeleeRatId = null;
+      if (!manualInput && pendingMeleeEnemyIndex !== null) {
+        const meleeTarget = enemies.find(enemy => enemy.enemyIndex === pendingMeleeEnemyIndex);
+        if (!meleeTarget?.visible || state.enemies[pendingMeleeEnemyIndex].hp <= 0 || state.action !== "close") {
+          pendingMeleeEnemyIndex = null;
         } else {
           const approach = Targeting.approachVector(player, meleeTarget, 52);
           if (approach.reached) {
             if (actionReady) {
-              pendingMeleeRatId = null;
+              pendingMeleeEnemyIndex = null;
               resolveAction(false, meleeTarget);
             }
           } else {
@@ -343,7 +360,7 @@
       }
 
       const target = player.getData("tapTarget");
-      if (!dx && !dy && pendingMeleeRatId === null && target) {
+      if (!dx && !dy && pendingMeleeEnemyIndex === null && target) {
         dx = target.x - player.x; dy = target.y - player.y;
         if (Math.hypot(dx, dy) < 8) { player.setData("tapTarget", null); dx = dy = 0; }
         else { const length = Math.hypot(dx, dy); dx /= length; dy /= length; }
@@ -364,30 +381,32 @@
       player.setDepth(player.y);
     }
 
-    moveRat(rat, delta) {
-      if (!rat.visible || state.rats[rat.ratId].hp <= 0) return;
-      if (rat.bobOffset) { rat.y -= rat.bobOffset; rat.bobOffset = 0; }
-      const playerDistance = Phaser.Math.Distance.Between(player.x, player.y, rat.x, rat.y);
-      const homeDistance = Phaser.Math.Distance.Between(rat.x, rat.y, rat.spawnX, rat.spawnY);
-      let targetX = player.x, targetY = player.y, speed = 24;
-      if (homeDistance > 175 || player.x > 965) { targetX = rat.spawnX; targetY = rat.spawnY; speed = 30; }
-      else if (playerDistance >= 185) return;
+    moveEnemy(enemy, delta) {
+      if (!enemy.visible || state.enemies[enemy.enemyIndex].hp <= 0) return;
+      if (enemy.bobOffset) { enemy.y -= enemy.bobOffset; enemy.bobOffset = 0; }
+      const definition = EnemyRules.definition(enemy.definitionId);
+      const playerDistance = Phaser.Math.Distance.Between(player.x, player.y, enemy.x, enemy.y);
+      const homeDistance = Phaser.Math.Distance.Between(enemy.x, enemy.y, enemy.spawnX, enemy.spawnY);
+      let targetX = player.x, targetY = player.y, speed = definition.speed;
+      if (homeDistance > definition.chaseRange + 65 || player.x > 985) { targetX = enemy.spawnX; targetY = enemy.spawnY; speed = Math.max(24, definition.speed); }
+      else if (playerDistance >= definition.chaseRange) return;
 
-      const dx = targetX - rat.x, dy = targetY - rat.y;
+      const dx = targetX - enemy.x, dy = targetY - enemy.y;
       const distance = Math.hypot(dx, dy);
       const angleSector = (Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) + 8) % 8;
-      rat.setFrame([2, 1, 0, 7, 6, 5, 4, 3][angleSector]);
-      if (targetX === player.x && distance <= 27) {
-        if (!rat.attackAt || this.time.now >= rat.attackAt) {
-          rat.attackAt = this.time.now + 1150;
-          state.hp = Math.max(0, state.hp - 5);
-          this.showDamageNumber(player, 5);
-          announce("Um rato zumbi atingiu você.");
+      enemy.setFrame([2, 1, 0, 7, 6, 5, 4, 3][angleSector]);
+      const contactRange = definition.species === "slow-zombie" ? 31 : 27;
+      if (targetX === player.x && distance <= contactRange) {
+        if (!enemy.attackAt || this.time.now >= enemy.attackAt) {
+          enemy.attackAt = this.time.now + definition.attackCooldown;
+          state.hp = Math.max(0, state.hp - definition.damage);
+          this.showDamageNumber(player, definition.damage);
+          announce(`${definition.name} nível ${definition.level} atingiu você.`);
           if (state.hp === 0) {
             state.hp = Math.floor(maxHp() / 2);
-            pendingMeleeRatId = null;
+            pendingMeleeEnemyIndex = null;
             player.setPosition(World.playerSpawn.x, World.playerSpawn.y).setData("tapTarget", null);
-            rats.forEach(other => { other.setPosition(other.spawnX, other.spawnY); other.bobOffset = 0; });
+            enemies.forEach(other => { other.setPosition(other.spawnX, other.spawnY); other.bobOffset = 0; });
             announce("Você recuou para o início da trilha e recuperou o fôlego.");
           }
           updateHud(); persistGame();
@@ -396,22 +415,23 @@
       }
       if (distance > 2) {
         const step = speed * delta / 1000;
-        const nx = Phaser.Math.Clamp(rat.x + dx / distance * step, 12, World.world.width - 12);
-        const ny = Phaser.Math.Clamp(rat.y + dy / distance * step, 12, World.world.height - 12);
-        if (!this.isBlocked(nx, rat.y, 8, 6)) rat.x = nx;
-        if (!this.isBlocked(rat.x, ny, 8, 6)) rat.y = ny;
-        const bob = Math.sin(this.time.now / 78 + rat.ratId) * 1.15;
-        rat.y += bob; rat.bobOffset = bob;
+        const nx = Phaser.Math.Clamp(enemy.x + dx / distance * step, 12, World.world.width - 12);
+        const ny = Phaser.Math.Clamp(enemy.y + dy / distance * step, 12, World.world.height - 12);
+        if (!this.isBlocked(nx, enemy.y, 8, 6)) enemy.x = nx;
+        if (!this.isBlocked(enemy.x, ny, 8, 6)) enemy.y = ny;
+        const bobStrength = definition.species === "slow-zombie" ? 0.45 : 1.15;
+        const bob = Math.sin(this.time.now / 78 + enemy.enemyIndex) * bobStrength;
+        enemy.y += bob; enemy.bobOffset = bob;
       }
-      rat.setDepth(rat.y);
+      enemy.setDepth(enemy.y);
     }
 
     update(_, delta) {
       if (!player) return;
       this.movePlayer(delta);
-      rats.forEach(rat => {
-        this.moveRat(rat, delta);
-        this.updateRatIndicators(rat);
+      enemies.forEach(enemy => {
+        this.moveEnemy(enemy, delta);
+        this.updateEnemyIndicators(enemy);
       });
       if (this.time.now % 250 < delta) updateHud();
     }
@@ -443,29 +463,30 @@
   function near(a, b, range = 75) { return a && b && Phaser.Math.Distance.Between(a.x, a.y, b.x, b.y) <= range; }
   function selectAction(action) {
     if (menuOpen) return;
-    pendingMeleeRatId = null;
+    pendingMeleeEnemyIndex = null;
     state.action = action; updateHud(); persistGame();
-    announce(action === "close" ? "Faca selecionada: atacar aproxima você do rato mais próximo." : CombatRules.DEVELOPMENT_INFINITE_AMMO ? "Revólver .38 selecionado com munição infinita durante o desenvolvimento." : "Revólver .38 selecionado: cada disparo consome uma munição.");
+    announce(action === "close" ? "Faca selecionada: atacar aproxima você do inimigo mais próximo." : CombatRules.DEVELOPMENT_INFINITE_AMMO ? "Revólver .38 selecionado com munição infinita durante o desenvolvimento." : "Revólver .38 selecionado: cada disparo consome uma munição.");
   }
 
   function resolveAction(allowApproach = true, forcedTarget = null) {
     if (!actionReady || state.hp <= 0 || menuOpen) return;
     const range = state.action === "close" ? 58 : 285;
     let target = forcedTarget;
-    if (target && (!target.visible || state.rats[target.ratId].hp <= 0 || Targeting.distanceBetween(player, target) > range)) target = null;
-    if (!target) target = nearestRat(range);
+    if (target && (!target.visible || state.enemies[target.enemyIndex].hp <= 0 || Targeting.distanceBetween(player, target) > range)) target = null;
+    if (!target) target = nearestEnemy(range);
 
     if (!target && state.action === "close" && allowApproach) {
-      const approachTarget = nearestRat();
-      if (!approachTarget) { announce("Não há ratos vivos para atacar."); return; }
-      pendingMeleeRatId = approachTarget.ratId;
+      const approachTarget = nearestEnemy();
+      if (!approachTarget) { announce("Não há inimigos vivos para atacar."); return; }
+      pendingMeleeEnemyIndex = approachTarget.enemyIndex;
       player.setData("tapTarget", null);
-      announce(`Aproximando da faca até o Rato ${approachTarget.ratId + 1}. Use o joystick para cancelar.`);
+      const approachDefinition = EnemyRules.definition(approachTarget.definitionId);
+      announce(`Aproximando da faca até ${approachDefinition.name} nível ${approachDefinition.level}. Use o joystick para cancelar.`);
       return;
     }
-    if (!target) { announce(state.action === "close" ? "Não foi possível alcançar o rato com a faca." : "Nenhum rato ao alcance do revólver."); return; }
+    if (!target) { announce(state.action === "close" ? "Não foi possível alcançar o inimigo com a faca." : "Nenhum inimigo ao alcance do revólver."); return; }
 
-    pendingMeleeRatId = null;
+    pendingMeleeEnemyIndex = null;
     const action = state.action;
     let cooldown;
     if (action === "close") cooldown = 500;
@@ -475,30 +496,31 @@
       cooldown = 700;
     }
     const skillName = CombatRules.WEAPONS[action].skill;
-    const roll = CombatRules.rollDamage(action, state.skills[skillName].level);
+    const roll = CombatRules.rollDamage(action, state.skills[skillName].level, state.level);
     const damage = roll.damage;
     CombatRules.grantSkillXp(state.skills[skillName]);
     actionReady = false;
     setTimeout(() => { actionReady = true; }, cooldown);
-    const ratState = state.rats[target.ratId];
-    ratState.hp = Math.max(0, ratState.hp - damage);
+    const enemyState = state.enemies[target.enemyIndex];
+    enemyState.hp = Math.max(0, enemyState.hp - damage);
     target.setAlpha(0.35);
     setTimeout(() => { if (target.visible) target.setAlpha(1); }, 130);
     sceneRef.playAttackSound(action);
     sceneRef.showDamageNumber(target, damage, roll.critical);
-    sceneRef.updateRatIndicators(target);
-    announce(`${action === "close" ? "Golpe de faca" : "Disparo"} atingiu o rato${roll.critical ? " com dano crítico" : ""}.`);
-    if (ratState.hp === 0) {
+    sceneRef.updateEnemyIndicators(target);
+    announce(`${action === "close" ? "Golpe de faca" : "Disparo"} atingiu o inimigo${roll.critical ? " com dano crítico" : ""}.`);
+    if (enemyState.hp === 0) {
+      const defeatedDefinition = EnemyRules.definition(target.definitionId);
       target.setVisible(false); target.nameLabel.setVisible(false);
-      sceneRef.updateRatIndicators(target);
-      state.coins += 8;
-      const levelsGained = State.grantXp(state, 50);
+      sceneRef.updateEnemyIndicators(target);
+      state.coins += defeatedDefinition.coins;
+      const levelsGained = State.grantXp(state, defeatedDefinition.xp);
       if (levelsGained > 0) state.hp = maxHp();
-      sceneRef.showExperienceNumber(50);
-      announce("+50 XP");
-      const remaining = livingRatCount();
-      el("quest-text").textContent = remaining > 0 ? `Restam ${remaining} ratos antes da clareira.` : "A trilha está livre. Encontre a fogueira e o mercador.";
-      sceneRef.scheduleRatRespawn(target);
+      sceneRef.showExperienceNumber(defeatedDefinition.xp);
+      announce(`+${defeatedDefinition.xp} XP`);
+      const remaining = livingEnemyCount();
+      el("quest-text").textContent = remaining > 0 ? `Restam ${remaining} inimigos antes da clareira.` : "A trilha está livre. Encontre a fogueira e o mercador.";
+      sceneRef.scheduleEnemyRespawn(target);
     }
     updateHud(); persistGame();
   }
@@ -526,7 +548,7 @@
     el("open-menu").setAttribute("aria-expanded", String(open));
     if (open) {
       updateHud();
-      pendingMeleeRatId = null;
+      pendingMeleeEnemyIndex = null;
       player?.setData("tapTarget", null);
       sceneRef?.scene.pause();
       el("close-menu").focus();
@@ -543,7 +565,7 @@
       announce("Mercador: Você atravessou a trilha. Tenho suprimentos para quem conseguir moedas.");
     } else if (sceneRef?.campfire && Phaser.Math.Distance.Between(player.x, player.y, World.campfire.x, World.campfire.y) <= 75) {
       announce("A fogueira marca a clareira segura. O mercador está logo adiante.");
-    } else if (nearestRat(100)) announce("Um rato zumbi bloqueia a trilha. Selecione uma arma e ataque.");
+    } else if (nearestEnemy(100)) announce("Um inimigo zumbi bloqueia a trilha. Selecione uma arma e ataque.");
     else announce("Não há nada para interagir por perto.");
   }
 

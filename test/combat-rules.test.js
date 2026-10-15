@@ -34,13 +34,16 @@ test("weapon skill increases its variable damage range", () => {
   const trained = damageRange("close", 5);
   assert.ok(trained.min > 11);
   assert.ok(trained.max > 15);
+  const experienced = damageRange("close", 1, 10);
+  assert.ok(experienced.min > 11);
+  assert.ok(trained.min >= experienced.min, "skill levels must remain more influential than general levels");
 });
 
 test("damage rolls vary inside the range and can critically strike", () => {
-  const low = rollDamage("close", 1, (() => { const values = [0, 1]; return () => values.shift(); })());
+  const low = rollDamage("close", 1, 1, (() => { const values = [0, 1]; return () => values.shift(); })());
   assert.deepEqual(low, { damage: 11, baseDamage: 11, critical: false });
 
-  const critical = rollDamage("far", 1, (() => { const values = [0.999, CRITICAL_CHANCE / 2]; return () => values.shift(); })());
+  const critical = rollDamage("far", 1, 1, (() => { const values = [0.999, CRITICAL_CHANCE / 2]; return () => values.shift(); })());
   assert.equal(critical.baseDamage, 28);
   assert.equal(critical.damage, 49);
   assert.equal(critical.critical, true);
