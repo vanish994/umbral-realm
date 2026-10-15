@@ -173,6 +173,7 @@ test("exploration HUD overlays health, XP, ammunition, and a circular minimap", 
   assert.match(html, /class="hud world-hud"/);
   assert.match(html, /id="world-ammo"/);
   assert.match(html, /id="minimap-canvas"/);
+  assert.doesNotMatch(html, /class="enemy-panel"|id="enemy-(?:label|hp)/);
   assert.match(css, /\.minimap\{[^}]*border-radius:50%/);
   assert.match(game, /drawMinimap\(\)/);
   assert.match(game, /wideViewport \? 1\.02/);

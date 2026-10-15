@@ -124,12 +124,6 @@
     el("critical-chance").textContent = `${Math.round(CombatRules.CRITICAL_CHANCE * 100)}%`;
     el("critical-multiplier").textContent = `${String(CombatRules.CRITICAL_MULTIPLIER).replace(".", ",")}×`;
 
-    const target = selectedEnemy() || nearestEnemy();
-    const remaining = livingEnemyCount();
-    const targetDefinition = target ? EnemyRules.definition(target.definitionId) : null;
-    el("enemy-label").textContent = targetDefinition ? `${targetDefinition.name} • NV. ${targetDefinition.level} • ${remaining} RESTANTE${remaining === 1 ? "" : "S"}` : "CLAREIRA SEGURA";
-    el("enemy-hp-label").textContent = targetDefinition ? `${state.enemies[target.enemyIndex].hp} / ${targetDefinition.maxHp}` : "Sem ameaça";
-    el("enemy-hp-bar").style.width = `${targetDefinition ? state.enemies[target.enemyIndex].hp / targetDefinition.maxHp * 100 : 0}%`;
     el("combat-info").textContent = state.action === "close" ? `${equippedBlade.name} • alcance curto` : `${equippedFirearm.name} • ${loadedAmmo}/${equippedFirearm.magazineSize}${isReloading ? " • recarregando" : ""}`;
   }
 
