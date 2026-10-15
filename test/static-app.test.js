@@ -178,6 +178,14 @@ test("exploration HUD overlays health, XP, ammunition, and a circular minimap", 
   assert.match(game, /wideViewport \? 1\.02/);
 });
 
+test("living enemies can be clicked to become the explicit combat target", () => {
+  const game = read("src/game.js");
+  assert.match(game, /enemy\.setInteractive/);
+  assert.match(game, /selectedEnemyIndex = enemy\.enemyIndex/);
+  assert.match(game, /function combatTarget/);
+  assert.match(game, /updateTargetMarker/);
+});
+
 test("manifest exposes installable PNG icon sizes and landscape mode", () => {
   const manifest = JSON.parse(read("manifest.webmanifest"));
   assert.equal(manifest.orientation, "landscape");

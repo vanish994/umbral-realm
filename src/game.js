@@ -11,7 +11,7 @@
   if (!State || !World || !Targeting || !CombatFeedback || !CombatRules || !EnemyRules || !ItemRules) throw new Error("Os módulos do jogo não carregaram.");
 
   const state = State.normalize(saved);
-  let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeEnemyIndex = null, menuOpen = false, merchantMode = false, playerDying = false, reloadState = null;
+  let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeEnemyIndex = null, selectedEnemyIndex = null, menuOpen = false, merchantMode = false, playerDying = false, reloadState = null;
   const enemies = [];
   const touch = { x: 0, y: 0 };
   const el = id => document.getElementById(id);
@@ -24,6 +24,16 @@
 
   function maxHp() { return State.maxHp(state.level); }
   function livingEnemyCount() { return state.enemies.filter(enemy => enemy.hp > 0).length; }
+  function selectedEnemy(maxRange = Infinity) {
+    if (!player || selectedEnemyIndex === null) return null;
+    const enemy = enemies.find(candidate => candidate.enemyIndex === selectedEnemyIndex);
+    if (!enemy?.visible || state.enemies[selectedEnemyIndex]?.hp <= 0) {
+      selectedEnemyIndex = null;
+      return null;
+    }
+    return Targeting.distanceBetween(player, enemy) <= maxRange ? enemy : null;
+  }
+
   function nearestEnemy(maxRange = Infinity) {
     if (!player) return null;
     const candidates = enemies.map(enemy => ({
@@ -33,6 +43,11 @@
       available: enemy.visible && state.enemies[enemy.enemyIndex].hp > 0
     }));
     return Targeting.findNearest(player, candidates, maxRange)?.enemy || null;
+  }
+
+  function combatTarget(maxRange = Infinity) {
+    if (selectedEnemyIndex !== null) return selectedEnemy(maxRange);
+    return nearestEnemy(maxRange);
   }
 
   function updateHud() {
@@ -109,7 +124,7 @@
     el("critical-chance").textContent = `${Math.round(CombatRules.CRITICAL_CHANCE * 100)}%`;
     el("critical-multiplier").textContent = `${String(CombatRules.CRITICAL_MULTIPLIER).replace(".", ",")}×`;
 
-    const target = nearestEnemy();
+    const target = selectedEnemy() || nearestEnemy();
     const remaining = livingEnemyCount();
     const targetDefinition = target ? EnemyRules.definition(target.definitionId) : null;
     el("enemy-label").textContent = targetDefinition ? `${targetDefinition.name} • NV. ${targetDefinition.level} • ${remaining} RESTANTE${remaining === 1 ? "" : "S"}` : "CLAREIRA SEGURA";
@@ -232,6 +247,7 @@
       player = this.add.sprite(World.playerSpawn.x, World.playerSpawn.y, "player-idle", 0).setScale(1.6 * this.characterScaleFactor).setOrigin(0.5, 0.82).setDepth(World.playerSpawn.y);
       player.setData("direction", "down");
       player.play("player-idle-down");
+      this.targetMarker = this.add.graphics().setDepth(998);
       this.createEnemies();
 
       this.physics.world.setBounds(0, 0, World.world.width, World.world.height);
@@ -248,7 +264,9 @@
         if (menuOpen || playerDying || pointer.event.target.closest("button,.game-controls")) return;
         const point = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
         if (Math.hypot(point.x - player.x, point.y - player.y) > 22) {
+          selectedEnemyIndex = null;
           pendingMeleeEnemyIndex = null;
+          this.updateTargetMarker();
           player.setData("tapTarget", { x: point.x, y: point.y });
         }
       });
@@ -364,6 +382,18 @@
       enemy.nameLabel.setPosition(enemy.x, y - 10);
     }
 
+    updateTargetMarker() {
+      this.targetMarker?.clear();
+      const target = selectedEnemy();
+      if (!target || !this.targetMarker) return;
+      const definition = EnemyRules.definition(target.definitionId);
+      const radius = definition.species === "slow-zombie" ? 27 : definition.species === "wolf" ? 23 : 19;
+      this.targetMarker.lineStyle(3, 0xf2c66d, 0.95);
+      this.targetMarker.strokeEllipse(target.x, target.y - 2, radius * 2, Math.round(radius * 0.72));
+      this.targetMarker.fillStyle(0xf2c66d, 0.22);
+      this.targetMarker.fillTriangle(target.x - 6, target.y - target.indicatorOffset - 13, target.x + 6, target.y - target.indicatorOffset - 13, target.x, target.y - target.indicatorOffset - 5);
+    }
+
     createEnemies() {
       const spriteConfig = {
         rat: { key: "zombie-rat-idle", scale: 1, offset: 27 },
@@ -382,7 +412,18 @@
         enemy.bobOffset = 0;
         enemy.attackAt = 0;
         enemy.healthBar = this.add.graphics().setDepth(999);
-        enemy.nameLabel = this.add.text(spawn.x, spawn.y - visual.offset - 10, `${definition.name} • NV. ${definition.level}`, this.labelStyle("#e6c2ad")).setOrigin(0.5).setDepth(1000);
+        enemy.nameLabel = this.add.text(spawn.x, spawn.y - enemy.indicatorOffset - 10, `${definition.name} • NV. ${definition.level}`, this.labelStyle("#e6c2ad")).setOrigin(0.5).setDepth(1000);
+        enemy.setInteractive({ useHandCursor: true });
+        enemy.on("pointerdown", (_pointer, _localX, _localY, event) => {
+          event?.stopPropagation();
+          if (playerDying || !enemy.visible || state.enemies[enemy.enemyIndex].hp <= 0) return;
+          selectedEnemyIndex = enemy.enemyIndex;
+          pendingMeleeEnemyIndex = null;
+          player.setData("tapTarget", null);
+          this.updateTargetMarker();
+          updateHud();
+          announce(`${definition.name} nível ${definition.level} selecionado como alvo.`);
+        });
         enemies.push(enemy);
         if (state.enemies[enemyIndex].hp <= 0) {
           enemy.setVisible(false);
@@ -415,6 +456,8 @@
       playerDying = true;
       actionReady = false;
       pendingMeleeEnemyIndex = null;
+      selectedEnemyIndex = null;
+      this.updateTargetMarker();
       player.setData("tapTarget", null);
       resetJoystick();
       const direction = player.getData("direction") || "down";
@@ -563,9 +606,10 @@
       World.solids.forEach(solid => context.fillRect(mapX(solid.x), mapY(solid.y), Math.max(1, solid.w / World.world.width * (width - margin * 2)), Math.max(1, solid.h / World.world.height * (height - margin * 2))));
       enemies.forEach(enemy => {
         if (!enemy.visible || state.enemies[enemy.enemyIndex].hp <= 0) return;
-        context.fillStyle = "#dc4d4d";
+        const selected = enemy.enemyIndex === selectedEnemyIndex;
+        context.fillStyle = selected ? "#ffd166" : "#dc4d4d";
         context.beginPath();
-        context.arc(mapX(enemy.x), mapY(enemy.y), 2.5, 0, Math.PI * 2);
+        context.arc(mapX(enemy.x), mapY(enemy.y), selected ? 4 : 2.5, 0, Math.PI * 2);
         context.fill();
       });
       context.fillStyle = "#f1bd55";
@@ -585,6 +629,7 @@
         this.moveEnemy(enemy, delta);
         this.updateEnemyIndicators(enemy);
       });
+      this.updateTargetMarker();
       if (this.time.now % 250 < delta) { updateHud(); this.drawMinimap(); }
     }
   }
@@ -626,10 +671,10 @@
     const range = state.action === "close" ? 58 : 285;
     let target = forcedTarget;
     if (target && (!target.visible || state.enemies[target.enemyIndex].hp <= 0 || Targeting.distanceBetween(player, target) > range)) target = null;
-    if (!target) target = nearestEnemy(range);
+    if (!target) target = combatTarget(range);
 
     if (!target && state.action === "close" && allowApproach) {
-      const approachTarget = nearestEnemy();
+      const approachTarget = selectedEnemy() || nearestEnemy();
       if (!approachTarget) { announce("Não há inimigos vivos para atacar."); return; }
       pendingMeleeEnemyIndex = approachTarget.enemyIndex;
       player.setData("tapTarget", null);
@@ -677,7 +722,9 @@
     if (enemyState.hp === 0) {
       const defeatedDefinition = EnemyRules.definition(target.definitionId);
       target.setVisible(false); target.nameLabel.setVisible(false);
+      if (selectedEnemyIndex === target.enemyIndex) selectedEnemyIndex = null;
       sceneRef.updateEnemyIndicators(target);
+      sceneRef.updateTargetMarker();
       state.coins += defeatedDefinition.coins;
       const coreDrop = EnemyRules.rollCoreDrop(defeatedDefinition);
       if (coreDrop) state.cores[coreDrop.level] = (state.cores[coreDrop.level] || 0) + 1;
