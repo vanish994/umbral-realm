@@ -1,0 +1,10 @@
+{
+  "name": "umbral-realm",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Protótipo PWA local do Umbral Realm",
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check src/game.js && node --check service-worker.js && node --test"
+  }
+}

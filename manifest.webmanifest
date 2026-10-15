@@ -1,7 +1,7 @@
 {
   "name": "Umbral Realm",
   "short_name": "Umbral Realm",
-  "description": "Um RPG 2D de fantasia sombria.",
+  "description": "RPG de ação e sobrevivência 2D em um apocalipse zumbi.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -9,6 +9,8 @@
   "background_color": "#11131a",
   "theme_color": "#11131a",
   "icons": [
-    {"src":"./icons/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+    {"src":"./icons/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src":"./icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"},
+    {"src":"./icons/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}
   ]
 }
