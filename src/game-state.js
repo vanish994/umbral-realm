@@ -1,11 +1,12 @@
 ((root, factory) => {
   const combatRules = root.UmbralCombatRules || (typeof require === "function" ? require("./combat-rules.js") : null);
   const enemyRules = root.UmbralEnemyRules || (typeof require === "function" ? require("./enemy-rules.js") : null);
-  const api = factory(combatRules, enemyRules);
+  const itemRules = root.UmbralItemRules || (typeof require === "function" ? require("./item-rules.js") : null);
+  const api = factory(combatRules, enemyRules, itemRules);
   if (typeof module === "object" && module.exports) module.exports = api;
   root.UmbralState = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, (CombatRules, EnemyRules) => {
-  if (!CombatRules || !EnemyRules) throw new Error("As regras do jogo não carregaram.");
+})(typeof globalThis !== "undefined" ? globalThis : this, (CombatRules, EnemyRules, ItemRules) => {
+  if (!CombatRules || !EnemyRules || !ItemRules) throw new Error("As regras do jogo não carregaram.");
 
   const MAX_LEVEL = 1000;
   const MAX_AMMO = 7;
@@ -66,6 +67,7 @@
         blades: CombatRules.normalizeSkill(raw.skills?.blades),
         firearms: CombatRules.normalizeSkill(raw.skills?.firearms)
       },
+      equipment: ItemRules.normalizeEquipment(raw.equipment),
       enemies,
       action: raw.action === "far" ? "far" : "close"
     };

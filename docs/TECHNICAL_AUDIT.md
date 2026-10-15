@@ -22,8 +22,18 @@
 | Zumbi lento | 10 | 155 | 12 | 140 | 16 | 26 s |
 | Zumbi lento | 12 | 190 | 14 | 175 | 20 | 30 s |
 
-- Faca e revólver `.38` representados pelas duas ações de combate preexistentes. Ao atacar com a faca fora do alcance, o personagem segue o inimigo vivo mais próximo e executa um golpe ao alcançá-lo; joystick, teclado, toque no mapa ou troca de arma cancelam a aproximação. O revólver mantém capacidade persistida de sete munições, mas a flag temporária `DEVELOPMENT_INFINITE_AMMO` evita consumo durante o desenvolvimento. O dano varia por golpe, recebe bônus moderado da skill correspondente e tem 8% de crítico com multiplicador 1,75; todos os valores continuam provisórios.
-- HUD de vida, XP, nível, moedas, munição e inimigo; controles de arma, ataque e interação acessíveis sobre a cena na orientação horizontal. O botão MENU abre uma composição autoral de mesa em CSS com a moldura de smartphone do Smart UI ampliada ao centro e pausa a cena, aproximando-se da referência promocional fornecida. O dispositivo usa uma proporção visual mais larga que o PNG-base para dar legibilidade aos dados e alvos de toque no Android horizontal. A página Status usa retrato, vida, equipamento rápido e detalhes de combate; Skills permanece funcional com progressão e faixas de dano. Inventário, Mapa e Missões aparecem na navegação como módulos explicitamente em desenvolvimento. Cada inimigo exibe nome, nível e barra de vida individual no mundo. Dano comum aparece em vermelho e crítico em dourado com texto, flash e tremor; XP geral ganho aparece em branco sobre o jogador e ouro atualiza silenciosamente. Avisos visuais e toast foram removidos, mantendo somente uma região invisível para leitores de tela. A apresentação ativa usa painéis, botões, barras e ícones selecionados do `Humble Gift - Smart UI.zip`; a moldura de smartphone está preservada para futuros menus.
+| Equipamento | Slot | Efeito-base |
+|---|---|---|
+| Faca | Lâminas | 11–15 de dano; recarga 500 ms |
+| Katana | Lâminas | 17–23 de dano; recarga 650 ms |
+| Revólver .38 | Armas de Fogo | 20–28 de dano; recarga 700 ms |
+| Pistola | Armas de Fogo | 16–22 de dano; recarga 450 ms |
+| Colete | Tronco | 15% de defesa |
+| Capacete | Cabeça | 8% de defesa |
+| Calça tática | Pernas | 7% de defesa |
+
+- Sete itens equipáveis e persistentes: faca, katana, revólver `.38`, pistola, colete, capacete e calça tática. Faca/katana usam Lâminas; revólver/pistola usam Armas de Fogo. A aproximação automática funciona com a arma branca equipada. O revólver e a pistola mantêm munição infinita pela flag temporária `DEVELOPMENT_INFINITE_AMMO`. Colete, capacete e calça somam até 30% de redução de dano; nenhum equipamento é desenhado sobre o personagem no mundo.
+- HUD de vida, XP, nível, moedas, munição e inimigo; controles de arma, ataque e interação acessíveis sobre a cena na orientação horizontal. O botão MENU abre uma composição autoral de mesa em CSS com a moldura de smartphone do Smart UI ampliada ao centro e pausa a cena, aproximando-se da referência promocional fornecida. O dispositivo usa uma proporção visual mais larga que o PNG-base para dar legibilidade aos dados e alvos de toque no Android horizontal. A página Status usa retrato, vida, defesa, equipamentos atuais e detalhes de combate; Skills mostra as faixas da arma equipada. A página Itens permite equipar e remover os sete itens. Mapa e Missões permanecem explicitamente em desenvolvimento. Cada inimigo exibe nome, nível e barra de vida individual no mundo. Dano comum aparece em vermelho e crítico em dourado com texto, flash e tremor; XP geral ganho aparece em branco sobre o jogador e ouro atualiza silenciosamente. Avisos visuais e toast foram removidos, mantendo somente uma região invisível para leitores de tela. A apresentação ativa usa painéis, botões, barras e ícones selecionados do `Humble Gift - Smart UI.zip`; a moldura de smartphone está preservada para futuros menus.
 - Mercador visível e diálogo simples, mas sem loja.
 - Salvamento local do estado numérico, agora normalizado contra campos ausentes/corrompidos e acionado também após alterações relevantes e ao ocultar/sair da página.
 - Manifesto, orientação horizontal e service worker. Phaser, shell e sprites usados pela cena são locais e pré-carregados para uso após a primeira visita.
@@ -36,18 +46,18 @@
 - Combate respeita alcance e recarga e reproduz efeitos distintos quando faca ou revólver acertam. A música `Wasteland`, de We Are All Astronauts, começa em volume baixo após a primeira interação e repete em loop. Ainda não há controles de volume, animações de ataque, projétil, chance de acerto, sangramento, fio da faca ou sujeira do revólver.
 - A “morte” recupera metade da vida e reposiciona o jogador; perda/recuperação ainda é uma decisão aberta no GDD.
 - XP geral e skills independentes de Lâminas e Armas de Fogo existem e são salvas. Cada acerto válido concede 4 XP à skill usada; o requisito parte de 20 e cresce por fator aproximado de 1,45 por nível. Cada nível adiciona 4% à faixa de dano-base da categoria; cada nível geral adiciona 1,5%, mantendo a skill como influência principal. A vida máxima do jogador parte de 100 e cresce 12 por nível. Esses números receberam testes de coerência, mas ainda não foram validados por playtest prolongado.
-- A recompensa é creditada diretamente; não existem entidades coletáveis, inventário nem tabelas de drop.
+- A recompensa é creditada diretamente e todos os sete equipamentos estão liberados no inventário de desenvolvimento; ainda não existem entidades coletáveis, aquisição de itens nem tabelas de drop.
 - O save preserva progresso e combate, mas não posição do jogador nem tempo restante de respawn.
 - Em telas horizontais baixas, o painel detalhado é ocultado para liberar o mapa; os comandos essenciais permanecem sobre a cena.
 
 ### Ausente em relação ao MVP do GDD
 
 - Estados e animações dedicadas de ataque/morte para as três espécies de inimigo.
-- Inventário, drops coletáveis e tabelas por espécie.
+- Drops coletáveis, aquisição de equipamentos e tabelas por espécie.
 - Compra e venda no mercador.
 - Medicamentos, munição encontrada/comprada e recarga.
 - Zona segura e área de exploração conectadas como regiões distintas.
-- Equipamento, fio da faca, sujeira e manutenção das armas.
+- Fio da faca, sujeira e manutenção das armas.
 - Testes automatizados de navegador e validação em aparelho Android real.
 
 ## Problemas e riscos encontrados
@@ -64,7 +74,7 @@
 
 1. **Validar e estabilizar o loop atual em navegador/Android:** carga, landscape, joystick, todos os botões, colisões do jogador e rato, morte, respawn, reload e modo offline. Corrigir qualquer regressão antes de ampliar sistemas.
 2. **Validar balanceamento dos inimigos em playtest:** as definições e testes puros existem; medir tempo para matar, dano recebido, progressão e espaço de perseguição no Android.
-3. **Implementar drops coletáveis e inventário mínimo:** recompensa física configurável, coleta explícita e persistência. Isso é pré-requisito para vender materiais.
+3. **Conectar drops ao inventário existente:** recompensa física configurável, coleta explícita, aquisição persistente e pré-requisito para vender materiais.
 4. **Implementar comerciante mínimo:** compra de munição e venda dos materiais existentes, com transações atômicas e testes contra saldo/estoque inválidos.
 5. **Adicionar segundo inimigo:** somente depois que o modelo de inimigo e drops for reutilizável; deve ter comportamento realmente distinto.
 6. **Refinar vida/morte e feedback de combate:** depende da decisão de consequência de morte ainda aberta e dos assets de animação disponíveis.
@@ -72,6 +82,6 @@
 
 ## Decisões pequenas adotadas
 
-- As ações genéricas “próxima” e “distante” foram nomeadas como a faca inicial e o revólver `.38`, pois ambos são equipamento inicial confirmado no GDD. No nível 1, a faca varia de 11 a 15 de dano e o revólver de 20 a 28, preservando aproximadamente as médias anteriores de 13 e 24; o revólver mantém capacidade-base de sete disparos, atualmente sem consumo pela flag de desenvolvimento. Esses números não foram promovidos a balanceamento definitivo.
+- As ações genéricas “próxima” e “distante” representam os slots de Lâminas e Armas de Fogo. Faca e revólver `.38` continuam como equipamento inicial; katana e pistola podem substituí-los pelo smartphone. As armas de fogo mantêm capacidade-base de sete disparos, atualmente sem consumo pela flag de desenvolvimento. Os números não foram promovidos a balanceamento definitivo.
 - O save inválido com vida zero é recuperado para um estado jogável porque o protótipo atual não possui estado persistente de morte.
 - O balanço do rato é visual e removido antes de calcular movimento/colisão, evitando que a oscilação altere sua posição lógica.

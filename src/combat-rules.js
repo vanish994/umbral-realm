@@ -50,8 +50,8 @@
     return levelsGained;
   }
 
-  function damageRange(action, skillLevel, playerLevel = 1) {
-    const weapon = WEAPONS[action] || WEAPONS.close;
+  function damageRange(action, skillLevel, playerLevel = 1, weaponStats = null) {
+    const weapon = weaponStats?.minDamage && weaponStats?.maxDamage ? weaponStats : WEAPONS[action] || WEAPONS.close;
     const level = whole(skillLevel, 1, 1, MAX_SKILL_LEVEL);
     const generalLevel = whole(playerLevel, 1, 1, Number.MAX_SAFE_INTEGER);
     const multiplier = 1 + (level - 1) * DAMAGE_PER_SKILL_LEVEL + (generalLevel - 1) * DAMAGE_PER_PLAYER_LEVEL;
@@ -61,8 +61,8 @@
     };
   }
 
-  function rollDamage(action, skillLevel, playerLevel = 1, random = Math.random) {
-    const range = damageRange(action, skillLevel, playerLevel);
+  function rollDamage(action, skillLevel, playerLevel = 1, weaponStats = null, random = Math.random) {
+    const range = damageRange(action, skillLevel, playerLevel, weaponStats);
     const baseRoll = Math.max(0, Math.min(0.999999, Number(random()) || 0));
     const baseDamage = range.min + Math.floor(baseRoll * (range.max - range.min + 1));
     const critical = (Number(random()) || 0) < CRITICAL_CHANCE;

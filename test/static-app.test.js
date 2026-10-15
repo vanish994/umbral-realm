@@ -126,6 +126,13 @@ test("smartphone menu exposes functional status and skills plus planned navigati
   }
 });
 
+test("smartphone inventory exposes all seven equippable items", () => {
+  const html = read("index.html");
+  const itemIds = [...html.matchAll(/data-equip-item="([^"]+)"/g)].map(match => match[1]);
+  assert.deepEqual(itemIds, ["knife", "katana", "revolver", "pistol", "vest", "helmet", "pants"]);
+  assert.match(html, /id="status-defense"/);
+});
+
 test("landscape scene exposes essential touch commands", () => {
   const html = read("index.html");
   for (const id of ["joystick", "touch-action-close", "touch-action-far", "touch-interact", "attack"]) {

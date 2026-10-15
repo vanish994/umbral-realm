@@ -20,6 +20,7 @@ test("normalize supplies a playable initial state with six scaled enemies", () =
   assert.equal(state.charges, 7);
   assert.equal(state.action, "close");
   assert.deepEqual(state.skills, { blades: { level: 1, xp: 0 }, firearms: { level: 1, xp: 0 } });
+  assert.deepEqual(state.equipment, { blade: "knife", firearm: "revolver", vest: null, helmet: null, pants: null });
   assert.deepEqual(state.enemies, freshEnemies);
 });
 
@@ -27,6 +28,7 @@ test("normalize repairs corrupt fields and enemy values", () => {
   const state = normalize({
     hp: "not a number", xp: -20, level: 0, coins: -5, charges: 100,
     skills: { blades: { level: 0, xp: -1 }, firearms: { level: 2, xp: 40 } },
+    equipment: { blade: "katana", firearm: "invalid", vest: "vest", helmet: "knife", pants: "pants" },
     enemies: [{ id: "wolf-5", hp: 500 }, { id: "rat-1", hp: -12 }], action: "unknown"
   });
   assert.equal(state.hp, 100);
@@ -35,6 +37,7 @@ test("normalize repairs corrupt fields and enemy values", () => {
   assert.equal(state.coins, 0);
   assert.equal(state.charges, 7);
   assert.deepEqual(state.skills, { blades: { level: 1, xp: 0 }, firearms: { level: 3, xp: 11 } });
+  assert.deepEqual(state.equipment, { blade: "katana", firearm: "revolver", vest: "vest", helmet: null, pants: "pants" });
   assert.deepEqual(state.enemies, [
     { id: "rat-1", hp: 0 }, { id: "rat-2", hp: 58 }, { id: "wolf-5", hp: 92 },
     { id: "wolf-6", hp: 108 }, { id: "slow-zombie-10", hp: 155 }, { id: "slow-zombie-12", hp: 190 }

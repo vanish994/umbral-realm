@@ -7,7 +7,8 @@
   const CombatFeedback = window.UmbralCombatFeedback;
   const CombatRules = window.UmbralCombatRules;
   const EnemyRules = window.UmbralEnemyRules;
-  if (!State || !World || !Targeting || !CombatFeedback || !CombatRules || !EnemyRules) throw new Error("Os módulos do jogo não carregaram.");
+  const ItemRules = window.UmbralItemRules;
+  if (!State || !World || !Targeting || !CombatFeedback || !CombatRules || !EnemyRules || !ItemRules) throw new Error("Os módulos do jogo não carregaram.");
 
   const state = State.normalize(saved);
   let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeEnemyIndex = null, menuOpen = false;
@@ -54,10 +55,35 @@
     el("status-coins").textContent = String(state.coins);
     el("status-ammo").textContent = CombatRules.DEVELOPMENT_INFINITE_AMMO ? "∞" : `${state.charges} / ${State.MAX_AMMO}`;
     el("status-xp").textContent = `${state.xp} / ${next}`;
+    const equippedDefense = ItemRules.defense(state.equipment);
+    el("status-defense").textContent = `${Math.round(equippedDefense * 100)}%`;
+    const equippedBlade = ItemRules.weaponForAction(state.equipment, "close");
+    const equippedFirearm = ItemRules.weaponForAction(state.equipment, "far");
+    for (const [slot, itemId] of Object.entries(state.equipment)) {
+      const image = el(`equipped-${slot}`);
+      if (!image) continue;
+      const item = ItemRules.ITEMS[itemId];
+      if (item) { image.src = item.image; image.alt = item.name; image.parentElement.classList.add("equipped"); }
+      else { image.removeAttribute("src"); image.alt = "Espaço vazio"; image.parentElement.classList.remove("equipped"); }
+    }
+    el("equipped-summary-title").textContent = `${equippedBlade.name.toUpperCase()} + ${equippedFirearm.name.toUpperCase()}`;
+    el("equipped-summary-text").textContent = `Defesa equipada: ${Math.round(equippedDefense * 100)}%. Abra Itens para trocar o equipamento.`;
+    document.querySelectorAll("[data-equip-item]").forEach(button => {
+      const item = ItemRules.ITEMS[button.dataset.equipItem];
+      const equipped = state.equipment[item.slot] === item.id;
+      button.classList.toggle("equipped", equipped);
+      button.setAttribute("aria-pressed", String(equipped));
+      button.querySelector("b").textContent = equipped ? "EQUIPADO" : "EQUIPAR";
+    });
+    el("action-close").textContent = equippedBlade.name.toUpperCase();
+    el("touch-action-close").textContent = equippedBlade.name.toUpperCase();
+    el("action-far").textContent = equippedFirearm.name.toUpperCase();
+    el("touch-action-far").textContent = equippedFirearm.id === "revolver" ? ".38" : "PISTOLA";
     for (const [skillName, action] of [["blades", "close"], ["firearms", "far"]]) {
       const skill = state.skills[skillName];
       const required = CombatRules.skillXpNeeded(skill.level);
-      const range = CombatRules.damageRange(action, skill.level, state.level);
+      const weapon = ItemRules.weaponForAction(state.equipment, action);
+      const range = CombatRules.damageRange(action, skill.level, state.level, weapon);
       el(`${skillName}-level`).textContent = `Nv. ${skill.level}`;
       el(`${skillName}-xp`).textContent = `${skill.xp} / ${required} XP`;
       el(`${skillName}-bar`).style.width = `${skill.xp / required * 100}%`;
@@ -72,7 +98,7 @@
     el("enemy-label").textContent = targetDefinition ? `${targetDefinition.name} • NV. ${targetDefinition.level} • ${remaining} RESTANTE${remaining === 1 ? "" : "S"}` : "CLAREIRA SEGURA";
     el("enemy-hp-label").textContent = targetDefinition ? `${state.enemies[target.enemyIndex].hp} / ${targetDefinition.maxHp}` : "Sem ameaça";
     el("enemy-hp-bar").style.width = `${targetDefinition ? state.enemies[target.enemyIndex].hp / targetDefinition.maxHp * 100 : 0}%`;
-    el("combat-info").textContent = state.action === "close" ? "Faca de cozinha • alcance curto" : CombatRules.DEVELOPMENT_INFINITE_AMMO ? "Revólver .38 • munição infinita" : "Revólver .38 • consome munição";
+    el("combat-info").textContent = state.action === "close" ? `${equippedBlade.name} • alcance curto` : CombatRules.DEVELOPMENT_INFINITE_AMMO ? `${equippedFirearm.name} • munição infinita` : `${equippedFirearm.name} • consome munição`;
   }
 
   function persistGame(showFeedback = false) {
@@ -399,8 +425,9 @@
       if (targetX === player.x && distance <= contactRange) {
         if (!enemy.attackAt || this.time.now >= enemy.attackAt) {
           enemy.attackAt = this.time.now + definition.attackCooldown;
-          state.hp = Math.max(0, state.hp - definition.damage);
-          this.showDamageNumber(player, definition.damage);
+          const receivedDamage = ItemRules.incomingDamage(definition.damage, state.equipment);
+          state.hp = Math.max(0, state.hp - receivedDamage);
+          this.showDamageNumber(player, receivedDamage);
           announce(`${definition.name} nível ${definition.level} atingiu você.`);
           if (state.hp === 0) {
             state.hp = Math.floor(maxHp() / 2);
@@ -465,7 +492,8 @@
     if (menuOpen) return;
     pendingMeleeEnemyIndex = null;
     state.action = action; updateHud(); persistGame();
-    announce(action === "close" ? "Faca selecionada: atacar aproxima você do inimigo mais próximo." : CombatRules.DEVELOPMENT_INFINITE_AMMO ? "Revólver .38 selecionado com munição infinita durante o desenvolvimento." : "Revólver .38 selecionado: cada disparo consome uma munição.");
+    const weapon = ItemRules.weaponForAction(state.equipment, action);
+    announce(action === "close" ? `${weapon.name} selecionada: atacar aproxima você do inimigo mais próximo.` : CombatRules.DEVELOPMENT_INFINITE_AMMO ? `${weapon.name} selecionada com munição infinita durante o desenvolvimento.` : `${weapon.name} selecionada: cada disparo consome uma munição.`);
   }
 
   function resolveAction(allowApproach = true, forcedTarget = null) {
@@ -481,22 +509,26 @@
       pendingMeleeEnemyIndex = approachTarget.enemyIndex;
       player.setData("tapTarget", null);
       const approachDefinition = EnemyRules.definition(approachTarget.definitionId);
-      announce(`Aproximando da faca até ${approachDefinition.name} nível ${approachDefinition.level}. Use o joystick para cancelar.`);
+      const blade = ItemRules.weaponForAction(state.equipment, "close");
+      announce(`Aproximando com ${blade.name} até ${approachDefinition.name} nível ${approachDefinition.level}. Use o joystick para cancelar.`);
       return;
     }
-    if (!target) { announce(state.action === "close" ? "Não foi possível alcançar o inimigo com a faca." : "Nenhum inimigo ao alcance do revólver."); return; }
+    if (!target) {
+      const selectedWeapon = ItemRules.weaponForAction(state.equipment, state.action);
+      announce(state.action === "close" ? `Não foi possível alcançar o inimigo com ${selectedWeapon.name}.` : `Nenhum inimigo ao alcance de ${selectedWeapon.name}.`);
+      return;
+    }
 
     pendingMeleeEnemyIndex = null;
     const action = state.action;
-    let cooldown;
-    if (action === "close") cooldown = 500;
-    else {
-      if (!CombatRules.DEVELOPMENT_INFINITE_AMMO && state.charges <= 0) { announce("O revólver está sem munição. Selecione a faca."); return; }
+    const weapon = ItemRules.weaponForAction(state.equipment, action);
+    if (action === "far") {
+      if (!CombatRules.DEVELOPMENT_INFINITE_AMMO && state.charges <= 0) { announce(`${weapon.name} está sem munição. Selecione a arma branca.`); return; }
       if (!CombatRules.DEVELOPMENT_INFINITE_AMMO) state.charges -= 1;
-      cooldown = 700;
     }
     const skillName = CombatRules.WEAPONS[action].skill;
-    const roll = CombatRules.rollDamage(action, state.skills[skillName].level, state.level);
+    const roll = CombatRules.rollDamage(action, state.skills[skillName].level, state.level, weapon);
+    const cooldown = weapon.cooldown;
     const damage = roll.damage;
     CombatRules.grantSkillXp(state.skills[skillName]);
     actionReady = false;
@@ -539,6 +571,16 @@
       button.setAttribute("aria-pressed", String(selected));
     });
     el("menu-title").textContent = menuTitles[page];
+  }
+
+  function equipItem(itemId) {
+    const item = ItemRules.ITEMS[itemId];
+    if (!item) return;
+    const wasEquipped = state.equipment[item.slot] === item.id;
+    state.equipment = ItemRules.equip(state.equipment, itemId);
+    updateHud();
+    persistGame();
+    announce(!item.action && wasEquipped ? `${item.name} removido.` : `${item.name} equipado.`);
   }
 
   function setMenuOpen(open) {
@@ -594,6 +636,8 @@
   el("open-menu").addEventListener("click", () => setMenuOpen(!menuOpen));
   el("close-menu").addEventListener("click", () => setMenuOpen(false));
   document.querySelectorAll("[data-menu-tab]").forEach(button => button.addEventListener("click", () => selectMenuPage(button.dataset.menuTab)));
+  document.querySelectorAll("[data-equip-item]").forEach(button => button.addEventListener("click", () => equipItem(button.dataset.equipItem)));
+  document.querySelectorAll("[data-open-item-slot]").forEach(button => button.addEventListener("click", () => selectMenuPage("inventory")));
   document.addEventListener("keydown", event => {
     if (event.key === "Escape" && menuOpen) { setMenuOpen(false); return; }
     if (event.code === "Space") { event.preventDefault(); resolveAction(); }
