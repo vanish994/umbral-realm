@@ -3,17 +3,17 @@ const test = require("node:test");
 const { ENEMIES, definition, playerMaxHp } = require("../src/enemy-rules.js");
 
 test("enemy roster follows the requested level bands", () => {
-  assert.deepEqual(ENEMIES.filter(enemy => enemy.species === "rat").map(enemy => enemy.level), [1, 2]);
-  assert.deepEqual(ENEMIES.filter(enemy => enemy.species === "wolf").map(enemy => enemy.level), [5, 6]);
-  assert.deepEqual(ENEMIES.filter(enemy => enemy.species === "slow-zombie").map(enemy => enemy.level), [10, 12]);
+  assert.deepEqual(ENEMIES.filter(enemy => enemy.species === "rat").map(enemy => enemy.level), [1, 1, 2, 2]);
+  assert.deepEqual(ENEMIES.filter(enemy => enemy.species === "wolf").map(enemy => enemy.level), [5, 5, 6, 6]);
+  assert.deepEqual(ENEMIES.filter(enemy => enemy.species === "slow-zombie").map(enemy => enemy.level), [10, 10, 11, 12]);
 });
 
 test("higher enemy bands increase health, damage, rewards, and respawn time", () => {
   for (let index = 1; index < ENEMIES.length; index += 1) {
-    assert.ok(ENEMIES[index].maxHp > ENEMIES[index - 1].maxHp);
+    assert.ok(ENEMIES[index].maxHp >= ENEMIES[index - 1].maxHp);
     assert.ok(ENEMIES[index].damage >= ENEMIES[index - 1].damage);
-    assert.ok(ENEMIES[index].xp > ENEMIES[index - 1].xp);
-    assert.ok(ENEMIES[index].coins > ENEMIES[index - 1].coins);
+    assert.ok(ENEMIES[index].xp >= ENEMIES[index - 1].xp);
+    assert.ok(ENEMIES[index].coins >= ENEMIES[index - 1].coins);
     assert.ok(ENEMIES[index].respawnMs >= ENEMIES[index - 1].respawnMs);
   }
 });

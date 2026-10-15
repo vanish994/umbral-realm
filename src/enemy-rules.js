@@ -3,25 +3,27 @@
   if (typeof module === "object" && module.exports) module.exports = api;
   root.UmbralEnemyRules = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, () => {
+  const make = (id, species, name, level, maxHp, damage, speed, chaseRange, attackCooldown, xp, coins, respawnMs) => Object.freeze({ id, species, name, level, maxHp, damage, speed, chaseRange, attackCooldown, xp, coins, respawnMs });
   const ENEMIES = Object.freeze([
-    Object.freeze({ id: "rat-1", species: "rat", name: "RATO ZUMBI", level: 1, maxHp: 45, damage: 4, speed: 25, chaseRange: 175, attackCooldown: 1250, xp: 30, coins: 4, respawnMs: 12000 }),
-    Object.freeze({ id: "rat-2", species: "rat", name: "RATO ZUMBI", level: 2, maxHp: 58, damage: 5, speed: 27, chaseRange: 180, attackCooldown: 1150, xp: 40, coins: 5, respawnMs: 13000 }),
-    Object.freeze({ id: "wolf-5", species: "wolf", name: "LOBO ZUMBI", level: 5, maxHp: 92, damage: 8, speed: 42, chaseRange: 220, attackCooldown: 950, xp: 80, coins: 9, respawnMs: 18000 }),
-    Object.freeze({ id: "wolf-6", species: "wolf", name: "LOBO ZUMBI", level: 6, maxHp: 108, damage: 9, speed: 45, chaseRange: 230, attackCooldown: 900, xp: 95, coins: 11, respawnMs: 20000 }),
-    Object.freeze({ id: "slow-zombie-10", species: "slow-zombie", name: "ZUMBI LENTO", level: 10, maxHp: 155, damage: 12, speed: 18, chaseRange: 165, attackCooldown: 1550, xp: 140, coins: 16, respawnMs: 26000 }),
-    Object.freeze({ id: "slow-zombie-12", species: "slow-zombie", name: "ZUMBI LENTO", level: 12, maxHp: 190, damage: 14, speed: 20, chaseRange: 175, attackCooldown: 1450, xp: 175, coins: 20, respawnMs: 30000 })
+    make("rat-1", "rat", "RATO ZUMBI", 1, 45, 4, 25, 175, 1250, 30, 4, 12000),
+    make("rat-1b", "rat", "RATO ZUMBI", 1, 45, 4, 25, 175, 1250, 30, 4, 12000),
+    make("rat-2", "rat", "RATO ZUMBI", 2, 58, 5, 27, 180, 1150, 40, 5, 13000),
+    make("rat-2b", "rat", "RATO ZUMBI", 2, 58, 5, 27, 180, 1150, 40, 5, 13000),
+    make("wolf-5", "wolf", "LOBO ZUMBI", 5, 92, 8, 42, 220, 950, 80, 9, 18000),
+    make("wolf-5b", "wolf", "LOBO ZUMBI", 5, 92, 8, 42, 220, 950, 80, 9, 18000),
+    make("wolf-6", "wolf", "LOBO ZUMBI", 6, 108, 9, 45, 230, 900, 95, 11, 20000),
+    make("wolf-6b", "wolf", "LOBO ZUMBI", 6, 108, 9, 45, 230, 900, 95, 11, 20000),
+    make("slow-zombie-10", "slow-zombie", "ZUMBI LENTO", 10, 155, 12, 18, 165, 1550, 140, 16, 26000),
+    make("slow-zombie-10b", "slow-zombie", "ZUMBI LENTO", 10, 155, 12, 18, 165, 1550, 140, 16, 26000),
+    make("slow-zombie-11", "slow-zombie", "ZUMBI LENTO", 11, 172, 13, 19, 170, 1500, 155, 18, 28000),
+    make("slow-zombie-12", "slow-zombie", "ZUMBI LENTO", 12, 190, 14, 20, 175, 1450, 175, 20, 30000)
   ]);
 
   const BY_ID = Object.freeze(Object.fromEntries(ENEMIES.map(enemy => [enemy.id, enemy])));
-
-  function definition(idOrIndex) {
-    return typeof idOrIndex === "number" ? ENEMIES[idOrIndex] : BY_ID[idOrIndex];
-  }
-
+  function definition(idOrIndex) { return typeof idOrIndex === "number" ? ENEMIES[idOrIndex] : BY_ID[idOrIndex]; }
   function playerMaxHp(level) {
     const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
     return 100 + (safeLevel - 1) * 12;
   }
-
   return { ENEMIES, BY_ID, definition, playerMaxHp };
 });

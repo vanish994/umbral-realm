@@ -3,16 +3,18 @@
   if (typeof module === "object" && module.exports) module.exports = api;
   root.UmbralCombatRules = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, () => {
-  // Flag temporária do playtest: desligar quando economia e recarga forem implementadas.
-  const DEVELOPMENT_INFINITE_AMMO = true;
+  // Flag temporária: carregadores precisam recarregar, mas a reserva não se esgota no playtest.
+  const DEVELOPMENT_INFINITE_RESERVE = true;
   const MAX_SKILL_LEVEL = 100;
   const SKILL_XP_PER_HIT = 4;
   const CRITICAL_CHANCE = 0.08;
   const CRITICAL_MULTIPLIER = 1.75;
+  const FIREARM_ACCURACY_STILL = 0.94;
+  const FIREARM_ACCURACY_MOVING = 0.76;
   const DAMAGE_PER_SKILL_LEVEL = 0.04;
   const DAMAGE_PER_PLAYER_LEVEL = 0.015;
   const WEAPONS = Object.freeze({
-    close: Object.freeze({ skill: "blades", minDamage: 11, maxDamage: 15 }),
+    close: Object.freeze({ skill: "blades", minDamage: 9, maxDamage: 13 }),
     far: Object.freeze({ skill: "firearms", minDamage: 20, maxDamage: 28 })
   });
 
@@ -61,6 +63,14 @@
     };
   }
 
+  function hitChance(action, moving) {
+    return action === "far" ? (moving ? FIREARM_ACCURACY_MOVING : FIREARM_ACCURACY_STILL) : 1;
+  }
+
+  function rollHit(action, moving, random = Math.random) {
+    return (Number(random()) || 0) < hitChance(action, moving);
+  }
+
   function rollDamage(action, skillLevel, playerLevel = 1, weaponStats = null, random = Math.random) {
     const range = damageRange(action, skillLevel, playerLevel, weaponStats);
     const baseRoll = Math.max(0, Math.min(0.999999, Number(random()) || 0));
@@ -74,16 +84,20 @@
   }
 
   return {
-    DEVELOPMENT_INFINITE_AMMO,
+    DEVELOPMENT_INFINITE_RESERVE,
     MAX_SKILL_LEVEL,
     SKILL_XP_PER_HIT,
     CRITICAL_CHANCE,
     CRITICAL_MULTIPLIER,
+    FIREARM_ACCURACY_STILL,
+    FIREARM_ACCURACY_MOVING,
     WEAPONS,
     skillXpNeeded,
     normalizeSkill,
     grantSkillXp,
     damageRange,
+    hitChance,
+    rollHit,
     rollDamage
   };
 });

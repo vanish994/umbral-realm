@@ -9,7 +9,6 @@
   if (!CombatRules || !EnemyRules || !ItemRules) throw new Error("As regras do jogo não carregaram.");
 
   const MAX_LEVEL = 1000;
-  const MAX_AMMO = 7;
 
   function integer(value, fallback, min, max) {
     const parsed = Number(value);
@@ -23,6 +22,14 @@
 
   function normalizeEnemy(raw, definition) {
     return { id: definition.id, hp: integer(raw?.hp, definition.maxHp, 0, definition.maxHp) };
+  }
+
+  function normalizeAmmo(raw = {}, legacyCharges) {
+    const revolverFallback = integer(legacyCharges, ItemRules.ITEMS.revolver.magazineSize, 0, ItemRules.ITEMS.revolver.magazineSize);
+    return {
+      revolver: integer(raw.revolver, revolverFallback, 0, ItemRules.ITEMS.revolver.magazineSize),
+      pistol: integer(raw.pistol, ItemRules.ITEMS.pistol.magazineSize, 0, ItemRules.ITEMS.pistol.magazineSize)
+    };
   }
 
   function normalize(raw = {}) {
@@ -62,7 +69,7 @@
       level,
       coins: integer(raw.coins, 0, 0, Number.MAX_SAFE_INTEGER),
       talked: Boolean(raw.talked),
-      charges: integer(raw.charges, MAX_AMMO, 0, MAX_AMMO),
+      ammo: normalizeAmmo(raw.ammo, raw.charges),
       skills: {
         blades: CombatRules.normalizeSkill(raw.skills?.blades),
         firearms: CombatRules.normalizeSkill(raw.skills?.firearms)
@@ -85,5 +92,5 @@
     return levelsGained;
   }
 
-  return { MAX_AMMO, maxHp, normalize, grantXp };
+  return { maxHp, normalize, grantXp };
 });

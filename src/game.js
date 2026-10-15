@@ -11,7 +11,7 @@
   if (!State || !World || !Targeting || !CombatFeedback || !CombatRules || !EnemyRules || !ItemRules) throw new Error("Os módulos do jogo não carregaram.");
 
   const state = State.normalize(saved);
-  let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeEnemyIndex = null, menuOpen = false;
+  let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeEnemyIndex = null, menuOpen = false, reloadState = null;
   const enemies = [];
   const touch = { x: 0, y: 0 };
   const el = id => document.getElementById(id);
@@ -40,11 +40,16 @@
     el("hp-label").textContent = `${state.hp} / ${maxHp()}`;
     el("hp-bar").style.width = `${state.hp / maxHp() * 100}%`;
     const next = state.level * 100;
+    const equippedBlade = ItemRules.weaponForAction(state.equipment, "close");
+    const equippedFirearm = ItemRules.weaponForAction(state.equipment, "far");
+    const loadedAmmo = state.ammo[equippedFirearm.id];
+    const isReloading = reloadState?.weaponId === equippedFirearm.id;
     el("xp-label").textContent = `${state.xp} / ${next} XP`;
     el("xp-bar").style.width = `${state.xp / next * 100}%`;
     el("level").textContent = `Nv. ${state.level}`;
     el("coins").textContent = String(state.coins);
-    el("charge-label").textContent = CombatRules.DEVELOPMENT_INFINITE_AMMO ? "Munição .38: ∞ (DESENVOLVIMENTO)" : `Munição .38: ${state.charges} / ${State.MAX_AMMO}`;
+    if (player) el("location-label").textContent = World.areaAt(player.x).name;
+    el("charge-label").textContent = `${equippedFirearm.name}: ${loadedAmmo} / ${equippedFirearm.magazineSize}${CombatRules.DEVELOPMENT_INFINITE_RESERVE ? " • reserva ∞" : ""}${isReloading ? " • recarregando" : ""}`;
     ["action-close", "touch-action-close"].forEach(id => el(id)?.classList.toggle("selected", state.action === "close"));
     ["action-far", "touch-action-far"].forEach(id => el(id)?.classList.toggle("selected", state.action === "far"));
     ["action-close", "touch-action-close"].forEach(id => el(id)?.setAttribute("aria-pressed", String(state.action === "close")));
@@ -53,12 +58,10 @@
     el("status-level").textContent = String(state.level);
     el("status-hp").textContent = `${state.hp} / ${maxHp()} PV`;
     el("status-coins").textContent = String(state.coins);
-    el("status-ammo").textContent = CombatRules.DEVELOPMENT_INFINITE_AMMO ? "∞" : `${state.charges} / ${State.MAX_AMMO}`;
+    el("status-ammo").textContent = `${loadedAmmo} / ${equippedFirearm.magazineSize}${CombatRules.DEVELOPMENT_INFINITE_RESERVE ? " + ∞" : ""}`;
     el("status-xp").textContent = `${state.xp} / ${next}`;
     const equippedDefense = ItemRules.defense(state.equipment);
     el("status-defense").textContent = `${Math.round(equippedDefense * 100)}%`;
-    const equippedBlade = ItemRules.weaponForAction(state.equipment, "close");
-    const equippedFirearm = ItemRules.weaponForAction(state.equipment, "far");
     for (const [slot, itemId] of Object.entries(state.equipment)) {
       const image = el(`equipped-${slot}`);
       if (!image) continue;
@@ -79,6 +82,12 @@
     el("touch-action-close").textContent = equippedBlade.name.toUpperCase();
     el("action-far").textContent = equippedFirearm.name.toUpperCase();
     el("touch-action-far").textContent = equippedFirearm.id === "revolver" ? ".38" : "PISTOLA";
+    ["reload", "touch-reload"].forEach(id => {
+      const button = el(id);
+      if (!button) return;
+      button.disabled = Boolean(reloadState) || loadedAmmo >= equippedFirearm.magazineSize;
+      button.textContent = isReloading ? "RECARREGANDO…" : "RECARREGAR";
+    });
     for (const [skillName, action] of [["blades", "close"], ["firearms", "far"]]) {
       const skill = state.skills[skillName];
       const required = CombatRules.skillXpNeeded(skill.level);
@@ -98,7 +107,7 @@
     el("enemy-label").textContent = targetDefinition ? `${targetDefinition.name} • NV. ${targetDefinition.level} • ${remaining} RESTANTE${remaining === 1 ? "" : "S"}` : "CLAREIRA SEGURA";
     el("enemy-hp-label").textContent = targetDefinition ? `${state.enemies[target.enemyIndex].hp} / ${targetDefinition.maxHp}` : "Sem ameaça";
     el("enemy-hp-bar").style.width = `${targetDefinition ? state.enemies[target.enemyIndex].hp / targetDefinition.maxHp * 100 : 0}%`;
-    el("combat-info").textContent = state.action === "close" ? `${equippedBlade.name} • alcance curto` : CombatRules.DEVELOPMENT_INFINITE_AMMO ? `${equippedFirearm.name} • munição infinita` : `${equippedFirearm.name} • consome munição`;
+    el("combat-info").textContent = state.action === "close" ? `${equippedBlade.name} • alcance curto` : `${equippedFirearm.name} • ${loadedAmmo}/${equippedFirearm.magazineSize}${isReloading ? " • recarregando" : ""}`;
   }
 
   function persistGame(showFeedback = false) {
@@ -110,6 +119,27 @@
       if (showFeedback) announce("Não foi possível salvar neste navegador.");
       return false;
     }
+  }
+
+  function isPlayerMoving() {
+    if (!player || !cursors || !moveKeys) return false;
+    return Boolean(player.getData("tapTarget") || pendingMeleeEnemyIndex !== null || cursors.left.isDown || cursors.right.isDown || cursors.up.isDown || cursors.down.isDown || moveKeys.A.isDown || moveKeys.D.isDown || moveKeys.W.isDown || moveKeys.S.isDown || Math.abs(touch.x) > 0.05 || Math.abs(touch.y) > 0.05);
+  }
+
+  function reloadFirearm() {
+    const weapon = ItemRules.weaponForAction(state.equipment, "far");
+    if (reloadState || state.ammo[weapon.id] >= weapon.magazineSize) return false;
+    reloadState = { weaponId: weapon.id, endsAt: Date.now() + weapon.reloadMs };
+    updateHud();
+    announce(`Recarregando ${weapon.name.toLowerCase()}.`);
+    window.setTimeout(() => {
+      state.ammo[weapon.id] = weapon.magazineSize;
+      reloadState = null;
+      persistGame();
+      updateHud();
+      announce(`${weapon.name} recarregado.`);
+    }, weapon.reloadMs);
+    return true;
   }
 
   if (!window.Phaser) {
@@ -129,7 +159,7 @@
       this.load.spritesheet("zombie-wolf-idle", "./assets/enemies/zombie-wolf/idle.png", { frameWidth: 32, frameHeight: 32 });
       this.load.spritesheet("slow-zombie-idle", "./assets/enemies/slow-zombie/idle.png", { frameWidth: 48, frameHeight: 48 });
       this.load.spritesheet("merchant-idle", "./assets/npcs/merchant/Um_npc_mercador_estilo_o-Idle.png", { frameWidth: 32, frameHeight: 32 });
-      ["ground-dark", "ground-detail", "small-oak", "bush", "tires-grass", "tire", "brick-debris", "garbage-bin", "barrel-rust-red", "destroyed-wall-corner", "destroyed-wall"].forEach(key => {
+      ["ground-dark", "ground-bleak", "ground-detail", "small-oak", "bush", "tires-grass", "tire", "brick-debris", "garbage-bin", "barrel-rust-red", "destroyed-wall-corner", "destroyed-wall", "brick-wall-tile", "brick-ruin-tile"].forEach(key => {
         this.load.image(key, `./assets/environment/trail/${key}.png`);
       });
       this.load.audio("knife-stab", "./assets/audio/knife-stab.mp3");
@@ -140,21 +170,21 @@
       sceneRef = this;
       this.solids = World.solids.map(solid => ({ ...solid }));
       this.cameras.main.setBackgroundColor("#17231c");
-      this.add.tileSprite(0, 0, World.world.width, World.world.height, "ground-dark").setOrigin(0).setDepth(0);
+      World.areas.forEach(area => {
+        this.add.tileSprite(area.startX, 0, area.endX - area.startX, World.world.height, area.ground).setOrigin(0).setDepth(0);
+      });
       World.groundDetails.forEach(([x, y]) => this.add.image(x, y, "ground-detail").setScale(2).setAlpha(0.7).setDepth(1));
 
       const g = this.add.graphics().setDepth(1);
-      // Trilha autoral em três trechos; a clareira fecha a jornada no lado leste.
+      // Estrada linear conecta as três áreas hostis ao refúgio no extremo leste.
       g.fillStyle(0x55483a, 1);
-      g.fillRoundedRect(-35, 300, 455, 120, 52);
-      g.fillRoundedRect(350, 250, 390, 120, 52);
-      g.fillRoundedRect(660, 310, 355, 120, 52);
-      g.fillEllipse(1080, 360, 370, 310);
+      g.fillRoundedRect(-35, 355, World.world.width + 70, 190, 70);
       g.lineStyle(3, 0x75624b, 0.7);
-      g.strokeRoundedRect(-35, 300, 455, 120, 52);
-      g.strokeRoundedRect(350, 250, 390, 120, 52);
-      g.strokeRoundedRect(660, 310, 355, 120, 52);
-      g.strokeEllipse(1080, 360, 370, 310);
+      g.strokeRoundedRect(-35, 355, World.world.width + 70, 190, 70);
+      World.areas.slice(1).forEach(area => {
+        g.lineStyle(4, 0x17191a, 0.42);
+        g.lineBetween(area.startX, 0, area.startX, World.world.height);
+      });
 
       // Ruínas fixas ajudam a orientar o jogador e correspondem aos retângulos de colisão.
       g.fillStyle(0x4a4c4d, 1);
@@ -170,9 +200,10 @@
         return sprite;
       });
 
-      this.add.text(62, 440, "TRILHA DOS INFECTADOS", this.labelStyle("#d6c49f")).setDepth(900);
-      this.add.text(445, 85, "RUÍNAS DO POSTO", this.labelStyle("#b9b09b")).setDepth(900);
-      this.add.text(1010, 190, "CLAREIRA DO REFÚGIO", this.labelStyle("#f0d7a0")).setDepth(900);
+      World.areas.forEach((area, index) => {
+        const color = index === World.areas.length - 1 ? "#f0d7a0" : "#d6c49f";
+        this.add.text((area.startX + area.endX) / 2, 58, area.name, this.labelStyle(color)).setOrigin(0.5).setDepth(900);
+      });
 
       this.createCampfire();
       this.createAnimations();
@@ -272,6 +303,13 @@
         ease: "Cubic.easeOut",
         onComplete: () => number.destroy()
       });
+    }
+
+    showMissNumber(target) {
+      const number = this.add.text(target.x, target.y - 34, "ERROU", {
+        fontFamily: "monospace", fontSize: "14px", fontStyle: "bold", color: "#d7dce2", stroke: "#101820", strokeThickness: 4
+      }).setOrigin(0.5).setDepth(2200);
+      this.tweens.add({ targets: number, y: number.y - 20, alpha: 0, duration: 600, ease: "Cubic.easeOut", onComplete: () => number.destroy() });
     }
 
     showExperienceNumber(amount) {
@@ -493,7 +531,7 @@
     pendingMeleeEnemyIndex = null;
     state.action = action; updateHud(); persistGame();
     const weapon = ItemRules.weaponForAction(state.equipment, action);
-    announce(action === "close" ? `${weapon.name} selecionada: atacar aproxima você do inimigo mais próximo.` : CombatRules.DEVELOPMENT_INFINITE_AMMO ? `${weapon.name} selecionada com munição infinita durante o desenvolvimento.` : `${weapon.name} selecionada: cada disparo consome uma munição.`);
+    announce(action === "close" ? `${weapon.name} selecionada: atacar aproxima você do inimigo mais próximo.` : `${weapon.name} selecionada: carregador com ${state.ammo[weapon.id]} de ${weapon.magazineSize} tiros${CombatRules.DEVELOPMENT_INFINITE_RESERVE ? " e reserva infinita" : ""}.`);
   }
 
   function resolveAction(allowApproach = true, forcedTarget = null) {
@@ -523,21 +561,29 @@
     const action = state.action;
     const weapon = ItemRules.weaponForAction(state.equipment, action);
     if (action === "far") {
-      if (!CombatRules.DEVELOPMENT_INFINITE_AMMO && state.charges <= 0) { announce(`${weapon.name} está sem munição. Selecione a arma branca.`); return; }
-      if (!CombatRules.DEVELOPMENT_INFINITE_AMMO) state.charges -= 1;
+      if (reloadState?.weaponId === weapon.id) { announce(`${weapon.name} ainda está recarregando.`); return; }
+      if (state.ammo[weapon.id] <= 0) { reloadFirearm(); return; }
+      state.ammo[weapon.id] -= 1;
     }
     const skillName = CombatRules.WEAPONS[action].skill;
-    const roll = CombatRules.rollDamage(action, state.skills[skillName].level, state.level, weapon);
     const cooldown = weapon.cooldown;
-    const damage = roll.damage;
-    CombatRules.grantSkillXp(state.skills[skillName]);
     actionReady = false;
     setTimeout(() => { actionReady = true; }, cooldown);
+    sceneRef.playAttackSound(action);
+    if (!CombatRules.rollHit(action, isPlayerMoving())) {
+      sceneRef.showMissNumber(target);
+      announce("O disparo errou o alvo durante o movimento.");
+      updateHud(); persistGame();
+      if (state.ammo[weapon.id] === 0) reloadFirearm();
+      return;
+    }
+    const roll = CombatRules.rollDamage(action, state.skills[skillName].level, state.level, weapon);
+    const damage = roll.damage;
+    CombatRules.grantSkillXp(state.skills[skillName]);
     const enemyState = state.enemies[target.enemyIndex];
     enemyState.hp = Math.max(0, enemyState.hp - damage);
     target.setAlpha(0.35);
     setTimeout(() => { if (target.visible) target.setAlpha(1); }, 130);
-    sceneRef.playAttackSound(action);
     sceneRef.showDamageNumber(target, damage, roll.critical);
     sceneRef.updateEnemyIndicators(target);
     announce(`${action === "close" ? "Golpe de faca" : "Disparo"} atingiu o inimigo${roll.critical ? " com dano crítico" : ""}.`);
@@ -555,6 +601,7 @@
       sceneRef.scheduleEnemyRespawn(target);
     }
     updateHud(); persistGame();
+    if (action === "far" && state.ammo[weapon.id] === 0) reloadFirearm();
   }
 
   const menuTitles = { status: "STATUS", skills: "SKILLS", inventory: "INVENTÁRIO", map: "MAPA", quests: "MISSÕES" };
@@ -631,6 +678,7 @@
   ["action-close", "touch-action-close"].forEach(id => el(id)?.addEventListener("click", () => selectAction("close")));
   ["action-far", "touch-action-far"].forEach(id => el(id)?.addEventListener("click", () => selectAction("far")));
   ["interact", "touch-interact"].forEach(id => el(id)?.addEventListener("click", interact));
+  ["reload", "touch-reload"].forEach(id => el(id)?.addEventListener("click", reloadFirearm));
   el("attack").addEventListener("click", resolveAction);
   el("save").addEventListener("click", () => persistGame(true));
   el("open-menu").addEventListener("click", () => setMenuOpen(!menuOpen));
@@ -642,6 +690,7 @@
     if (event.key === "Escape" && menuOpen) { setMenuOpen(false); return; }
     if (event.code === "Space") { event.preventDefault(); resolveAction(); }
     if (event.key.toLowerCase() === "e") interact();
+    if (event.key.toLowerCase() === "r") reloadFirearm();
     if (event.key === "1") selectAction("close");
     if (event.key === "2") selectAction("far");
   });

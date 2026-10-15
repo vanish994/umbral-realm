@@ -101,11 +101,14 @@ test("operational notices remain accessible without visual toast overlays", () =
   assert.doesNotMatch(read("src/style.css"), /#toast/);
 });
 
-test("development HUD clearly exposes infinite revolver ammunition", () => {
+test("development HUD exposes finite magazines with an infinite reserve", () => {
   const html = read("index.html");
   const game = read("src/game.js");
-  assert.match(html, /Munição \.38: ∞ \(DESENVOLVIMENTO\)/);
-  assert.match(game, /DEVELOPMENT_INFINITE_AMMO/);
+  assert.match(html, /Revólver \.38: 6 \/ 6 • reserva ∞/);
+  assert.match(html, /id="reload"/);
+  assert.match(html, /id="touch-reload"/);
+  assert.match(game, /DEVELOPMENT_INFINITE_RESERVE/);
+  assert.match(game, /state\.ammo/);
 });
 
 test("smartphone menu exposes functional status and skills plus planned navigation", () => {
@@ -138,7 +141,7 @@ test("smartphone inventory exposes all seven equippable items", () => {
 
 test("landscape scene exposes essential touch commands", () => {
   const html = read("index.html");
-  for (const id of ["joystick", "touch-action-close", "touch-action-far", "touch-interact", "attack"]) {
+  for (const id of ["joystick", "touch-action-close", "touch-action-far", "touch-reload", "touch-interact", "attack"]) {
     assert.match(html, new RegExp(`id="${id}"`), `missing touch control ${id}`);
   }
 });
