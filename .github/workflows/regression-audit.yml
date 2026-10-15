@@ -1,0 +1,32 @@
+name: Umbral Realm regression audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: regression-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regression:
+    name: Logic, syntax and asset integrity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current revision
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Record audited revision
+        run: echo "Auditing commit $GITHUB_SHA"
+      - name: Run JavaScript syntax checks and regression tests
+        run: npm run check
+      - name: Verify packaged Phaser runtime exists
+        run: test -s vendor/phaser/phaser-3.80.1.min.js && test -s vendor/phaser/LICENSE.md
