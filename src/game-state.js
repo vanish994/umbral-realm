@@ -1,8 +1,11 @@
 ((root, factory) => {
-  const api = factory();
+  const rules = root.UmbralCombatRules || (typeof require === "function" ? require("./combat-rules.js") : null);
+  const api = factory(rules);
   if (typeof module === "object" && module.exports) module.exports = api;
   root.UmbralState = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, () => {
+})(typeof globalThis !== "undefined" ? globalThis : this, CombatRules => {
+  if (!CombatRules) throw new Error("As regras de combate não carregaram.");
+
   const MAX_LEVEL = 1000;
   const ENEMY_MAX_HP = 70;
   const RAT_COUNT = 4;
@@ -50,6 +53,10 @@
       coins: integer(raw.coins, 0, 0, Number.MAX_SAFE_INTEGER),
       talked: Boolean(raw.talked),
       charges: integer(raw.charges, MAX_AMMO, 0, MAX_AMMO),
+      skills: {
+        blades: CombatRules.normalizeSkill(raw.skills?.blades),
+        firearms: CombatRules.normalizeSkill(raw.skills?.firearms)
+      },
       rats,
       action: raw.action === "far" ? "far" : "close"
     };

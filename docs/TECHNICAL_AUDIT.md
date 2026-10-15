@@ -12,8 +12,8 @@
 - Colisão manual do jogador com retângulos de cenário. A perseguição do rato agora usa os mesmos obstáculos e limites do mundo.
 - Sprites direcionais do jogador e poses direcionais do rato. As folhas foram conferidas: personagem combinado 384×384 (6 linhas de 8 quadros de 48×64); rato e mercador 256×32 (8 direções de 32×32). O rato não possui ciclo de caminhada no asset atual.
 - Quatro ratos zumbis distribuídos antes da clareira, cada um com vida e persistência independentes, perseguição com território, dano por contato, recompensa direta e respawn de doze segundos.
-- Faca e revólver `.38` representados pelas duas ações de combate preexistentes. Ao atacar com a faca fora do alcance, o personagem segue o rato vivo mais próximo e executa um golpe ao alcançá-lo; joystick, teclado, toque no mapa ou troca de arma cancelam a aproximação. O revólver começa com sete munições e sem reserva; os valores de dano continuam provisórios.
-- HUD de vida, XP, nível, moedas, munição e inimigo; controles de arma, ataque e interação acessíveis sobre a cena na orientação horizontal. Cada rato também possui barra de vida no mundo. Dano aparece em vermelho sobre o alvo e XP ganho aparece em branco sobre o jogador; ouro atualiza silenciosamente. Avisos visuais e toast foram removidos, mantendo somente uma região invisível para leitores de tela. A apresentação ativa usa painéis, botões, barras e ícones selecionados do `Humble Gift - Smart UI.zip`; a moldura de smartphone está preservada para futuros menus.
+- Faca e revólver `.38` representados pelas duas ações de combate preexistentes. Ao atacar com a faca fora do alcance, o personagem segue o rato vivo mais próximo e executa um golpe ao alcançá-lo; joystick, teclado, toque no mapa ou troca de arma cancelam a aproximação. O revólver começa com sete munições e sem reserva. O dano agora varia por golpe, recebe bônus moderado da skill correspondente e tem 8% de crítico com multiplicador 1,75; todos os valores continuam provisórios.
+- HUD de vida, XP, nível, moedas, munição e inimigo; controles de arma, ataque e interação acessíveis sobre a cena na orientação horizontal. O botão STATUS abre um painel completo com recursos, progressão de Lâminas e Armas de Fogo, faixas de dano e estatísticas de crítico, pausando a cena enquanto estiver aberto. Cada rato também possui barra de vida no mundo. Dano comum aparece em vermelho e crítico em dourado com texto, flash e tremor; XP geral ganho aparece em branco sobre o jogador e ouro atualiza silenciosamente. Avisos visuais e toast foram removidos, mantendo somente uma região invisível para leitores de tela. A apresentação ativa usa painéis, botões, barras e ícones selecionados do `Humble Gift - Smart UI.zip`; a moldura de smartphone está preservada para futuros menus.
 - Mercador visível e diálogo simples, mas sem loja.
 - Salvamento local do estado numérico, agora normalizado contra campos ausentes/corrompidos e acionado também após alterações relevantes e ao ocultar/sair da página.
 - Manifesto, orientação horizontal e service worker. Phaser, shell e sprites usados pela cena são locais e pré-carregados para uso após a primeira visita.
@@ -25,7 +25,7 @@
 - A Trilha dos Infectados é um mapa inicial autoral de 1280×720: saída a oeste, quatro territórios de ratos, ruínas e uma clareira segura a leste com fogueira e mercador. Terreno e props selecionados do pack autorizado foram integrados; algumas estruturas continuam desenhadas com formas enquanto seus tiles não forem montados e validados.
 - Combate respeita alcance e recarga e reproduz efeitos distintos quando faca ou revólver acertam. A música `Wasteland`, de We Are All Astronauts, começa em volume baixo após a primeira interação e repete em loop. Ainda não há controles de volume, animações de ataque, projétil, chance de acerto, sangramento, fio da faca ou sujeira do revólver.
 - A “morte” recupera metade da vida e reposiciona o jogador; perda/recuperação ainda é uma decisão aberta no GDD.
-- XP e nível existem, mas skills independentes ainda não. Os números atuais não foram validados por balanceamento.
+- XP geral e skills independentes de Lâminas e Armas de Fogo existem e são salvas. Cada acerto válido concede 4 XP à skill usada; o requisito parte de 20 e cresce por fator aproximado de 1,45 por nível. Cada nível adiciona 4% à faixa de dano-base da categoria. Esses números não foram validados por balanceamento.
 - A recompensa é creditada diretamente; não existem entidades coletáveis, inventário nem tabelas de drop.
 - O save preserva progresso e combate, mas não posição do jogador nem tempo restante de respawn.
 - Em telas horizontais baixas, o painel detalhado é ocultado para liberar o mapa; os comandos essenciais permanecem sobre a cena.
@@ -37,7 +37,7 @@
 - Compra e venda no mercador.
 - Medicamentos, munição encontrada/comprada e recarga.
 - Zona segura e área de exploração conectadas como regiões distintas.
-- Skills de Lâminas e Armas de Fogo, equipamento e manutenção.
+- Equipamento, fio da faca, sujeira e manutenção das armas.
 - Testes automatizados de navegador e validação em aparelho Android real.
 
 ## Problemas e riscos encontrados
@@ -58,10 +58,10 @@
 4. **Implementar comerciante mínimo:** compra de munição e venda dos materiais existentes, com transações atômicas e testes contra saldo/estoque inválidos.
 5. **Adicionar segundo inimigo:** somente depois que o modelo de inimigo e drops for reutilizável; deve ter comportamento realmente distinto.
 6. **Refinar vida/morte e feedback de combate:** depende da decisão de consequência de morte ainda aberta e dos assets de animação disponíveis.
-7. **Progressão de skills e manutenção:** depende do combate e inventário estáveis; números permanecem propostas de balanceamento.
+7. **Manutenção e balanceamento das skills:** implementar fio e sujeira após inventário estável; validar em playtest a curva e os bônus já configuráveis.
 
 ## Decisões pequenas adotadas
 
-- As ações genéricas “próxima” e “distante” foram nomeadas como a faca inicial e o revólver `.38`, pois ambos são equipamento inicial confirmado no GDD. O comportamento existente foi preservado: 13 de dano corpo a corpo, 24 à distância e sete disparos. Esses números não foram promovidos a balanceamento definitivo.
+- As ações genéricas “próxima” e “distante” foram nomeadas como a faca inicial e o revólver `.38`, pois ambos são equipamento inicial confirmado no GDD. No nível 1, a faca varia de 11 a 15 de dano e o revólver de 20 a 28, preservando aproximadamente as médias anteriores de 13 e 24; o revólver mantém sete disparos. Esses números não foram promovidos a balanceamento definitivo.
 - O save inválido com vida zero é recuperado para um estado jogável porque o protótipo atual não possui estado persistente de morte.
 - O balanço do rato é visual e removido antes de calcular movimento/colisão, evitando que a oscilação altere sua posição lógica.

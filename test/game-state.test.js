@@ -10,12 +10,14 @@ test("normalize supplies a playable initial state with four rats", () => {
   assert.equal(state.coins, 0);
   assert.equal(state.charges, 7);
   assert.equal(state.action, "close");
+  assert.deepEqual(state.skills, { blades: { level: 1, xp: 0 }, firearms: { level: 1, xp: 0 } });
   assert.deepEqual(state.rats, [{ hp: 70 }, { hp: 70 }, { hp: 70 }, { hp: 70 }]);
 });
 
 test("normalize repairs corrupt fields and rat values", () => {
   const state = normalize({
     hp: "not a number", xp: -20, level: 0, coins: -5, charges: 100,
+    skills: { blades: { level: 0, xp: -1 }, firearms: { level: 2, xp: 40 } },
     rats: [{ hp: -12 }, { hp: 500 }, { hp: "bad" }], action: "unknown"
   });
   assert.equal(state.hp, 100);
@@ -23,6 +25,7 @@ test("normalize repairs corrupt fields and rat values", () => {
   assert.equal(state.level, 1);
   assert.equal(state.coins, 0);
   assert.equal(state.charges, 7);
+  assert.deepEqual(state.skills, { blades: { level: 1, xp: 0 }, firearms: { level: 3, xp: 11 } });
   assert.deepEqual(state.rats, [{ hp: 0 }, { hp: 70 }, { hp: 70 }, { hp: 70 }]);
   assert.equal(state.action, "close");
 });

@@ -101,6 +101,14 @@ test("operational notices remain accessible without visual toast overlays", () =
   assert.doesNotMatch(read("src/style.css"), /#toast/);
 });
 
+test("complete character status exposes both weapon skills and combat stats", () => {
+  const html = read("index.html");
+  assert.match(html, /id="status-panel"[^>]*role="dialog"/);
+  for (const id of ["blades-level", "blades-xp", "firearms-level", "firearms-xp", "critical-chance", "critical-multiplier"]) {
+    assert.match(html, new RegExp(`id="${id}"`));
+  }
+});
+
 test("landscape scene exposes essential touch commands", () => {
   const html = read("index.html");
   for (const id of ["joystick", "touch-action-close", "touch-action-far", "touch-interact", "attack"]) {

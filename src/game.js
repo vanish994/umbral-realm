@@ -5,10 +5,11 @@
   const World = window.UmbralWorld;
   const Targeting = window.UmbralTargeting;
   const CombatFeedback = window.UmbralCombatFeedback;
-  if (!State || !World || !Targeting || !CombatFeedback) throw new Error("Os módulos do jogo não carregaram.");
+  const CombatRules = window.UmbralCombatRules;
+  if (!State || !World || !Targeting || !CombatFeedback || !CombatRules) throw new Error("Os módulos do jogo não carregaram.");
 
   const state = State.normalize(saved);
-  let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeRatId = null;
+  let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeRatId = null, statusOpen = false;
   const rats = [];
   const touch = { x: 0, y: 0 };
   const el = id => document.getElementById(id);
@@ -46,6 +47,23 @@
     ["action-far", "touch-action-far"].forEach(id => el(id)?.classList.toggle("selected", state.action === "far"));
     ["action-close", "touch-action-close"].forEach(id => el(id)?.setAttribute("aria-pressed", String(state.action === "close")));
     ["action-far", "touch-action-far"].forEach(id => el(id)?.setAttribute("aria-pressed", String(state.action === "far")));
+
+    el("status-level").textContent = String(state.level);
+    el("status-hp").textContent = `${state.hp} / ${maxHp()}`;
+    el("status-coins").textContent = String(state.coins);
+    el("status-ammo").textContent = `${state.charges} / ${State.MAX_AMMO}`;
+    el("status-xp").textContent = `${state.xp} / ${next}`;
+    for (const [skillName, action] of [["blades", "close"], ["firearms", "far"]]) {
+      const skill = state.skills[skillName];
+      const required = CombatRules.skillXpNeeded(skill.level);
+      const range = CombatRules.damageRange(action, skill.level);
+      el(`${skillName}-level`).textContent = `Nv. ${skill.level}`;
+      el(`${skillName}-xp`).textContent = `${skill.xp} / ${required} XP`;
+      el(`${skillName}-bar`).style.width = `${skill.xp / required * 100}%`;
+      el(`${skillName}-damage`).textContent = `Dano ${range.min}–${range.max}`;
+    }
+    el("critical-chance").textContent = `${Math.round(CombatRules.CRITICAL_CHANCE * 100)}%`;
+    el("critical-multiplier").textContent = `${String(CombatRules.CRITICAL_MULTIPLIER).replace(".", ",")}×`;
 
     const target = nearestRat();
     const remaining = livingRatCount();
@@ -200,20 +218,27 @@
       sound.play();
     }
 
-    showDamageNumber(target, amount) {
-      const number = this.add.text(target.x, target.y - 34, CombatFeedback.damageLabel(amount), {
+    showDamageNumber(target, amount, critical = false) {
+      const label = critical ? `CRÍTICO! ${CombatFeedback.damageLabel(amount)}` : CombatFeedback.damageLabel(amount);
+      const number = this.add.text(target.x, target.y - 34, label, {
         fontFamily: "monospace",
-        fontSize: "16px",
+        fontSize: critical ? "19px" : "16px",
         fontStyle: "bold",
-        color: "#ff3b30",
-        stroke: "#260606",
-        strokeThickness: 4
-      }).setOrigin(0.5).setDepth(2200);
+        color: critical ? "#ffd166" : "#ff3b30",
+        stroke: critical ? "#4b2600" : "#260606",
+        strokeThickness: critical ? 5 : 4
+      }).setOrigin(0.5).setDepth(2200).setScale(critical ? 1.15 : 1);
+      if (critical) {
+        this.cameras.main.shake(100, 0.003);
+        if (typeof target.setTintFill === "function") target.setTintFill(0xffd166);
+        setTimeout(() => { if (target.active && typeof target.clearTint === "function") target.clearTint(); }, 140);
+      }
       this.tweens.add({
         targets: number,
-        y: number.y - 22,
+        y: number.y - (critical ? 30 : 22),
+        scale: critical ? 0.95 : 1,
         alpha: 0,
-        duration: 650,
+        duration: critical ? 900 : 650,
         ease: "Cubic.easeOut",
         onComplete: () => number.destroy()
       });
@@ -417,13 +442,14 @@
 
   function near(a, b, range = 75) { return a && b && Phaser.Math.Distance.Between(a.x, a.y, b.x, b.y) <= range; }
   function selectAction(action) {
+    if (statusOpen) return;
     pendingMeleeRatId = null;
     state.action = action; updateHud(); persistGame();
     announce(action === "close" ? "Faca selecionada: atacar aproxima você do rato mais próximo." : "Revólver .38 selecionado: cada disparo consome uma munição.");
   }
 
   function resolveAction(allowApproach = true, forcedTarget = null) {
-    if (!actionReady || state.hp <= 0) return;
+    if (!actionReady || state.hp <= 0 || statusOpen) return;
     const range = state.action === "close" ? 58 : 285;
     let target = forcedTarget;
     if (target && (!target.visible || state.rats[target.ratId].hp <= 0 || Targeting.distanceBetween(player, target) > range)) target = null;
@@ -440,22 +466,27 @@
     if (!target) { announce(state.action === "close" ? "Não foi possível alcançar o rato com a faca." : "Nenhum rato ao alcance do revólver."); return; }
 
     pendingMeleeRatId = null;
-    let damage, cooldown;
-    if (state.action === "close") { damage = 13; cooldown = 500; }
+    const action = state.action;
+    let cooldown;
+    if (action === "close") cooldown = 500;
     else {
       if (state.charges <= 0) { announce("O revólver está sem munição. Selecione a faca."); return; }
-      state.charges -= 1; damage = 24; cooldown = 700;
+      state.charges -= 1; cooldown = 700;
     }
+    const skillName = CombatRules.WEAPONS[action].skill;
+    const roll = CombatRules.rollDamage(action, state.skills[skillName].level);
+    const damage = roll.damage;
+    CombatRules.grantSkillXp(state.skills[skillName]);
     actionReady = false;
     setTimeout(() => { actionReady = true; }, cooldown);
     const ratState = state.rats[target.ratId];
     ratState.hp = Math.max(0, ratState.hp - damage);
     target.setAlpha(0.35);
     setTimeout(() => { if (target.visible) target.setAlpha(1); }, 130);
-    sceneRef.playAttackSound(state.action);
-    sceneRef.showDamageNumber(target, damage);
+    sceneRef.playAttackSound(action);
+    sceneRef.showDamageNumber(target, damage, roll.critical);
     sceneRef.updateRatIndicators(target);
-    announce(`${state.action === "close" ? "Golpe de faca" : "Disparo"} atingiu o rato.`);
+    announce(`${action === "close" ? "Golpe de faca" : "Disparo"} atingiu o rato${roll.critical ? " com dano crítico" : ""}.`);
     if (ratState.hp === 0) {
       target.setVisible(false); target.nameLabel.setVisible(false);
       sceneRef.updateRatIndicators(target);
@@ -471,7 +502,25 @@
     updateHud(); persistGame();
   }
 
+  function setStatusOpen(open) {
+    statusOpen = open;
+    const panel = el("status-panel");
+    panel.hidden = !open;
+    el("open-status").setAttribute("aria-expanded", String(open));
+    if (open) {
+      updateHud();
+      pendingMeleeRatId = null;
+      player?.setData("tapTarget", null);
+      sceneRef?.scene.pause();
+      el("close-status").focus();
+    } else {
+      sceneRef?.scene.resume();
+      el("open-status").focus();
+    }
+  }
+
   function interact() {
+    if (statusOpen) return;
     if (sceneRef?.merchant && near(player, sceneRef.merchant, 85)) {
       state.talked = true; persistGame();
       announce("Mercador: Você atravessou a trilha. Tenho suprimentos para quem conseguir moedas.");
@@ -503,7 +552,10 @@
   ["interact", "touch-interact"].forEach(id => el(id)?.addEventListener("click", interact));
   el("attack").addEventListener("click", resolveAction);
   el("save").addEventListener("click", () => persistGame(true));
+  el("open-status").addEventListener("click", () => setStatusOpen(!statusOpen));
+  el("close-status").addEventListener("click", () => setStatusOpen(false));
   document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && statusOpen) { setStatusOpen(false); return; }
     if (event.code === "Space") { event.preventDefault(); resolveAction(); }
     if (event.key.toLowerCase() === "e") interact();
     if (event.key === "1") selectAction("close");
