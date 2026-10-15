@@ -166,6 +166,12 @@ sem playtest longo.
 Os dois sprites têm somente poses paradas por direção (sem ciclo de caminhada, ataque ou morte), então o
 protótipo usa a rotação conforme o ângulo de movimento, como já acontecia com rato, lobo e zumbi lento.
 
+**Corredores subterrâneos (abaixo da zona urbana):** área de nível 20 acessada por um poço na borda sul
+da cidade, com três galerias em zigue-zague habitadas por **Zumbis do Esgoto** de níveis 20–22 (brutos
+lentos de corredor, 320–410 de vida). Eles reutilizam a arte do zumbi lento com escala e matiz próprios
+enquanto não há sprite dedicado licenciado; a progressão superfície → refúgio permanece intacta e o
+subterrâneo é conteúdo lateral de risco maior, não um atalho.
+
 ### Vida e respawn
 
 - Inimigos iniciais terão vida relativamente baixa.

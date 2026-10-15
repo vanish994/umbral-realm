@@ -24,7 +24,17 @@
     make("scavenger-18", "scavenger", "SAQUEADOR", 18, 300, 22, 54, 170, 950, 380, 52, 70000),
     make("scavenger-20", "scavenger", "SAQUEADOR", 20, 340, 25, 56, 175, 900, 430, 60, 78000),
     // Chefe de área: o mais lento do mapa, resistente e brutal, com o maior respawn do protótipo.
-    make("mutant-30", "mutant", "MUTANTE", 30, 680, 36, 16, 150, 1350, 900, 110, 120000)
+    make("mutant-30", "mutant", "MUTANTE", 30, 680, 36, 16, 150, 1350, 900, 110, 120000),
+    // Corredores subterrâneos (apêndice pós-refúgio — nunca inserir no meio: os 15
+    // primeiros índices são o contrato do save). Zumbis do esgoto são brutos lentos
+    // de corredor: mais resistentes que o zumbi lento da superfície, com perseguição
+    // curta porque as galerias já limitam o espaço. Arte reutilizada do zumbi lento
+    // com escala e matiz próprios em ENEMY_VISUALS (sem asset novo licenciado).
+    make("sewer-zombie-20", "sewer-zombie", "ZUMBI DO ESGOTO", 20, 320, 24, 23, 165, 1400, 420, 55, 45000),
+    make("sewer-zombie-20b", "sewer-zombie", "ZUMBI DO ESGOTO", 20, 320, 24, 23, 165, 1400, 420, 55, 45000),
+    make("sewer-zombie-21", "sewer-zombie", "ZUMBI DO ESGOTO", 21, 355, 26, 24, 170, 1350, 470, 62, 50000),
+    make("sewer-zombie-21b", "sewer-zombie", "ZUMBI DO ESGOTO", 21, 355, 26, 24, 170, 1350, 470, 62, 50000),
+    make("sewer-zombie-22", "sewer-zombie", "ZUMBI DO ESGOTO", 22, 410, 28, 25, 175, 1300, 560, 75, 60000)
   ]);
 
   const BY_ID = Object.freeze(Object.fromEntries(ENEMIES.map(enemy => [enemy.id, enemy])));

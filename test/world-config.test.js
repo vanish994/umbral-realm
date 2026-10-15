@@ -34,15 +34,17 @@ const expectedEnemyIds = [
   "rat-1", "rat-1b", "rat-2", "rat-2b",
   "wolf-5", "wolf-5b", "wolf-6", "wolf-6b",
   "slow-zombie-10", "slow-zombie-10b", "slow-zombie-11", "slow-zombie-12",
-  "scavenger-18", "scavenger-20", "mutant-30"
+  "scavenger-18", "scavenger-20", "mutant-30",
+  "sewer-zombie-20", "sewer-zombie-20b", "sewer-zombie-21", "sewer-zombie-21b", "sewer-zombie-22"
 ];
 
 test("linear world walks from weak to elite enemies before the refuge", () => {
   assert.deepEqual(world.enemySpawns.map(enemy => enemy.id), expectedEnemyIds);
   assert.deepEqual(world.areas.map(area => area.id), ["outskirts", "wilds", "urban", "refuge"]);
-  assert.equal(world.enemySpawns.filter(enemy => world.areaAt(enemy.x).id === "outskirts").length, 4);
-  assert.equal(world.enemySpawns.filter(enemy => world.areaAt(enemy.x).id === "wilds").length, 4);
-  assert.equal(world.enemySpawns.filter(enemy => world.areaAt(enemy.x).id === "urban").length, 7);
+  assert.equal(world.enemySpawns.filter(enemy => world.areaAt(enemy.x, enemy.y).id === "outskirts").length, 4);
+  assert.equal(world.enemySpawns.filter(enemy => world.areaAt(enemy.x, enemy.y).id === "wilds").length, 4);
+  assert.equal(world.enemySpawns.filter(enemy => world.areaAt(enemy.x, enemy.y).id === "urban").length, 7);
+  assert.equal(world.enemySpawns.filter(enemy => world.areaAt(enemy.x, enemy.y).id === "underground").length, 5);
   assert.equal(world.enemySpawns.filter(enemy => world.areaAt(enemy.x).id === "refuge").length, 0, "o refúgio deve continuar sem inimigos");
   assert.ok(world.enemySpawns.every(enemy => enemy.x > world.playerSpawn.x && enemy.x < world.safeZoneX));
 });
@@ -121,7 +123,9 @@ test("a folhagem da mata fica dentro do retângulo de colisão da própria faixa
 
 test("as quatro faixas cobrem a volta do mapa e nenhum spawn fica dentro da mata", () => {
   const { width, height } = world.world;
-  for (const [x, y] of [[0, 0], [width, 0], [0, height], [width, height], [width / 2, 0], [width / 2, height], [0, height / 2], [width, height / 2]]) {
+  // O fundo do mundo agora é a rocha sob os corredores, não a mata: a cobertura das
+  // beiradas de baixo é provada pelos sólidos de rocha no teste de alcance (BFS).
+  for (const [x, y] of [[0, 0], [width, 0], [0, height], [width, height], [width / 2, 0], [width / 2, 827], [0, height / 2], [width, height / 2]]) {
     assert.ok(
       world.borderBands.some(band => x >= band.x && x <= band.x + band.w && y >= band.y && y <= band.y + band.h),
       `a borda em ${x},${y} não tem mata`

@@ -49,6 +49,7 @@
 - Salvamento local do estado numérico, agora normalizado contra campos ausentes/corrompidos e acionado também após alterações relevantes e ao ocultar/sair da página.
 - Manifesto, orientação horizontal e service worker. Phaser, shell e sprites usados pela cena são locais e pré-carregados para uso após a primeira visita.
 - Um único workflow de deploy Pages. O segundo workflow apenas reorganiza assets e faz commit; ele não publica o site.
+- Área subterrânea nível 20–22 sob a zona urbana: mundo expandido para 2500×1500, com a superfície preservada nos primeiros 900 px. Um poço de 48 px na mata sul da cidade (bueiro "ESGOTO ↓", único vão nas duas faixas sul) desce a três galerias de tijolo em zigue-zague (passagem oeste, depois leste), cercadas de rocha sólida invisível; o chão é o concreto do pack escurecido, com véu de penumbra. Cinco **Zumbis do Esgoto** (20, 20, 21, 21, 22) reutilizam a folha do zumbi lento com escala 1,5 e matiz esverdeado. As listas de inimigos só ganharam apêndice no fim, então saves antigos mantêm os 15 primeiros índices/ids. O teste BFS existente prova que todos os spawns (inclusive os das galerias) continuam alcançáveis e nenhuma célula alcançável encosta na beirada do mundo; um render offline (`tools/render-map-preview.py`) conferiu a geometria — o preview não aplica o tint/penumbra da cena, então as cores finais só aparecem no jogo.
 - Drops físicos de núcleos: ao morrer, o inimigo pode deixar um núcleo do próprio nível no chão
   (losango esverdeado pulsante com rótulo de nível, desenhado por gráficos sem asset novo), visível
   também no minimapa. A coleta é por proximidade (raio de 36 px em `src/drop-rules.js`) ao passar
@@ -57,7 +58,7 @@
   coordenadas corrompidas, com teto FIFO de 40) e sobrevivem à recarga da página. Ouro e XP
   continuam creditados diretamente na morte — decisão deliberada para não mudar a economia já
   testada; tabelas de drop por espécie continuam pendentes.
-- Oitenta e quatro testes Node (`npm run check`) cobrindo estado, regras de combate, drops físicos
+- Oitenta e sete testes Node (`npm run check`) cobrindo estado, regras de combate, drops físicos
   (`src/drop-rules.js` e persistência em `game-state`), referências estáticas, shell offline,
   requisitos do manifesto, folhas de animação, perfis de espécie e a geometria do mapa (contenção
   das bordas, alcance do mercador e dos spawns, medidas dos pisos, estrada e parede).

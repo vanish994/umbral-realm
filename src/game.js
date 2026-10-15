@@ -31,7 +31,10 @@
     // O deslocamento dos indicadores acompanha o topo do corpo desenhado (ancora em 0.76 da celula).
     scavenger: Object.freeze({ key: "scavenger-idle", scale: 1.9, offset: 46, contact: 33, bob: 0.6, barWidth: 46, radius: 28, solid: Object.freeze({ w: 10, h: 7 }) }),
     // Bruto de nivel 30: o maior sprite do mapa, com area de contato equivalente ao tamanho.
-    mutant: Object.freeze({ key: "mutant-idle", scale: 2.15, offset: 56, contact: 40, bob: 0.35, barWidth: 52, radius: 32, solid: Object.freeze({ w: 13, h: 9 }) })
+    mutant: Object.freeze({ key: "mutant-idle", scale: 2.15, offset: 56, contact: 40, bob: 0.35, barWidth: 52, radius: 32, solid: Object.freeze({ w: 13, h: 9 }) }),
+    // Bruto do esgoto: mesma folha do zumbi lento, maior e com matiz esverdeado para
+    // ler como outra espécie na penumbra dos corredores (sem asset novo).
+    "sewer-zombie": Object.freeze({ key: "slow-zombie-idle", scale: 1.5, offset: 52, contact: 36, bob: 0.4, barWidth: 50, radius: 30, solid: Object.freeze({ w: 11, h: 8 }), tint: 0xa9c68b })
   });
   const FALLBACK_VISUAL = ENEMY_VISUALS.rat;
   function visualFor(definition) {
@@ -133,7 +136,7 @@
     el("xp-bar").style.width = `${state.xp / next * 100}%`;
     el("level").textContent = `Nv. ${state.level}`;
     el("coins").textContent = String(state.coins);
-    if (player) el("location-label").textContent = World.areaAt(player.x).name;
+    if (player) el("location-label").textContent = World.areaAt(player.x, player.y).name;
     el("charge-label").textContent = `${equippedFirearm.name}: ${loadedAmmo} / ${equippedFirearm.magazineSize}${CombatRules.DEVELOPMENT_INFINITE_RESERVE ? " • reserva ∞" : ""}${isReloading ? " • recarregando" : ""}`;
     el("world-ammo").textContent = `${equippedFirearm.name.toUpperCase()} • ${loadedAmmo}/${equippedFirearm.magazineSize}${CombatRules.DEVELOPMENT_INFINITE_RESERVE ? " • RESERVA ∞" : ""}${isReloading ? " • RECARREGANDO" : ""}`;
     ["action-close", "touch-action-close"].forEach(id => el(id)?.classList.toggle("selected", state.action === "close"));
@@ -319,8 +322,19 @@
       this.solids = World.solids.map(solid => ({ ...solid }));
       this.cameras.main.setBackgroundColor("#17231c");
       World.areas.forEach(area => {
-        this.add.tileSprite(area.startX, 0, area.endX - area.startX, World.world.height, area.ground).setOrigin(0).setDepth(0);
+        this.add.tileSprite(area.startX, 0, area.endX - area.startX, World.surfaceHeight, area.ground).setOrigin(0).setDepth(0);
       });
+      // Subterrâneo: chão de concreto escurecido nas galerias e no poço (a rocha em
+      // volta fica no fundo escuro da cena), com véu de penumbra abaixo dos personagens.
+      const under = World.underground;
+      this.add.tileSprite(under.x, under.y, under.width, under.height, under.ground).setOrigin(0).setDepth(0).setTint(0x7e858c);
+      this.add.tileSprite(under.gapX, under.entrance.top, under.entrance.width, under.y - under.entrance.top + 32, under.ground).setOrigin(0).setDepth(0).setTint(0x7e858c);
+      const gloom = this.add.graphics().setDepth(2);
+      gloom.fillStyle(0x05070a, 0.34);
+      gloom.fillRect(under.x, under.y, under.width, under.height);
+      gloom.fillRect(under.gapX, under.entrance.top, under.entrance.width, under.y - under.entrance.top + 32);
+      this.add.text(under.entrance.x, under.entrance.top - 16, "ESGOTO ↓", this.labelStyle("#cfe8c9")).setOrigin(0.5).setDepth(900);
+      this.add.text(under.entrance.x, under.y + 52, under.name, this.labelStyle("#cfe8c9")).setOrigin(0.5).setDepth(900);
       World.groundDetails.forEach(([x, y]) => this.add.image(x, y, "ground-detail").setScale(2).setAlpha(0.7).setDepth(1));
 
       // Divisas de área: dither de 96 px centrado no limite, no lugar de linhas pretas.
@@ -544,6 +558,7 @@
         const definition = EnemyRules.definition(spawn.id);
         const visual = visualFor(definition);
         const enemy = this.add.sprite(spawn.x, spawn.y, visual.key, 4).setScale(visual.scale * this.characterScaleFactor).setOrigin(0.5, 0.76).setDepth(spawn.y);
+        if (visual.tint) enemy.setTint(visual.tint);
         enemy.enemyIndex = enemyIndex;
         enemy.definitionId = definition.id;
         enemy.spawnX = spawn.x;
@@ -819,6 +834,10 @@
       World.borderBands.forEach(band => context.fillRect(mapX(band.x), mapY(band.y), Math.max(1, band.w / World.world.width * (width - margin * 2)), Math.max(1, band.h / World.world.height * (height - margin * 2))));
       context.fillStyle = "#9ba2a6";
       World.solids.filter(solid => !solid.border).forEach(solid => context.fillRect(mapX(solid.x), mapY(solid.y), Math.max(1, solid.w / World.world.width * (width - margin * 2)), Math.max(1, solid.h / World.world.height * (height - margin * 2))));
+      // Galerias subterrâneas: bloco escuro sob a cidade, ligado pelo poço.
+      context.fillStyle = "#394048";
+      context.fillRect(mapX(World.underground.x), mapY(World.underground.y), World.underground.width / World.world.width * (width - margin * 2), World.underground.height / World.world.height * (height - margin * 2));
+      context.fillRect(mapX(World.underground.gapX), mapY(World.underground.entrance.top), Math.max(1.5, World.underground.entrance.width / World.world.width * (width - margin * 2)), (World.underground.y - World.underground.entrance.top) / World.world.height * (height - margin * 2));
       enemies.forEach(enemy => {
         if (!enemy.visible || state.enemies[enemy.enemyIndex].hp <= 0) return;
         const selected = enemy.enemyIndex === selectedEnemyIndex;

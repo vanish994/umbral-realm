@@ -3,7 +3,9 @@
   if (typeof module === "object" && module.exports) module.exports = config;
   root.UmbralWorld = config;
 })(typeof globalThis !== "undefined" ? globalThis : this, () => {
-  const world = { width: 2500, height: 900 };
+  const world = { width: 2500, height: 1500 };
+  // A superfície continua com 900 px de altura; abaixo dela ficam os corredores.
+  const surfaceHeight = 900;
   const playerSpawn = { x: 190, y: 450 };
   const merchant = { x: 2310, y: 430 };
   const campfire = { x: 2260, y: 485 };
@@ -28,6 +30,16 @@
   // tem colisao: e so leito, o jogador anda por cima.
   const road = { key: "road", x: 0, y: 386, width: world.width, height: 128 };
 
+  // Corredores subterrâneos sob a zona urbana (nível 20): três galerias ligadas em
+  // zigue-zague, acessadas por um poço na borda sul da cidade. O poço e as galerias
+  // são a única parte alcançável abaixo da superfície; o resto é rocha sólida.
+  const underground = {
+    id: "underground", name: "CORREDORES SUBTERRÂNEOS",
+    x: 1580, y: 980, width: 620, height: 456, ground: "ground-urban",
+    entrance: { x: 1888, top: 754, width: 48 }
+  };
+  underground.gapX = underground.entrance.x - underground.entrance.width / 2;
+
   const enemySpawns = [
     { id: "rat-1", x: 260, y: 420 }, { id: "rat-1b", x: 385, y: 520 },
     { id: "rat-2", x: 550, y: 365 }, { id: "rat-2b", x: 700, y: 485 },
@@ -39,7 +51,12 @@
     // O mutante fica a oeste de safeZoneX menos sua área de contato, para o refúgio continuar seguro.
     // A ordem desta lista precisa continuar igual à ordem de EnemyRules.ENEMIES (índice usado pelo save).
     { id: "scavenger-18", x: 2060, y: 620 }, { id: "scavenger-20", x: 2105, y: 300 },
-    { id: "mutant-30", x: 2155, y: 400 }
+    { id: "mutant-30", x: 2155, y: 400 },
+    // Subterrâneo nível 20: apêndice no fim das duas listas (nunca reordenar — o save
+    // antigo referencia os 15 primeiros). Galeria A, galeria B e galeria C, nesta ordem.
+    { id: "sewer-zombie-20", x: 1720, y: 1068 }, { id: "sewer-zombie-20b", x: 2060, y: 1068 },
+    { id: "sewer-zombie-21", x: 1960, y: 1214 }, { id: "sewer-zombie-21b", x: 1760, y: 1214 },
+    { id: "sewer-zombie-22", x: 2020, y: 1352 }
   ];
 
   // ---------------------------------------------------------------------------
@@ -49,11 +66,37 @@
   // alcanca nenhuma beirada: a mata e a barreira, nao o clamp de coordenadas do
   // movePlayer. A folhagem de cada faixa fica dentro do proprio retangulo (os
   // testes medem sprite por sprite contra estes numeros).
+  // A faixa sul é partida em duas no poço do esgoto (gapX..gapX+48): é a única
+  // passagem entre a superfície e os corredores abaixo dela.
   const borderBands = [
     { id: "north", border: true, x: 0, y: 0, w: world.width, h: 128 },
-    { id: "south", border: true, x: 0, y: 754, w: world.width, h: 146 },
+    { id: "south", border: true, x: 0, y: 754, w: underground.gapX, h: 146 },
+    { id: "south", border: true, x: underground.gapX + underground.entrance.width, y: 754, w: world.width - underground.gapX - underground.entrance.width, h: 146 },
     { id: "west", border: true, x: 0, y: 0, w: 150, h: world.height },
     { id: "east", border: true, x: 2360, y: 0, w: 140, h: world.height }
+  ];
+
+  // Paredes de tijolo dos corredores (desenhadas pela cena, como as ruínas): topo com
+  // a boca do poço, laterais, fundo e duas divisórias com passagens alternadas, que
+  // obrigam o zigue-zague galeria A -> oeste -> galeria B -> leste -> galeria C.
+  const undergroundWalls = [
+    { x: underground.x, y: underground.y, w: underground.gapX - underground.x, h: 32 },
+    { x: underground.gapX + underground.entrance.width, y: underground.y, w: underground.x + underground.width - underground.gapX - underground.entrance.width, h: 32 },
+    { x: underground.x, y: underground.y, w: 32, h: underground.height },
+    { x: underground.x + underground.width - 32, y: underground.y, w: 32, h: underground.height },
+    { x: underground.x, y: underground.y + underground.height - 32, w: underground.width, h: 32 },
+    { x: 1692, y: 1124, w: 476, h: 28 },
+    { x: 1612, y: 1276, w: 500, h: 28 }
+  ];
+
+  // Rocha ao redor dos corredores (border: true = colide mas não desenha parede;
+  // a cena pinta só o chão das galerias e o resto fica na escuridão do fundo).
+  const undergroundRock = [
+    { border: true, x: 150, y: surfaceHeight, w: underground.x - 150, h: world.height - surfaceHeight },
+    { border: true, x: underground.x + underground.width, y: surfaceHeight, w: 2360 - underground.x - underground.width, h: world.height - surfaceHeight },
+    { border: true, x: underground.x, y: surfaceHeight, w: underground.gapX - underground.x, h: underground.y - surfaceHeight },
+    { border: true, x: underground.gapX + underground.entrance.width, y: surfaceHeight, w: underground.x + underground.width - underground.gapX - underground.entrance.width, h: underground.y - surfaceHeight },
+    { border: true, x: underground.x, y: underground.y + underground.height, w: underground.width, h: world.height - underground.y - underground.height }
   ];
 
   // Ruinas: paredes de tijolo do pack (o desenho segue estes retangulos).
@@ -66,7 +109,7 @@
     { x: 1922, y: 665, w: 224, h: 32 }, { x: 2112, y: 570, w: 32, h: 96 }
   ];
 
-  const solids = [...ruins, ...borderBands];
+  const solids = [...ruins, ...borderBands, ...undergroundWalls, ...undergroundRock];
 
   const TREE_SHORT = ["tree-spruce", "tree-spruce-sparse", "tree-normal"];
   const TREE_TALL = ["tree-big", "tree-big-pine", "tree-birch", "tree-oak", "tree-oak-small", "tree-birch-small"];
@@ -129,13 +172,16 @@
     return props;
   }
 
+  // Nenhuma árvore pode nascer sobre a boca do poço: a folhagem sul é filtrada na
+  // faixa do poço (com folga para a copa não cobrir a entrada).
+  const shaftClear = x => x < underground.entrance.x - 72 || x > underground.entrance.x + 72;
   const borderProps = [
     ...borderRows.map(forestRow).flat(),
     ...undergrowthRow({ band: "north", axis: "x", fixed: 138, spread: 16, spacing: 96, seed: 211 }),
     ...undergrowthRow({ band: "south", axis: "x", fixed: 744, spread: 16, spacing: 96, seed: 223 }),
     ...undergrowthRow({ band: "west", axis: "y", fixed: 160, spread: 16, spacing: 104, seed: 227 }),
     ...undergrowthRow({ band: "east", axis: "y", fixed: 2348, spread: 16, spacing: 104, seed: 229 })
-  ];
+  ].filter(prop => prop.band !== "south" || shaftClear(prop.x));
 
   // Vegetacao dentro das areas (a mata das ruinas precisa de arvores no meio,
   // nao so nas bordas). Cada uma tem base de colisao no tronco.
@@ -242,7 +288,21 @@
     { key: "brick-debris", x: 1615, y: 505, scale: 2.4, flat: true }
   ];
 
-  const props = [...interior, ...street, ...borderProps];
+  // Boca do poço na superfície e entulho das galerias (só assets já carregados).
+  const undergroundProps = [
+    { key: "manhole", x: underground.entrance.x, y: 748, scale: 3, flat: true },
+    { key: "metal-plates", x: 1800, y: 1092, scale: 2.4, flat: true },
+    { key: "metal-plates", x: 2080, y: 1242, scale: 2.4, flat: true },
+    { key: "brick-debris", x: 1900, y: 1202, scale: 2.4, flat: true },
+    { key: "tires-grass", x: 2000, y: 1382, scale: 2.2, flat: true },
+    { key: "garbage-bin", x: 1660, y: 1368, scale: 2, solid: { w: 26, h: 16 } },
+    { key: "barrel-rust-red", x: 2140, y: 1092, scale: 2.2, solid: { w: 24, h: 16 } },
+    { key: "iron-beam", x: 1750, y: 1258, scale: 2.6 },
+    { key: "exhaust-pipe", x: 1652, y: 1052, scale: 2.8 },
+    { key: "tire", x: 2100, y: 1332, scale: 2.6 }
+  ];
+
+  const props = [...interior, ...street, ...undergroundProps, ...borderProps];
 
   const groundDetails = [
     [45, 100], [180, 165], [290, 740], [470, 710], [650, 90], [760, 780],
@@ -250,6 +310,11 @@
     [1640, 85], [1770, 745], [1900, 170], [2040, 760], [2160, 105], [2290, 720], [2430, 120]
   ];
 
-  function areaAt(x) { return areas.find(area => x >= area.startX && x < area.endX) || areas[areas.length - 1]; }
-  return { world, playerSpawn, merchant, campfire, safeZoneX, areas, areaAt, areaEdges, road, borderBands, enemySpawns, solids, props, groundDetails };
+  function areaAt(x, y = 0) {
+    // Abaixo da superfície (ou descendo pelo poço) a área é sempre o subterrâneo,
+    // qualquer que seja o x: o resto lá embaixo é rocha inalcançável.
+    if (y >= surfaceHeight || (y >= underground.entrance.top - 14 && Math.abs(x - underground.entrance.x) <= underground.entrance.width)) return underground;
+    return areas.find(area => x >= area.startX && x < area.endX) || areas[areas.length - 1];
+  }
+  return { world, surfaceHeight, underground, playerSpawn, merchant, campfire, safeZoneX, areas, areaAt, areaEdges, road, borderBands, enemySpawns, solids, props, groundDetails };
 });
