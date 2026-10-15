@@ -306,4 +306,36 @@
   el("interact").addEventListener("click",interact);el("attack").addEventListener("click",resolveAction);el("save").addEventListener("click",saveGame);
   document.addEventListener("keydown",e=>{if(e.code==="Space"){e.preventDefault();resolveAction();}if(e.key.toLowerCase()==="e")interact();if(e.key==="1")selectAction("close");if(e.key==="2")selectAction("far");});
   updateHud();
+
+  async function enterFullscreenAndLandscape(){
+    try {
+      if(!document.fullscreenElement && document.documentElement.requestFullscreen){
+        await document.documentElement.requestFullscreen({navigationUI:"hide"});
+      }
+    } catch (_) {}
+    try {
+      if(screen.orientation && typeof screen.orientation.lock === "function"){
+        await screen.orientation.lock("landscape");
+      }
+    } catch (_) {
+      say("Gire o celular para a horizontal. Se possível, ative a rotação automática do Android.");
+    }
+    if(!document.fullscreenElement && !document.documentElement.requestFullscreen){
+      say("Seu navegador não oferece tela cheia por aqui. Abra o jogo instalado na tela inicial e gire o celular.");
+    }
+  }
+  const fullscreenButton = el("fullscreen");
+  const rotateFullscreenButton = el("rotate-fullscreen");
+  fullscreenButton?.addEventListener("click", enterFullscreenAndLandscape);
+  rotateFullscreenButton?.addEventListener("click", enterFullscreenAndLandscape);
+  document.addEventListener("fullscreenchange",()=>{
+    const active=Boolean(document.fullscreenElement);
+    if(fullscreenButton){fullscreenButton.textContent=active?"⛶ SAIR DA TELA CHEIA":"⛶ TELA CHEIA";fullscreenButton.setAttribute("aria-label",active?"Sair da tela cheia":"Ativar tela cheia");}
+  });
+  window.addEventListener("orientationchange",()=>setTimeout(()=>{
+    if(screen.orientation && screen.orientation.type && screen.orientation.type.startsWith("landscape")){
+      document.getElementById("rotate-overlay")?.setAttribute("aria-hidden","true");
+    }
+  },150));
+
 })();
