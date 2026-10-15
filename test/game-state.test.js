@@ -1,6 +1,6 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { maxHp, normalize, grantXp } = require("../src/game-state.js");
+const { maxHp, normalize, grantXp, applyDeathPenalty } = require("../src/game-state.js");
 
 const freshEnemies = [
   { id: "rat-1", hp: 45 }, { id: "rat-1b", hp: 45 },
@@ -82,4 +82,25 @@ test("grantXp supports multiple level gains and reports them", () => {
   assert.equal(grantXp(state, 220), 2);
   assert.equal(state.level, 3);
   assert.equal(state.xp, 10);
+});
+
+test("death removes general and skill XP and can lower levels", () => {
+  const state = normalize({
+    level: 3,
+    xp: 4,
+    skills: { blades: { level: 2, xp: 2 }, firearms: { level: 3, xp: 20 } }
+  });
+  const penalty = applyDeathPenalty(state);
+  assert.deepEqual({ level: state.level, xp: state.xp }, { level: 2, xp: 194 });
+  assert.deepEqual(state.skills.blades, { level: 1, xp: 19 });
+  assert.deepEqual(state.skills.firearms, { level: 3, xp: 15 });
+  assert.equal(penalty.generalLevelsLost, 1);
+  assert.equal(penalty.skills.blades.levelsLost, 1);
+});
+
+test("death penalties never reduce level or XP below their minimum", () => {
+  const state = normalize({ level: 1, xp: 5, skills: { blades: { level: 1, xp: 1 }, firearms: { level: 1, xp: 0 } } });
+  applyDeathPenalty(state);
+  assert.deepEqual({ level: state.level, xp: state.xp }, { level: 1, xp: 0 });
+  assert.deepEqual(state.skills, { blades: { level: 1, xp: 0 }, firearms: { level: 1, xp: 0 } });
 });

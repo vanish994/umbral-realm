@@ -63,6 +63,15 @@ test("every integrated environment and UI asset is available offline", () => {
   }
 });
 
+test("player death sprites are animated and available offline", () => {
+  const game = read("src/game.js");
+  const shell = shellEntries().map(localPath);
+  assert.match(game, /player-death/);
+  assert.match(game, /handlePlayerDeath/);
+  assert.match(game, /State\.applyDeathPenalty/);
+  assert.ok(shell.includes("assets/characters/male/Death/death_normal.png"));
+});
+
 test("combat audio files loaded by Phaser exist and are available offline", () => {
   const game = read("src/game.js");
   const loadedAudio = [...game.matchAll(/this\.load\.audio\([^,]+,\s*"([^"]+)"/g)].map(match => match[1]);

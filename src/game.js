@@ -11,7 +11,7 @@
   if (!State || !World || !Targeting || !CombatFeedback || !CombatRules || !EnemyRules || !ItemRules) throw new Error("Os módulos do jogo não carregaram.");
 
   const state = State.normalize(saved);
-  let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeEnemyIndex = null, menuOpen = false, merchantMode = false, reloadState = null;
+  let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeEnemyIndex = null, menuOpen = false, merchantMode = false, playerDying = false, reloadState = null;
   const enemies = [];
   const touch = { x: 0, y: 0 };
   const el = id => document.getElementById(id);
@@ -162,6 +162,7 @@
       this.load.spritesheet("player-walk", "./assets/characters/male/Walk/walk.png", { frameWidth: 48, frameHeight: 64 });
       this.load.spritesheet("player-idle-right-down", "./assets/characters/male/Idle/idle_right_down.png", { frameWidth: 48, frameHeight: 64 });
       this.load.spritesheet("player-walk-right-down", "./assets/characters/male/Walk/walk_right_down.png", { frameWidth: 48, frameHeight: 64 });
+      this.load.spritesheet("player-death", "./assets/characters/male/Death/death_normal.png", { frameWidth: 48, frameHeight: 64 });
       this.load.spritesheet("zombie-rat-idle", "./assets/enemies/zombie-rat/Um_rato_zombie-Idle.png", { frameWidth: 32, frameHeight: 32 });
       this.load.spritesheet("zombie-wolf-idle", "./assets/enemies/zombie-wolf/idle.png", { frameWidth: 32, frameHeight: 32 });
       this.load.spritesheet("slow-zombie-idle", "./assets/enemies/slow-zombie/idle.png", { frameWidth: 48, frameHeight: 48 });
@@ -226,6 +227,7 @@
       this.merchantName = this.add.text(World.merchant.x, World.merchant.y - 35, "MERCADOR", this.labelStyle("#f0d7a0")).setOrigin(0.5).setDepth(1000);
 
       player = this.add.sprite(World.playerSpawn.x, World.playerSpawn.y, "player-idle", 0).setScale(1.6).setOrigin(0.5, 0.82).setDepth(World.playerSpawn.y);
+      player.setData("direction", "down");
       player.play("player-idle-down");
       this.createEnemies();
 
@@ -236,7 +238,7 @@
       cursors = this.input.keyboard.createCursorKeys();
       moveKeys = this.input.keyboard.addKeys("W,A,S,D,SPACE,E");
       this.input.on("pointerdown", pointer => {
-        if (menuOpen || pointer.event.target.closest("button,.game-controls")) return;
+        if (menuOpen || playerDying || pointer.event.target.closest("button,.game-controls")) return;
         const point = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
         if (Math.hypot(point.x - player.x, point.y - player.y) > 22) {
           pendingMeleeEnemyIndex = null;
@@ -272,6 +274,9 @@
       });
       this.anims.create({ key: "player-idle-right-down", frames: this.anims.generateFrameNumbers("player-idle-right-down", { start: 0, end: 7 }), frameRate: 7, repeat: -1 });
       this.anims.create({ key: "player-walk-right-down", frames: this.anims.generateFrameNumbers("player-walk-right-down", { start: 0, end: 7 }), frameRate: 10, repeat: -1 });
+      directions.forEach((direction, row) => {
+        this.anims.create({ key: `player-death-${direction}`, frames: this.anims.generateFrameNumbers("player-death", { start: row * 8, end: row * 8 + 7 }), frameRate: 9, repeat: 0 });
+      });
     }
 
     startBackgroundMusic() {
@@ -398,11 +403,39 @@
       });
     }
 
+    handlePlayerDeath() {
+      if (playerDying) return;
+      playerDying = true;
+      actionReady = false;
+      pendingMeleeEnemyIndex = null;
+      player.setData("tapTarget", null);
+      resetJoystick();
+      const direction = player.getData("direction") || "down";
+      player.play(`player-death-${direction}`, true);
+      announce("Você morreu.");
+      this.time.delayedCall(950, () => {
+        const penalty = State.applyDeathPenalty(state);
+        state.hp = Math.max(1, Math.floor(maxHp() / 2));
+        player.setPosition(World.playerSpawn.x, World.playerSpawn.y).setData("direction", "down");
+        enemies.forEach(other => { other.setPosition(other.spawnX, other.spawnY); other.bobOffset = 0; });
+        player.play("player-idle-down", true);
+        playerDying = false;
+        actionReady = true;
+        updateHud();
+        persistGame();
+        const levelMessage = penalty.generalLevelsLost > 0 ? ` Você voltou ${penalty.generalLevelsLost} nível geral.` : "";
+        const skillLevelsLost = penalty.skills.blades.levelsLost + penalty.skills.firearms.levelsLost;
+        const skillMessage = skillLevelsLost > 0 ? ` Você perdeu ${skillLevelsLost} nível de skill.` : "";
+        announce(`Morte: menos 10 XP geral e 10% do progresso atual de cada skill.${levelMessage}${skillMessage}`);
+      });
+    }
+
     isBlocked(x, y, halfWidth = 10, halfHeight = 8) {
       return this.solids.some(rect => x + halfWidth > rect.x && x - halfWidth < rect.x + rect.w && y + halfHeight > rect.y && y - halfHeight < rect.y + rect.h);
     }
 
     movePlayer(delta) {
+      if (playerDying) return;
       let dx = 0, dy = 0;
       if (cursors.left.isDown || moveKeys.A.isDown) dx = -1; else if (cursors.right.isDown || moveKeys.D.isDown) dx = 1; else dx = touch.x;
       if (cursors.up.isDown || moveKeys.W.isDown) dy = -1; else if (cursors.down.isDown || moveKeys.S.isDown) dy = 1; else dy = touch.y;
@@ -440,6 +473,7 @@
         const diagonal = Math.abs(dx) > 0 && Math.abs(dy) > 0;
         const direction = diagonal ? (dx < 0 ? (dy < 0 ? "left-up" : "left-down") : (dy < 0 ? "right-up" : "right-down")) : (Math.abs(dx) > 0 ? (dx < 0 ? "left-down" : "right-down") : (dy < 0 ? "up" : "down"));
         const animation = `player-walk-${direction}`;
+        player.setData("direction", direction);
         if (player.anims.currentAnim?.key !== animation) player.play(animation, true);
         const length = Math.hypot(dx, dy), step = 145 * delta / 1000;
         const nx = Phaser.Math.Clamp(player.x + dx / length * step, 25, World.world.width - 25);
@@ -453,13 +487,13 @@
     }
 
     moveEnemy(enemy, delta) {
-      if (!enemy.visible || state.enemies[enemy.enemyIndex].hp <= 0) return;
+      if (playerDying || !enemy.visible || state.enemies[enemy.enemyIndex].hp <= 0) return;
       if (enemy.bobOffset) { enemy.y -= enemy.bobOffset; enemy.bobOffset = 0; }
       const definition = EnemyRules.definition(enemy.definitionId);
       const playerDistance = Phaser.Math.Distance.Between(player.x, player.y, enemy.x, enemy.y);
       const homeDistance = Phaser.Math.Distance.Between(enemy.x, enemy.y, enemy.spawnX, enemy.spawnY);
       let targetX = player.x, targetY = player.y, speed = definition.speed;
-      if (homeDistance > definition.chaseRange + 65 || player.x > 985) { targetX = enemy.spawnX; targetY = enemy.spawnY; speed = Math.max(24, definition.speed); }
+      if (homeDistance > definition.chaseRange + 65 || player.x > World.safeZoneX) { targetX = enemy.spawnX; targetY = enemy.spawnY; speed = Math.max(24, definition.speed); }
       else if (playerDistance >= definition.chaseRange) return;
 
       const dx = targetX - enemy.x, dy = targetY - enemy.y;
@@ -474,13 +508,7 @@
           state.hp = Math.max(0, state.hp - receivedDamage);
           this.showDamageNumber(player, receivedDamage);
           announce(`${definition.name} nível ${definition.level} atingiu você.`);
-          if (state.hp === 0) {
-            state.hp = Math.floor(maxHp() / 2);
-            pendingMeleeEnemyIndex = null;
-            player.setPosition(World.playerSpawn.x, World.playerSpawn.y).setData("tapTarget", null);
-            enemies.forEach(other => { other.setPosition(other.spawnX, other.spawnY); other.bobOffset = 0; });
-            announce("Você recuou para o início da trilha e recuperou o fôlego.");
-          }
+          if (state.hp === 0) this.handlePlayerDeath();
           updateHud(); persistGame();
         }
         return;
@@ -534,7 +562,7 @@
 
   function near(a, b, range = 75) { return a && b && Phaser.Math.Distance.Between(a.x, a.y, b.x, b.y) <= range; }
   function selectAction(action) {
-    if (menuOpen) return;
+    if (menuOpen || playerDying) return;
     pendingMeleeEnemyIndex = null;
     state.action = action; updateHud(); persistGame();
     const weapon = ItemRules.weaponForAction(state.equipment, action);
@@ -542,7 +570,7 @@
   }
 
   function resolveAction(allowApproach = true, forcedTarget = null) {
-    if (!actionReady || state.hp <= 0 || menuOpen) return;
+    if (!actionReady || playerDying || state.hp <= 0 || menuOpen) return;
     const range = state.action === "close" ? 58 : 285;
     let target = forcedTarget;
     if (target && (!target.visible || state.enemies[target.enemyIndex].hp <= 0 || Targeting.distanceBetween(player, target) > range)) target = null;
@@ -680,7 +708,7 @@
   }
 
   function interact() {
-    if (menuOpen) return;
+    if (menuOpen || playerDying) return;
     if (sceneRef?.merchant && near(player, sceneRef.merchant, 85)) {
       state.talked = true;
       const sale = sellAllCores();

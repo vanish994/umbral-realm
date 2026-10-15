@@ -112,5 +112,36 @@
     return levelsGained;
   }
 
-  return { maxHp, normalize, grantXp };
+  function removeProgress(level, xp, amount, requirementForLevel) {
+    let safeLevel = integer(level, 1, 1, MAX_LEVEL);
+    let safeXp = integer(xp, 0, 0, Number.MAX_SAFE_INTEGER);
+    let remaining = integer(amount, 0, 0, Number.MAX_SAFE_INTEGER);
+    let levelsLost = 0;
+    while (remaining > safeXp && safeLevel > 1) {
+      remaining -= safeXp;
+      safeLevel -= 1;
+      levelsLost += 1;
+      safeXp = requirementForLevel(safeLevel);
+    }
+    safeXp = Math.max(0, safeXp - remaining);
+    return { level: safeLevel, xp: safeXp, levelsLost };
+  }
+
+  function applyDeathPenalty(state) {
+    const general = removeProgress(state.level, state.xp, 10, level => level * 100);
+    state.level = general.level;
+    state.xp = general.xp;
+    const skills = {};
+    for (const name of ["blades", "firearms"]) {
+      const skill = state.skills[name];
+      const loss = Math.ceil(CombatRules.skillXpNeeded(skill.level) * 0.1);
+      const result = removeProgress(skill.level, skill.xp, loss, CombatRules.skillXpNeeded);
+      skill.level = result.level;
+      skill.xp = result.xp;
+      skills[name] = { xpLost: loss, levelsLost: result.levelsLost };
+    }
+    return { generalXpLost: 10, generalLevelsLost: general.levelsLost, skills };
+  }
+
+  return { maxHp, normalize, grantXp, applyDeathPenalty };
 });
