@@ -1,6 +1,6 @@
-# Interface do UI Package
+# Interface anterior do UI Package
 
-Seleção extraída de `docs/UI Package.zip` e integrada ao HUD HTML/CSS do Umbral Realm.
+Seleção extraída de `docs/UI Package.zip`. Estes arquivos foram usados na primeira revisão do HUD e permanecem preservados como referência, mas a apresentação ativa foi substituída pela seleção em `assets/ui-smart/`.
 
 | Arquivo integrado | Origem no ZIP | Uso |
 | --- | --- | --- |

@@ -53,13 +53,24 @@ test("all Phaser preload assets are available offline", () => {
 
 test("every integrated environment and UI asset is available offline", () => {
   const shell = shellEntries().map(localPath);
-  for (const directory of ["assets/environment/trail", "assets/ui"]) {
+  for (const directory of ["assets/environment/trail", "assets/ui", "assets/ui-smart"]) {
     const assets = fs.readdirSync(path.join(root, directory)).filter(file => file.endsWith(".png"));
     assert.ok(assets.length > 0);
     for (const asset of assets) {
       const reference = `${directory}/${asset}`;
       assert.ok(shell.includes(reference), `${reference} is not pre-cached`);
     }
+  }
+});
+
+test("combat audio files loaded by Phaser exist and are available offline", () => {
+  const game = read("src/game.js");
+  const loadedAudio = [...game.matchAll(/this\.load\.audio\([^,]+,\s*"([^"]+)"/g)].map(match => match[1]);
+  const shell = shellEntries().map(localPath);
+  assert.equal(loadedAudio.length, 2);
+  for (const audio of loadedAudio) {
+    assert.ok(exists(audio), `missing audio ${audio}`);
+    assert.ok(shell.includes(localPath(audio)), `${audio} is not pre-cached`);
   }
 });
 

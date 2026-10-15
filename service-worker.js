@@ -1,13 +1,13 @@
-const CACHE = "umbral-realm-playtest-v36";
+const CACHE = "umbral-realm-playtest-v37";
 const SHELL = [
   "./",
   "./index.html",
-  "./src/style.css?v=36",
-  "./src/game-state.js?v=36",
-  "./src/world-config.js?v=36",
-  "./src/targeting.js?v=36",
-  "./src/combat-feedback.js?v=36",
-  "./src/game.js?v=36",
+  "./src/style.css?v=37",
+  "./src/game-state.js?v=37",
+  "./src/world-config.js?v=37",
+  "./src/targeting.js?v=37",
+  "./src/combat-feedback.js?v=37",
+  "./src/game.js?v=37",
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./icons/icon-192.png",
@@ -38,7 +38,18 @@ const SHELL = [
   "./assets/ui/button-frame.png",
   "./assets/ui/status-bar-frame.png",
   "./assets/ui/vitality-heart.png",
-  "./assets/ui/coin.png"
+  "./assets/ui/coin.png",
+  "./assets/ui-smart/panel-wide.png",
+  "./assets/ui-smart/panel-tall.png",
+  "./assets/ui-smart/pill.png",
+  "./assets/ui-smart/progress-frame.png",
+  "./assets/ui-smart/smartphone-frame.png",
+  "./assets/ui-smart/button.png",
+  "./assets/ui-smart/button-active.png",
+  "./assets/ui-smart/vitality.png",
+  "./assets/ui-smart/coin.png",
+  "./assets/audio/knife-stab.mp3",
+  "./assets/audio/revolver-shot.mp3"
 ];
 
 self.addEventListener("install", event => {

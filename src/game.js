@@ -86,6 +86,8 @@
       ["ground-dark", "ground-detail", "small-oak", "bush", "tires-grass", "tire", "brick-debris", "garbage-bin", "barrel-rust-red", "destroyed-wall-corner", "destroyed-wall"].forEach(key => {
         this.load.image(key, `./assets/environment/trail/${key}.png`);
       });
+      this.load.audio("knife-stab", "./assets/audio/knife-stab.mp3");
+      this.load.audio("revolver-shot", "./assets/audio/revolver-shot.mp3");
     }
 
     create() {
@@ -128,6 +130,10 @@
 
       this.createCampfire();
       this.createAnimations();
+      this.attackSounds = {
+        close: this.sound.add("knife-stab", { volume: 0.58 }),
+        far: this.sound.add("revolver-shot", { volume: 0.48 })
+      };
       this.merchant = this.add.sprite(World.merchant.x, World.merchant.y, "merchant-idle", 0).setScale(1.6).setOrigin(0.5, 0.82).setDepth(World.merchant.y);
       this.merchantName = this.add.text(World.merchant.x, World.merchant.y - 35, "MERCADOR", this.labelStyle("#f0d7a0")).setOrigin(0.5).setDepth(1000);
 
@@ -178,6 +184,13 @@
       });
       this.anims.create({ key: "player-idle-right-down", frames: this.anims.generateFrameNumbers("player-idle-right-down", { start: 0, end: 7 }), frameRate: 7, repeat: -1 });
       this.anims.create({ key: "player-walk-right-down", frames: this.anims.generateFrameNumbers("player-walk-right-down", { start: 0, end: 7 }), frameRate: 10, repeat: -1 });
+    }
+
+    playAttackSound(action) {
+      const sound = this.attackSounds?.[action];
+      if (!sound) return;
+      if (sound.isPlaying) sound.stop();
+      sound.play();
     }
 
     showDamageNumber(target, amount) {
@@ -404,6 +417,7 @@
     ratState.hp = Math.max(0, ratState.hp - damage);
     target.setAlpha(0.35);
     setTimeout(() => { if (target.visible) target.setAlpha(1); }, 130);
+    sceneRef.playAttackSound(state.action);
     sceneRef.showDamageNumber(target, damage);
     sceneRef.updateRatIndicators(target);
     el("status").textContent = `${state.action === "close" ? "Golpe de faca" : "Disparo"} atingiu o Rato ${target.ratId + 1}.`;

@@ -13,7 +13,7 @@
 - Sprites direcionais do jogador e poses direcionais do rato. As folhas foram conferidas: personagem combinado 384×384 (6 linhas de 8 quadros de 48×64); rato e mercador 256×32 (8 direções de 32×32). O rato não possui ciclo de caminhada no asset atual.
 - Quatro ratos zumbis distribuídos antes da clareira, cada um com vida e persistência independentes, perseguição com território, dano por contato, recompensa direta e respawn de doze segundos.
 - Faca e revólver `.38` representados pelas duas ações de combate preexistentes. Ao atacar com a faca fora do alcance, o personagem segue o rato vivo mais próximo e executa um golpe ao alcançá-lo; joystick, teclado, toque no mapa ou troca de arma cancelam a aproximação. O revólver começa com sete munições e sem reserva; os valores de dano continuam provisórios.
-- HUD de vida, XP, nível, moedas, munição e inimigo; controles de arma, ataque e interação acessíveis sobre a cena na orientação horizontal. Cada rato também possui barra de vida no mundo. Dano recebido por ratos e pelo jogador aparece como número vermelho flutuante, em vez de mensagens textuais com a quantidade. Molduras, barras, botões e ícones selecionados do `UI Package.zip` foram integrados sem substituir a estrutura HTML acessível.
+- HUD de vida, XP, nível, moedas, munição e inimigo; controles de arma, ataque e interação acessíveis sobre a cena na orientação horizontal. Cada rato também possui barra de vida no mundo. Dano recebido por ratos e pelo jogador aparece como número vermelho flutuante. A apresentação ativa usa painéis, botões, barras e ícones selecionados do `Humble Gift - Smart UI.zip`, mantendo a estrutura HTML acessível; a moldura de smartphone está preservada para futuros menus.
 - Mercador visível e diálogo simples, mas sem loja.
 - Salvamento local do estado numérico, agora normalizado contra campos ausentes/corrompidos e acionado também após alterações relevantes e ao ocultar/sair da página.
 - Manifesto, orientação horizontal e service worker. Phaser, shell e sprites usados pela cena são locais e pré-carregados para uso após a primeira visita.
@@ -23,7 +23,7 @@
 ### Parcial ou provisório
 
 - A Trilha dos Infectados é um mapa inicial autoral de 1280×720: saída a oeste, quatro territórios de ratos, ruínas e uma clareira segura a leste com fogueira e mercador. Terreno e props selecionados do pack autorizado foram integrados; algumas estruturas continuam desenhadas com formas enquanto seus tiles não forem montados e validados.
-- Combate respeita alcance e recarga, mas não tem animações de ataque, projétil, chance de acerto, sangramento, fio da faca ou sujeira do revólver.
+- Combate respeita alcance e recarga e reproduz efeitos distintos quando faca ou revólver acertam. Ainda não tem animações de ataque, projétil, chance de acerto, sangramento, fio da faca ou sujeira do revólver.
 - A “morte” recupera metade da vida e reposiciona o jogador; perda/recuperação ainda é uma decisão aberta no GDD.
 - XP e nível existem, mas skills independentes ainda não. Os números atuais não foram validados por balanceamento.
 - A recompensa é creditada diretamente; não existem entidades coletáveis, inventário nem tabelas de drop.
