@@ -9,9 +9,11 @@ Seleção extraída de `docs/Humble Gift - Smart UI.zip` e usada na interface re
 - `progress-frame.png`: moldura de barras de vida e experiência.
 - `button.png` e `button-active.png`: estados normal e selecionado dos botões.
 - `vitality.png` e `coin.png`: indicadores de vida e ouro.
-- `smartphone-frame.png`: moldura do dispositivo preservada para os futuros menus de inventário e loja; ainda não é exibida no HUD de combate.
+- `smartphone-frame.png`: moldura do menu principal, exibida sobre uma composição autoral de mesa feita em CSS.
+- `profile-avatar.png`: retrato de perfil extraído de `Sprites/5 - Icons/10.png`.
+- `medkit.png` e `bandages.png`: atalhos visuais extraídos de `Sprites/4 - Items/5.png` e `4.png`.
 
-Origem no pack: `Humble Gift - Smart UI v1.0/Sprites/`. A interface mantém conteúdo e controles em HTML para acessibilidade e adaptação ao Android; os PNGs fornecem a apresentação pixel art.
+Origem no pack: `Humble Gift - Smart UI v1.0/Sprites/`. A interface de smartphone recompõe em HTML e CSS a linguagem visual da referência promocional, sem depender de uma imagem pronta da mesa. Isso preserva acessibilidade, adaptação ao Android e conteúdo dinâmico; os PNGs fornecem a apresentação pixel art.
 
 ## Licença
 

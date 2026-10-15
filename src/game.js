@@ -49,7 +49,7 @@
     ["action-far", "touch-action-far"].forEach(id => el(id)?.setAttribute("aria-pressed", String(state.action === "far")));
 
     el("status-level").textContent = String(state.level);
-    el("status-hp").textContent = `${state.hp} / ${maxHp()}`;
+    el("status-hp").textContent = `${state.hp} / ${maxHp()} PV`;
     el("status-coins").textContent = String(state.coins);
     el("status-ammo").textContent = CombatRules.DEVELOPMENT_INFINITE_AMMO ? "∞" : `${state.charges} / ${State.MAX_AMMO}`;
     el("status-xp").textContent = `${state.xp} / ${next}`;

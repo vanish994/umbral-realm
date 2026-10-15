@@ -1,14 +1,14 @@
-const CACHE = "umbral-realm-playtest-v41";
+const CACHE = "umbral-realm-playtest-v42";
 const SHELL = [
   "./",
   "./index.html",
-  "./src/style.css?v=41",
-  "./src/combat-rules.js?v=41",
-  "./src/game-state.js?v=41",
-  "./src/world-config.js?v=41",
-  "./src/targeting.js?v=41",
-  "./src/combat-feedback.js?v=41",
-  "./src/game.js?v=41",
+  "./src/style.css?v=42",
+  "./src/combat-rules.js?v=42",
+  "./src/game-state.js?v=42",
+  "./src/world-config.js?v=42",
+  "./src/targeting.js?v=42",
+  "./src/combat-feedback.js?v=42",
+  "./src/game.js?v=42",
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./icons/icon-192.png",
@@ -49,6 +49,9 @@ const SHELL = [
   "./assets/ui-smart/button-active.png",
   "./assets/ui-smart/vitality.png",
   "./assets/ui-smart/coin.png",
+  "./assets/ui-smart/profile-avatar.png",
+  "./assets/ui-smart/medkit.png",
+  "./assets/ui-smart/bandages.png",
   "./assets/audio/knife-stab.mp3",
   "./assets/audio/revolver-shot.mp3",
   "./docs/wasteland-we-are-all-astronauts-main-version-37037-02-20.mp3"
