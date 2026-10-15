@@ -1,14 +1,14 @@
-const CACHE = "umbral-realm-playtest-v40";
+const CACHE = "umbral-realm-playtest-v41";
 const SHELL = [
   "./",
   "./index.html",
-  "./src/style.css?v=40",
-  "./src/combat-rules.js?v=40",
-  "./src/game-state.js?v=40",
-  "./src/world-config.js?v=40",
-  "./src/targeting.js?v=40",
-  "./src/combat-feedback.js?v=40",
-  "./src/game.js?v=40",
+  "./src/style.css?v=41",
+  "./src/combat-rules.js?v=41",
+  "./src/game-state.js?v=41",
+  "./src/world-config.js?v=41",
+  "./src/targeting.js?v=41",
+  "./src/combat-feedback.js?v=41",
+  "./src/game.js?v=41",
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./icons/icon-192.png",

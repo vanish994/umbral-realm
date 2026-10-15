@@ -108,9 +108,15 @@ test("development HUD clearly exposes infinite revolver ammunition", () => {
   assert.match(game, /DEVELOPMENT_INFINITE_AMMO/);
 });
 
-test("complete character status exposes both weapon skills and combat stats", () => {
+test("smartphone menu exposes functional status and skills plus planned navigation", () => {
   const html = read("index.html");
-  assert.match(html, /id="status-panel"[^>]*role="dialog"/);
+  const css = read("src/style.css");
+  assert.match(html, /id="smartphone-menu"[^>]*role="dialog"/);
+  assert.match(css, /smartphone-frame\.png/);
+  for (const page of ["status", "skills", "inventory", "map", "quests"]) {
+    assert.match(html, new RegExp(`data-menu-page="${page}"`));
+    assert.match(html, new RegExp(`data-menu-tab="${page}"`));
+  }
   for (const id of ["blades-level", "blades-xp", "firearms-level", "firearms-xp", "critical-chance", "critical-multiplier"]) {
     assert.match(html, new RegExp(`id="${id}"`));
   }

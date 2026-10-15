@@ -9,7 +9,7 @@
   if (!State || !World || !Targeting || !CombatFeedback || !CombatRules) throw new Error("Os módulos do jogo não carregaram.");
 
   const state = State.normalize(saved);
-  let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeRatId = null, statusOpen = false;
+  let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeRatId = null, menuOpen = false;
   const rats = [];
   const touch = { x: 0, y: 0 };
   const el = id => document.getElementById(id);
@@ -168,7 +168,7 @@
       cursors = this.input.keyboard.createCursorKeys();
       moveKeys = this.input.keyboard.addKeys("W,A,S,D,SPACE,E");
       this.input.on("pointerdown", pointer => {
-        if (pointer.event.target.closest("button,.game-controls")) return;
+        if (menuOpen || pointer.event.target.closest("button,.game-controls")) return;
         const point = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
         if (Math.hypot(point.x - player.x, point.y - player.y) > 22) {
           pendingMeleeRatId = null;
@@ -442,14 +442,14 @@
 
   function near(a, b, range = 75) { return a && b && Phaser.Math.Distance.Between(a.x, a.y, b.x, b.y) <= range; }
   function selectAction(action) {
-    if (statusOpen) return;
+    if (menuOpen) return;
     pendingMeleeRatId = null;
     state.action = action; updateHud(); persistGame();
     announce(action === "close" ? "Faca selecionada: atacar aproxima você do rato mais próximo." : CombatRules.DEVELOPMENT_INFINITE_AMMO ? "Revólver .38 selecionado com munição infinita durante o desenvolvimento." : "Revólver .38 selecionado: cada disparo consome uma munição.");
   }
 
   function resolveAction(allowApproach = true, forcedTarget = null) {
-    if (!actionReady || state.hp <= 0 || statusOpen) return;
+    if (!actionReady || state.hp <= 0 || menuOpen) return;
     const range = state.action === "close" ? 58 : 285;
     let target = forcedTarget;
     if (target && (!target.visible || state.rats[target.ratId].hp <= 0 || Targeting.distanceBetween(player, target) > range)) target = null;
@@ -503,25 +503,41 @@
     updateHud(); persistGame();
   }
 
-  function setStatusOpen(open) {
-    statusOpen = open;
-    const panel = el("status-panel");
+  const menuTitles = { status: "STATUS", skills: "SKILLS", inventory: "INVENTÁRIO", map: "MAPA", quests: "MISSÕES" };
+  function selectMenuPage(page) {
+    if (!menuTitles[page]) return;
+    document.querySelectorAll("[data-menu-page]").forEach(section => {
+      const selected = section.dataset.menuPage === page;
+      section.hidden = !selected;
+      section.classList.toggle("active", selected);
+    });
+    document.querySelectorAll("[data-menu-tab]").forEach(button => {
+      const selected = button.dataset.menuTab === page;
+      button.classList.toggle("active", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    });
+    el("menu-title").textContent = menuTitles[page];
+  }
+
+  function setMenuOpen(open) {
+    menuOpen = open;
+    const panel = el("smartphone-menu");
     panel.hidden = !open;
-    el("open-status").setAttribute("aria-expanded", String(open));
+    el("open-menu").setAttribute("aria-expanded", String(open));
     if (open) {
       updateHud();
       pendingMeleeRatId = null;
       player?.setData("tapTarget", null);
       sceneRef?.scene.pause();
-      el("close-status").focus();
+      el("close-menu").focus();
     } else {
       sceneRef?.scene.resume();
-      el("open-status").focus();
+      el("open-menu").focus();
     }
   }
 
   function interact() {
-    if (statusOpen) return;
+    if (menuOpen) return;
     if (sceneRef?.merchant && near(player, sceneRef.merchant, 85)) {
       state.talked = true; persistGame();
       announce("Mercador: Você atravessou a trilha. Tenho suprimentos para quem conseguir moedas.");
@@ -553,10 +569,11 @@
   ["interact", "touch-interact"].forEach(id => el(id)?.addEventListener("click", interact));
   el("attack").addEventListener("click", resolveAction);
   el("save").addEventListener("click", () => persistGame(true));
-  el("open-status").addEventListener("click", () => setStatusOpen(!statusOpen));
-  el("close-status").addEventListener("click", () => setStatusOpen(false));
+  el("open-menu").addEventListener("click", () => setMenuOpen(!menuOpen));
+  el("close-menu").addEventListener("click", () => setMenuOpen(false));
+  document.querySelectorAll("[data-menu-tab]").forEach(button => button.addEventListener("click", () => selectMenuPage(button.dataset.menuTab)));
   document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && statusOpen) { setStatusOpen(false); return; }
+    if (event.key === "Escape" && menuOpen) { setMenuOpen(false); return; }
     if (event.code === "Space") { event.preventDefault(); resolveAction(); }
     if (event.key.toLowerCase() === "e") interact();
     if (event.key === "1") selectAction("close");
