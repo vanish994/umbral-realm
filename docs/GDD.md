@@ -166,6 +166,10 @@ sem playtest longo.
 Os dois sprites têm somente poses paradas por direção (sem ciclo de caminhada, ataque ou morte), então o
 protótipo usa a rotação conforme o ângulo de movimento, como já acontecia com rato, lobo e zumbi lento.
 
+**Vila inicial (após a área dos ratos):** clareira cercada por árvores ao fim da estrada de terra, com
+fogueira grande, barracas e o comerciante — o primeiro ponto seguro e de comércio do jogo, antes das
+áreas de lobo e da zona urbana. O refúgio do leste permanece como clareira de descanso avançada.
+
 **Corredores subterrâneos (abaixo da zona urbana):** área de nível 20 acessada por um poço na borda sul
 da cidade, com três galerias em zigue-zague habitadas por **Zumbis do Esgoto** de níveis 20–22 (brutos
 lentos de corredor, 320–410 de vida). Eles reutilizam a arte do zumbi lento com escala e matiz próprios

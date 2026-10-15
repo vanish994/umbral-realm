@@ -13,7 +13,8 @@ const freshEnemies = [
   { id: "mutant-30", hp: 680 },
   { id: "sewer-zombie-20", hp: 320 }, { id: "sewer-zombie-20b", hp: 320 },
   { id: "sewer-zombie-21", hp: 355 }, { id: "sewer-zombie-21b", hp: 355 },
-  { id: "sewer-zombie-22", hp: 410 }
+  { id: "sewer-zombie-22", hp: 410 },
+  { id: "rat-2c", hp: 58 }, { id: "wolf-6c", hp: 108 }, { id: "slow-zombie-12b", hp: 190 }
 ];
 
 test("normalize supplies a playable initial state with every scaled enemy", () => {

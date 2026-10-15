@@ -49,7 +49,7 @@
   // faria o loot visível desaparecer. Níveis desconhecidos são descartados.
   function normalizeGroundDrops(raw) {
     const levels = [...new Set(EnemyRules.ENEMIES.map(enemy => enemy.level))];
-    return DropRules.normalizeDrops(raw, levels, { width: 2500, height: 900 });
+    return DropRules.normalizeDrops(raw, levels, { width: 4300, height: 1500 });
   }
 
   function normalize(raw = {}) {

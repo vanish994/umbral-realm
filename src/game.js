@@ -414,6 +414,11 @@
     }
 
     createCampfire() {
+      this.createBonfireAt(World.campfire.x, World.campfire.y, 1, "FOGUEIRA");
+      this.createVillage();
+    }
+
+    createBonfireAt(x, y, scale, label) {
       const logs = this.add.graphics();
       logs.fillStyle(0x3a241b); logs.fillRect(-15, 5, 30, 6); logs.fillRect(-3, -7, 6, 30);
       logs.fillStyle(0x8f552f); logs.fillCircle(-12, 8, 3); logs.fillCircle(12, 8, 3);
@@ -421,9 +426,30 @@
       flame.fillStyle(0xd84b2a); flame.fillTriangle(-11, 7, 0, -24, 11, 7);
       flame.fillStyle(0xffa22f); flame.fillTriangle(-7, 6, 1, -15, 7, 6);
       flame.fillStyle(0xffdf78); flame.fillTriangle(-3, 5, 1, -7, 4, 5);
-      this.campfire = this.add.container(World.campfire.x, World.campfire.y, [logs, flame]).setDepth(World.campfire.y);
+      const glow = this.add.graphics();
+      glow.fillStyle(0xff9a3c, 0.10); glow.fillCircle(0, 0, 34);
+      const container = this.add.container(x, y, [glow, logs, flame]).setDepth(y).setScale(scale);
+      if (scale === 1) this.campfire = container;
       this.tweens.add({ targets: flame, scaleY: 0.86, scaleX: 1.08, alpha: 0.82, duration: 170, yoyo: true, repeat: -1 });
-      this.add.text(World.campfire.x, World.campfire.y + 22, "FOGUEIRA", this.labelStyle("#e8a45c")).setOrigin(0.5).setDepth(1000);
+      this.add.text(x, y + 24 * scale, label, this.labelStyle("#e8a45c")).setOrigin(0.5).setDepth(1000);
+      return container;
+    }
+
+    // Vila inicial: fogueira grande (1,7x a do refúgio) e barracas de lona desenhadas
+    // por gráficos — o pack não tem asset de barraca licenciado.
+    createVillage() {
+      const fire = World.village.bonfire;
+      this.createBonfireAt(fire.x, fire.y, 1.7, "FOGUEIRA DA VILA");
+      const light = this.add.graphics().setDepth(fire.y - 1);
+      light.fillStyle(0xff9a3c, 0.07); light.fillCircle(fire.x, fire.y, 120);
+      World.village.tents.forEach(tent => {
+        const g = this.add.graphics().setDepth(tent.y);
+        g.fillStyle(0x4c3f2a); g.fillTriangle(tent.x - 34, tent.y, tent.x, tent.y - 44, tent.x + 34, tent.y);
+        g.fillStyle(0x6b5b3e); g.fillTriangle(tent.x - 34, tent.y, tent.x, tent.y - 44, tent.x + 6, tent.y);
+        g.fillStyle(0x1c1710); g.fillTriangle(tent.x - 9, tent.y, tent.x, tent.y - 26, tent.x + 9, tent.y);
+        g.lineStyle(2, 0x2e2517); g.beginPath(); g.moveTo(tent.x, tent.y - 44); g.lineTo(tent.x, tent.y - 52); g.strokePath();
+        g.fillStyle(0x8f552f); g.fillRect(tent.x - 38, tent.y - 2, 76, 3);
+      });
     }
 
     createAnimations() {
@@ -771,7 +797,7 @@
       const playerDistance = Phaser.Math.Distance.Between(player.x, player.y, enemy.x, enemy.y);
       const homeDistance = Phaser.Math.Distance.Between(enemy.x, enemy.y, enemy.spawnX, enemy.spawnY);
       let targetX = player.x, targetY = player.y, speed = definition.speed;
-      if (homeDistance > definition.chaseRange + 65 || player.x > World.safeZoneX) { targetX = enemy.spawnX; targetY = enemy.spawnY; speed = Math.max(24, definition.speed); }
+      if (homeDistance > definition.chaseRange + 65 || World.isSafeX(player.x)) { targetX = enemy.spawnX; targetY = enemy.spawnY; speed = Math.max(24, definition.speed); }
       else if (playerDistance >= definition.chaseRange) return;
 
       const dx = targetX - enemy.x, dy = targetY - enemy.y;
@@ -818,7 +844,7 @@
       context.clip();
       context.fillStyle = "#091017";
       context.fillRect(0, 0, width, height);
-      const areaColors = ["#6d6339", "#253d2d", "#514638", "#294335"];
+      const areaColors = ["#6d6339", "#3d5a3a", "#253d2d", "#514638", "#294335"];
       World.areas.forEach((area, index) => {
         context.fillStyle = areaColors[index];
         context.fillRect(mapX(area.startX), margin, mapX(area.endX) - mapX(area.startX), height - margin * 2);

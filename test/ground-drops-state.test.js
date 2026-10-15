@@ -21,12 +21,12 @@ test("normalize discards corrupt ground drops instead of spawning false loot", (
       "lixo"
     ]
   });
-  assert.deepEqual(state.groundDrops, [{ level: 1, x: 2500, y: 0 }]);
+  assert.deepEqual(state.groundDrops, [{ level: 1, x: 4300, y: 0 }]);
 });
 
 test("ground drops are independent from carried cores and enemy state", () => {
   const state = normalize({ cores: { 5: 2 }, groundDrops: [{ level: 5, x: 10, y: 10 }] });
   assert.equal(state.cores[5], 2, "coletar continua sendo o único caminho para a mochila");
   assert.equal(state.groundDrops.length, 1);
-  assert.equal(state.enemies.length, 20);
+  assert.equal(state.enemies.length, 23);
 });

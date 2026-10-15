@@ -3,16 +3,16 @@ const test = require("node:test");
 const { ENEMIES, definition, playerMaxHp, coreDropChance, coreValue, rollCoreDrop } = require("../src/enemy-rules.js");
 
 test("enemy roster follows the requested level bands", () => {
-  assert.deepEqual(ENEMIES.filter(enemy => enemy.species === "rat").map(enemy => enemy.level), [1, 1, 2, 2]);
-  assert.deepEqual(ENEMIES.filter(enemy => enemy.species === "wolf").map(enemy => enemy.level), [5, 5, 6, 6]);
-  assert.deepEqual(ENEMIES.filter(enemy => enemy.species === "slow-zombie").map(enemy => enemy.level), [10, 10, 11, 12]);
+  assert.deepEqual(ENEMIES.filter(enemy => enemy.species === "rat").map(enemy => enemy.level), [1, 1, 2, 2, 2]);
+  assert.deepEqual(ENEMIES.filter(enemy => enemy.species === "wolf").map(enemy => enemy.level), [5, 5, 6, 6, 6]);
+  assert.deepEqual(ENEMIES.filter(enemy => enemy.species === "slow-zombie").map(enemy => enemy.level), [10, 10, 11, 12, 12]);
   assert.deepEqual(ENEMIES.filter(enemy => enemy.species === "scavenger").map(enemy => enemy.level), [18, 20]);
   assert.deepEqual(ENEMIES.filter(enemy => enemy.species === "sewer-zombie").map(enemy => enemy.level), [20, 20, 21, 21, 22]);
   assert.deepEqual(ENEMIES.filter(enemy => enemy.species === "mutant").map(enemy => enemy.level), [30]);
   // A faixa de elite fecha o roster da superfície; o subterrâneo é um apêndice no fim
   // das duas listas porque os 15 primeiros índices são o contrato do save existente.
   assert.deepEqual(ENEMIES.slice(12, 15).map(enemy => enemy.id), ["scavenger-18", "scavenger-20", "mutant-30"]);
-  assert.deepEqual(ENEMIES.slice(-5).map(enemy => enemy.id), ["sewer-zombie-20", "sewer-zombie-20b", "sewer-zombie-21", "sewer-zombie-21b", "sewer-zombie-22"]);
+  assert.deepEqual(ENEMIES.slice(15, 20).map(enemy => enemy.id), ["sewer-zombie-20", "sewer-zombie-20b", "sewer-zombie-21", "sewer-zombie-21b", "sewer-zombie-22"]);
   assert.deepEqual(ENEMIES.slice(12, 15).map(enemy => enemy.name), ["SAQUEADOR", "SAQUEADOR", "MUTANTE"]);
 });
 
@@ -20,7 +20,9 @@ test("higher enemy bands increase health, damage, rewards, and respawn time", ()
   // A progressão é monotônica dentro de cada território (superfície e subterrâneo);
   // o apêndice do esgoto não reordena o roster porque o save usa os índices/ids.
   const surface = ENEMIES.slice(0, 15);
-  const sewer = ENEMIES.slice(15);
+  const sewer = ENEMIES.slice(15, 20);
+  // Os três reforços finais repetem os números da própria faixa (apêndice do save).
+  assert.deepEqual(ENEMIES.slice(-3).map(enemy => enemy.id), ["rat-2c", "wolf-6c", "slow-zombie-12b"]);
   for (const roster of [surface, sewer]) for (let index = 1; index < roster.length; index += 1) {
     const ENEMIES_BAND = roster;
     assert.ok(ENEMIES_BAND[index].maxHp >= ENEMIES_BAND[index - 1].maxHp);

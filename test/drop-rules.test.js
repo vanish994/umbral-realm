@@ -8,7 +8,7 @@ test("createDrop keeps valid cores and rejects invalid entries instead of invent
   assert.equal(createDrop(-2, 100, 100), null);
   assert.equal(createDrop(5, "not-a-number", 100), null);
   assert.equal(createDrop(5, 100, undefined), null);
-  assert.deepEqual(createDrop(5, 99999, -50), { level: 5, x: 2500, y: 0 });
+  assert.deepEqual(createDrop(5, 99999, -50), { level: 5, x: 4300, y: 0 });
 });
 
 test("addDrop does not mutate the previous list and evicts the oldest beyond the cap", () => {
@@ -57,7 +57,7 @@ test("normalizeDrops keeps only known levels inside the world and respects the c
   ], validLevels);
   assert.deepEqual(normalized, [
     { level: 5, x: 120, y: 220 },
-    { level: 2, x: 2500, y: 0 }
+    { level: 2, x: 4300, y: 0 }
   ]);
   assert.deepEqual(normalizeDrops(undefined, validLevels), []);
   assert.deepEqual(normalizeDrops([{ level: 1, x: 1, y: 1 }], []), []);

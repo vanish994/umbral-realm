@@ -22,11 +22,11 @@
   }
 
   // Retorna null para entradas inválidas em vez de fabricar um drop jogável.
-  function createDrop(level, x, y, bounds = { width: 2500, height: 900 }) {
+  function createDrop(level, x, y, bounds = { width: 4300, height: 1500 }) {
     const safeLevel = whole(level, 0, 0, Number.MAX_SAFE_INTEGER);
     if (safeLevel <= 0) return null;
-    const width = whole(bounds?.width, 2500, 1, Number.MAX_SAFE_INTEGER);
-    const height = whole(bounds?.height, 900, 1, Number.MAX_SAFE_INTEGER);
+    const width = whole(bounds?.width, 4300, 1, Number.MAX_SAFE_INTEGER);
+    const height = whole(bounds?.height, 1500, 1, Number.MAX_SAFE_INTEGER);
     const safeX = coordinate(x, NaN, width);
     const safeY = coordinate(y, NaN, height);
     if (!Number.isFinite(safeX) || !Number.isFinite(safeY)) return null;
@@ -76,7 +76,7 @@
 
   // Normaliza o save: só níveis conhecidos, coordenadas dentro do mundo e teto de entidades.
   // Entradas corrompidas são descartadas (não reparadas para um drop falso).
-  function normalizeDrops(raw, validLevels, bounds = { width: 2500, height: 900 }) {
+  function normalizeDrops(raw, validLevels, bounds = { width: 4300, height: 1500 }) {
     if (!Array.isArray(raw)) return [];
     const levels = new Set((Array.isArray(validLevels) ? validLevels : []).map(level => whole(level, 0, 0, Number.MAX_SAFE_INTEGER)));
     const normalized = [];

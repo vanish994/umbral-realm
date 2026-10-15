@@ -18,7 +18,7 @@ test("the only surface opening is the sewer shaft in the south forest band", () 
 });
 
 test("sewer zombies are level 20-22 brutes confined to the three galleries", () => {
-  const spawns = world.enemySpawns.slice(-5);
+  const spawns = world.enemySpawns.slice(15, 20);
   assert.deepEqual(spawns.map(spawn => definition(spawn.id).level), [20, 20, 21, 21, 22]);
   const under = world.underground;
   for (const spawn of spawns) {
