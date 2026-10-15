@@ -194,17 +194,39 @@
       if(enemy&&enemy.visible&&!state.defeated&&state.hp>0){
         const distance=Phaser.Math.Distance.Between(player.x,player.y,enemy.x,enemy.y);
         if(distance<185){
-          const a=Math.atan2(player.y-enemy.y,player.x-enemy.x);
-          // Converter o ângulo para uma das 8 poses do spritesheet.
-          // Cada quadro é uma direção, não um frame de caminhada.
-          const sector = ((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8;
-          // setor 0= direita; 1=baixo-direita; 2=baixo; ... 7=cima-direita.
-          // A folha começa com baixo no quadro 0, esquerda-baixo no 1,
-          // esquerda no 2, esquerda-cima no 3, cima no 4,
-          // direita-cima no 5, direita no 6 e direita-baixo no 7.
-          const frameBySector = [6, 7, 0, 1, 2, 3, 4, 5];
+          // Mesma lógica direcional do personagem: primeiro calcula o vetor
+          // até o alvo e classifica horizontal/vertical/diagonal.
+          const toPlayerX = player.x - enemy.x;
+          const toPlayerY = player.y - enemy.y;
+          const horizontal = Math.abs(toPlayerX) > Math.abs(toPlayerY) * 0.414;
+          const vertical = Math.abs(toPlayerY) > Math.abs(toPlayerX) * 0.414;
+          let dirKey;
+          if (horizontal && vertical) {
+            dirKey = toPlayerX < 0
+              ? (toPlayerY < 0 ? "left-up" : "left-down")
+              : (toPlayerY < 0 ? "right-up" : "right-down");
+          } else if (horizontal) {
+            dirKey = toPlayerX < 0 ? "left-down" : "right-down";
+          } else {
+            dirKey = toPlayerY < 0 ? "up" : "down";
+          }
+          // Os nomes seguem a mesma classificação do personagem; os índices
+          // apontam para as 8 poses fixas do spritesheet do rato.
+          const ratFrameByDirection = {
+            "right-down": 7,
+            "right-up": 5,
+            "left-up": 3,
+            "left-down": 1,
+            "up": 4,
+            "down": 0
+          };
+          // A folha tem uma pose lateral para cada lado, sem duplicar animações.
+          // Usa a direção horizontal dominante para não selecionar a pose oposta.
+          let ratFrame = ratFrameByDirection[dirKey];
+          if (dirKey === "right-down" && toPlayerY < 0) ratFrame = 5;
+          if (dirKey === "left-down" && toPlayerY < 0) ratFrame = 3;
           enemy.anims.stop();
-          enemy.setFrame(frameBySector[sector]);
+          enemy.setFrame(ratFrame);
           if(distance>27){
             enemy.x+=Math.cos(a)*24*delta/1000;
             enemy.y+=Math.sin(a)*24*delta/1000;
