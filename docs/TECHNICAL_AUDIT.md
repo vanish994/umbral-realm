@@ -33,8 +33,8 @@
 | Calça tática | Pernas | 7% de defesa |
 
 - Sete itens equipáveis e persistentes: o personagem começa somente com faca e revólver `.38`; katana, pistola, colete, capacete e calça tática são comprados do mercador e ficam permanentemente disponíveis. Faca/katana usam Lâminas; revólver/pistola usam Armas de Fogo. A aproximação automática funciona com a arma branca equipada. Armas de fogo usam carregadores persistentes (6 no revólver e 12 na pistola), recarga manual/automática e reserva infinita temporária pela flag `DEVELOPMENT_INFINITE_RESERVE`; a precisão cai durante o movimento. Colete, capacete e calça somam até 30% de redução de dano; nenhum equipamento é desenhado sobre o personagem no mundo.
-- HUD de vida, XP, nível, moedas, munição e inimigo; controles de arma, ataque e interação acessíveis sobre a cena na orientação horizontal. O botão MENU abre uma composição autoral de mesa em CSS com a moldura de smartphone do Smart UI ampliada ao centro e pausa a cena, aproximando-se da referência promocional fornecida. O dispositivo usa uma proporção visual mais larga que o PNG-base para dar legibilidade aos dados e alvos de toque no Android horizontal. A página Status usa retrato, vida, defesa, equipamentos atuais e detalhes de combate; Skills mostra as faixas da arma equipada. A página Itens mantém os sete equipamentos em uma grade fixa de quatro linhas, sem rolagem do conteúdo do smartphone, e permite equipar ou remover itens. Mapa e Missões permanecem explicitamente em desenvolvimento. Cada inimigo exibe nome, nível e barra de vida individual no mundo. Dano comum aparece em vermelho e crítico em dourado com texto, flash e tremor; XP geral ganho aparece em branco sobre o jogador e ouro atualiza silenciosamente. Avisos visuais e toast foram removidos, mantendo somente uma região invisível para leitores de tela. A apresentação ativa usa painéis, botões, barras e ícones selecionados do `Humble Gift - Smart UI.zip`; a moldura de smartphone está preservada para futuros menus.
-- Mercador visível e diálogo simples, mas sem loja.
+- HUD de vida, XP, nível, moedas e munição; controles de arma, ataque e interação acessíveis sobre a cena na orientação horizontal. O botão MENU pausa a cena e abre o terminal de campo horizontal aprovado: mesa de madeira com papéis, lápis, USB, cartão médico e disco, aparelho central largo e quatro páginas fixas sem rolagem — Personagem, Status, Habilidades e Equipamentos. Todos os dados exibidos vêm do estado real, e a página Equipamentos preserva compra, posse, troca e remoção dos sete itens. Cada inimigo exibe nome, nível e barra de vida individual no mundo. Dano comum aparece em vermelho e crítico em dourado com texto, flash e tremor; XP geral ganho aparece em branco sobre o jogador e ouro atualiza silenciosamente. Avisos visuais e toast foram removidos, mantendo somente uma região invisível para leitores de tela.
+- Mercador funcional: vende cinco equipamentos, compra automaticamente os núcleos carregados e persiste saldo e propriedade.
 - Salvamento local do estado numérico, agora normalizado contra campos ausentes/corrompidos e acionado também após alterações relevantes e ao ocultar/sair da página.
 - Manifesto, orientação horizontal e service worker. Phaser, shell e sprites usados pela cena são locais e pré-carregados para uso após a primeira visita.
 - Um único workflow de deploy Pages. O segundo workflow apenas reorganiza assets e faz commit; ele não publica o site.
@@ -43,20 +43,18 @@
 ### Parcial ou provisório
 
 - O mapa autoral de 2500×900 segue uma progressão linear: subúrbio com quatro ratos, mata/ruínas com quatro lobos, zona urbana com quatro zumbis lentos e refúgio a leste com fogueira e mercador. Inimigos podem derrubar núcleos do próprio nível; a chance e o valor de venda aumentam com o nível. Ao interagir, o mercador compra todos os núcleos carregados e abre sua lista de equipamentos. A morte usa as seis direções do spritesheet original, retorna o jogador ao início com metade da vida e remove 10 XP geral e 10% do requisito atual de cada skill, permitindo regressão de nível. Terrenos e props selecionados do pack autorizado foram integrados; a estrada e as colisões estruturais ainda usam formas simples.
-- Combate respeita alcance e recarga e reproduz efeitos distintos quando faca ou revólver acertam. A música `Wasteland`, de We Are All Astronauts, começa em volume baixo após a primeira interação e repete em loop. Ainda não há controles de volume, animações de ataque, projétil, chance de acerto, sangramento, fio da faca ou sujeira do revólver.
-- A “morte” recupera metade da vida e reposiciona o jogador; perda/recuperação ainda é uma decisão aberta no GDD.
+- Combate respeita alcance, cadência, carregador e recarga e reproduz efeitos distintos por categoria. Armas de fogo têm 94% de precisão parado e 76% em movimento. A música `Wasteland`, de We Are All Astronauts, começa em volume baixo após a primeira interação e repete em loop. Ainda não há controles de volume, animações de ataque, projétil, sangramento, fio da faca ou sujeira do revólver.
+- A morte anima o spritesheet direcional real, recupera metade da vida, reposiciona o jogador e aplica perda regressiva de XP geral e de skills.
 - XP geral e skills independentes de Lâminas e Armas de Fogo existem e são salvas. Cada acerto válido concede 4 XP à skill usada; o requisito parte de 20 e cresce por fator aproximado de 1,45 por nível. Cada nível adiciona 4% à faixa de dano-base da categoria; cada nível geral adiciona 1,5%, mantendo a skill como influência principal. A vida máxima do jogador parte de 100 e cresce 12 por nível. Esses números receberam testes de coerência, mas ainda não foram validados por playtest prolongado.
-- A recompensa é creditada diretamente e todos os sete equipamentos estão liberados no inventário de desenvolvimento; ainda não existem entidades coletáveis, aquisição de itens nem tabelas de drop.
+- Ouro e XP são creditados diretamente. Núcleos por nível têm chance de drop configurável e inventário persistente, mas ainda não aparecem como entidades físicas coletáveis no chão.
 - O save preserva progresso e combate, mas não posição do jogador nem tempo restante de respawn.
 - Em telas horizontais baixas, o painel detalhado é ocultado para liberar o mapa; os comandos essenciais permanecem sobre a cena.
 
 ### Ausente em relação ao MVP do GDD
 
 - Estados e animações dedicadas de ataque/morte para as três espécies de inimigo.
-- Drops coletáveis, aquisição de equipamentos e tabelas por espécie.
-- Compra e venda no mercador.
-- Medicamentos, munição encontrada/comprada e recarga.
-- Zona segura e área de exploração conectadas como regiões distintas.
+- Drops representados fisicamente no mundo e tabelas distintas por espécie.
+- Medicamentos e munição encontrada/comprada; a recarga com reserva de desenvolvimento já existe.
 - Fio da faca, sujeira e manutenção das armas.
 - Testes automatizados de navegador e validação em aparelho Android real.
 
@@ -74,14 +72,14 @@
 
 1. **Validar e estabilizar o loop atual em navegador/Android:** carga, landscape, joystick, todos os botões, colisões do jogador e rato, morte, respawn, reload e modo offline. Corrigir qualquer regressão antes de ampliar sistemas.
 2. **Validar balanceamento dos inimigos em playtest:** as definições e testes puros existem; medir tempo para matar, dano recebido, progressão e espaço de perseguição no Android.
-3. **Conectar drops ao inventário existente:** recompensa física configurável, coleta explícita, aquisição persistente e pré-requisito para vender materiais.
-4. **Implementar comerciante mínimo:** compra de munição e venda dos materiais existentes, com transações atômicas e testes contra saldo/estoque inválidos.
-5. **Adicionar segundo inimigo:** somente depois que o modelo de inimigo e drops for reutilizável; deve ter comportamento realmente distinto.
-6. **Refinar vida/morte e feedback de combate:** depende da decisão de consequência de morte ainda aberta e dos assets de animação disponíveis.
+3. **Materializar drops no mundo:** transformar a rolagem persistente de núcleos em coleta explícita sem quebrar a venda já funcional.
+4. **Ampliar o comerciante:** adicionar compra de munição/medicamentos, estoque e testes de transações inválidas.
+5. **Diferenciar IA e animações dos inimigos:** ratos, lobos e zumbis já têm faixas próprias, mas ainda precisam de estados visuais de ataque/morte e comportamentos mais distintos.
+6. **Refinar feedback de combate:** adicionar animações de ataque e projéteis sem comprometer cadência, seleção e multitoque.
 7. **Manutenção e balanceamento das skills:** implementar fio e sujeira após inventário estável; validar em playtest a curva e os bônus já configuráveis.
 
 ## Decisões pequenas adotadas
 
-- As ações genéricas “próxima” e “distante” representam os slots de Lâminas e Armas de Fogo. Faca e revólver `.38` continuam como equipamento inicial; katana e pistola podem substituí-los pelo smartphone. As armas de fogo mantêm capacidade-base de sete disparos, atualmente sem consumo pela flag de desenvolvimento. Os números não foram promovidos a balanceamento definitivo.
-- O save inválido com vida zero é recuperado para um estado jogável porque o protótipo atual não possui estado persistente de morte.
+- As ações de curta e longa distância representam os slots de Lâminas e Armas de Fogo. Faca e revólver `.38` são o equipamento inicial; os demais itens precisam ser comprados. Revólver usa 6 tiros e pistola 12, ambos com carregador consumível e reserva infinita temporária. Os números ainda não foram promovidos a balanceamento definitivo.
+- O save inválido com vida zero é recuperado para um estado jogável; mortes válidas são resolvidas em runtime após a animação e então persistidas com a penalidade aplicada.
 - O balanço do rato é visual e removido antes de calcular movimento/colisão, evitando que a oscilação altere sua posição lógica.

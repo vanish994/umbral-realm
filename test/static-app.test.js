@@ -120,19 +120,19 @@ test("development HUD exposes finite magazines with an infinite reserve", () => 
   assert.match(game, /state\.ammo/);
 });
 
-test("smartphone menu exposes functional status and skills plus planned navigation", () => {
+test("field terminal menu matches the approved desk composition and exposes four functional pages", () => {
   const html = read("index.html");
   const css = read("src/style.css");
   assert.match(html, /id="smartphone-menu"[^>]*role="dialog"/);
-  assert.match(html, /class="desk-scene"/);
-  assert.match(html, /class="profile-card"/);
-  assert.match(css, /smartphone-frame\.png/);
-  assert.match(css, /\.smartphone-device\{[^}]*height:min\(96%,520px\)[^}]*aspect-ratio:3\/5/);
-  assert.match(css, /repeating-linear-gradient\(0deg/);
-  for (const page of ["status", "skills", "inventory", "map", "quests"]) {
+  for (const prop of ["desk-paper", "desk-pencil", "desk-drive", "desk-disc", "desk-card"]) assert.match(html, new RegExp(prop));
+  assert.match(html, /class="smartphone-device field-phone"/);
+  assert.match(css, /\.smartphone-device\.field-phone\{[^}]*width:min\(92vw,960px\)[^}]*height:min\(84vh,500px\)/);
+  assert.match(css, /repeating-linear-gradient\(90deg/);
+  for (const page of ["character", "status", "skills", "inventory"]) {
     assert.match(html, new RegExp(`data-menu-page="${page}"`));
     assert.match(html, new RegExp(`data-menu-tab="${page}"`));
   }
+  for (const removed of ["map", "quests"]) assert.doesNotMatch(html, new RegExp(`data-menu-(?:page|tab)="${removed}"`));
   for (const id of ["blades-level", "blades-xp", "firearms-level", "firearms-xp", "critical-chance", "critical-multiplier"]) {
     assert.match(html, new RegExp(`id="${id}"`));
   }
@@ -145,7 +145,8 @@ test("smartphone inventory exposes all seven equippable items", () => {
   assert.match(html, /id="status-defense"/);
   const css = read("src/style.css");
   assert.match(css, /\.smartphone-content\{[^}]*overflow:hidden/);
-  assert.match(css, /\.inventory-grid\{[^}]*grid-template-rows:repeat\(4,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.field-item-grid\{[^}]*grid-template-columns:repeat\(4,1fr\)[^}]*grid-template-rows:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.field-equipped-grid\{[^}]*grid-template-columns:repeat\(5,1fr\)/);
 });
 
 test("landscape scene exposes essential touch commands and immediate multi-touch attack", () => {

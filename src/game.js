@@ -53,7 +53,9 @@
   function updateHud() {
     state.hp = Math.max(0, Math.min(maxHp(), state.hp));
     el("hp-label").textContent = `${state.hp} / ${maxHp()}`;
-    el("hp-bar").style.width = `${state.hp / maxHp() * 100}%`;
+    const healthRatio = state.hp / maxHp();
+    el("hp-bar").style.width = `${healthRatio * 100}%`;
+    el("character-condition").textContent = healthRatio > 0.66 ? "OPERACIONAL" : healthRatio > 0.33 ? "FERIDO" : "CRÍTICO";
     const next = state.level * 100;
     const equippedBlade = ItemRules.weaponForAction(state.equipment, "close");
     const equippedFirearm = ItemRules.weaponForAction(state.equipment, "far");
@@ -76,14 +78,25 @@
     el("status-coins").textContent = String(state.coins);
     el("status-ammo").textContent = `${loadedAmmo} / ${equippedFirearm.magazineSize}${CombatRules.DEVELOPMENT_INFINITE_RESERVE ? " + ∞" : ""}`;
     el("status-xp").textContent = `${state.xp} / ${next}`;
+    el("status-xp-bar").style.width = `${state.xp / next * 100}%`;
     const equippedDefense = ItemRules.defense(state.equipment);
     el("status-defense").textContent = `${Math.round(equippedDefense * 100)}%`;
     for (const [slot, itemId] of Object.entries(state.equipment)) {
       const image = el(`equipped-${slot}`);
       if (!image) continue;
       const item = ItemRules.ITEMS[itemId];
-      if (item) { image.src = item.image; image.alt = item.name; image.parentElement.classList.add("equipped"); }
-      else { image.removeAttribute("src"); image.alt = "Espaço vazio"; image.parentElement.classList.remove("equipped"); }
+      const slotName = image.parentElement.querySelector("strong");
+      if (item) {
+        image.src = item.image;
+        image.alt = item.name;
+        image.parentElement.classList.add("equipped");
+        if (slotName) slotName.textContent = item.name.toUpperCase();
+      } else {
+        image.removeAttribute("src");
+        image.alt = "Espaço vazio";
+        image.parentElement.classList.remove("equipped");
+        if (slotName) slotName.textContent = "VAZIO";
+      }
     }
     el("equipped-summary-title").textContent = `${equippedBlade.name.toUpperCase()} + ${equippedFirearm.name.toUpperCase()}`;
     el("equipped-summary-text").textContent = `Defesa equipada: ${Math.round(equippedDefense * 100)}%. Abra Itens para trocar o equipamento.`;
@@ -734,7 +747,7 @@
     if (action === "far" && state.ammo[weapon.id] === 0) reloadFirearm();
   }
 
-  const menuTitles = { status: "STATUS", skills: "SKILLS", inventory: "INVENTÁRIO", map: "MAPA", quests: "MISSÕES" };
+  const menuTitles = { character: "PERSONAGEM", status: "STATUS", skills: "HABILIDADES", inventory: "EQUIPAMENTOS" };
   function selectMenuPage(page) {
     if (!menuTitles[page]) return;
     document.querySelectorAll("[data-menu-page]").forEach(section => {
