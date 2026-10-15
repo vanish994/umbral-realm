@@ -1,0 +1,132 @@
+{
+  "meta": {
+    "image": "knife-attack.png",
+    "source": "male-slash-source.jpeg",
+    "size": {
+      "w": 576,
+      "h": 384
+    },
+    "frameWidth": 48,
+    "frameHeight": 64,
+    "columns": 12,
+    "rows": 6,
+    "totalFrames": 72,
+    "directionOrder": [
+      "down",
+      "left-down",
+      "left-up",
+      "up",
+      "right-up",
+      "right-down"
+    ],
+    "frameIndexOrder": "esquerda para direita, de cima para baixo",
+    "sourceScale": 2.8,
+    "sourceBodyHeightPx": 70.0,
+    "paletteColors": 70,
+    "note": "Quadros 0/1 e 4/5 repetidos para segurar o pre-ataque e o impacto em 12 quadros por direcao."
+  },
+  "directions": {
+    "down": {
+      "row": 0,
+      "holdSequence": [
+        0,
+        0,
+        1,
+        2,
+        2,
+        3,
+        4,
+        4,
+        5,
+        6,
+        6,
+        7
+      ]
+    },
+    "left-down": {
+      "row": 1,
+      "holdSequence": [
+        0,
+        0,
+        1,
+        2,
+        2,
+        3,
+        4,
+        4,
+        5,
+        6,
+        6,
+        7
+      ]
+    },
+    "left-up": {
+      "row": 2,
+      "holdSequence": [
+        0,
+        0,
+        1,
+        2,
+        2,
+        3,
+        4,
+        4,
+        5,
+        6,
+        6,
+        7
+      ]
+    },
+    "up": {
+      "row": 3,
+      "holdSequence": [
+        0,
+        0,
+        1,
+        2,
+        2,
+        3,
+        4,
+        4,
+        5,
+        6,
+        6,
+        7
+      ]
+    },
+    "right-up": {
+      "row": 4,
+      "holdSequence": [
+        0,
+        0,
+        1,
+        2,
+        2,
+        3,
+        4,
+        4,
+        5,
+        6,
+        6,
+        7
+      ]
+    },
+    "right-down": {
+      "row": 5,
+      "holdSequence": [
+        0,
+        0,
+        1,
+        2,
+        2,
+        3,
+        4,
+        4,
+        5,
+        6,
+        6,
+        7
+      ]
+    }
+  }
+}

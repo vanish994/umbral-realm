@@ -50,6 +50,10 @@ A sociedade entrou em colapso devido a uma infecção que transforma pessoas e a
 
 Nomes específicos de cidades, facções e regiões serão definidos mais tarde. A ambientação deve permanecer pós-apocalíptica, sem magia ou criaturas de fantasia tradicional.
 
+### Limites da área jogável
+
+A área jogável termina em mata cerrada em toda a volta: a vegetação e a colisão impedem o jogador de alcançar as beiradas do mapa, e a estrada atravessa o maciço como se continuasse para fora da região. Ampliar o mapa significa abrir novas passagens entre maciços, nunca afrouxar essa barreira.
+
 ## 4. Personagem e progressão
 
 ### Sem classes fixas
@@ -139,6 +143,28 @@ Todos os mobs de combate pertencem à temática zumbi. A diversidade vem de esp�
 - **Variantes de elite e chefes:** encontros raros com padrões reconhecíveis e habilidades próprias; não devem ser apenas inimigos comuns com mais vida.
 
 As habilidades especiais precisam de sinais visuais ou animações legíveis para permitir reação do jogador. A lista final de espécies será criada depois; estas são diretrizes, não um catálogo implementado.
+
+### Catálogo implementado no protótipo
+
+Além das faixas zumbis em `src/enemy-rules.js`, o protótipo tem duas espécies de elite que guardam a
+aproximação do refúgio. Os números abaixo são provisórios e configuráveis, ajustados por teste e ainda
+sem playtest longo.
+
+| Espécie | Nível | Vida | Dano | Velocidade | Alcance de perseguição | Recarga | XP | Ouro | Respawn |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Saqueador (humano hostil) | 18 | 300 | 22 | 54 | 170 | 950 ms | 380 | 52 | 70 s |
+| Saqueador (humano hostil) | 20 | 340 | 25 | 56 | 175 | 900 ms | 430 | 60 | 78 s |
+| Mutante | 30 | 680 | 36 | 16 | 150 | 1350 ms | 900 | 110 | 120 s |
+
+- **Saqueador:** humano hostil que não é zumbi. Aproveita o sprite direcional de 32×32 enviado em
+  `docs/Saqueador-32x32.zip` e é o inimigo mais rápido do mapa; pressiona por pouco tempo e volta ao
+  acampamento quando o jogador se afasta. Ainda não tem rotina de patrulha, saque ou tiro à distância.
+- **Mutante:** infectado evoluído de nível 30, o mais lento e resistente do protótipo. Usa o sprite de
+  `docs/Mutante-32x32.zip`. Ainda é um perseguidor corpo a corpo; investidas, garras ou ataques em área
+  continuam planejados, não implementados.
+
+Os dois sprites têm somente poses paradas por direção (sem ciclo de caminhada, ataque ou morte), então o
+protótipo usa a rotação conforme o ângulo de movimento, como já acontecia com rato, lobo e zumbi lento.
 
 ### Vida e respawn
 

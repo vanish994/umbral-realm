@@ -16,7 +16,15 @@
     make("slow-zombie-10", "slow-zombie", "ZUMBI LENTO", 10, 155, 12, 18, 165, 1550, 140, 16, 26000),
     make("slow-zombie-10b", "slow-zombie", "ZUMBI LENTO", 10, 155, 12, 18, 165, 1550, 140, 16, 26000),
     make("slow-zombie-11", "slow-zombie", "ZUMBI LENTO", 11, 172, 13, 19, 170, 1500, 155, 18, 28000),
-    make("slow-zombie-12", "slow-zombie", "ZUMBI LENTO", 12, 190, 14, 20, 175, 1450, 175, 20, 30000)
+    make("slow-zombie-12", "slow-zombie", "ZUMBI LENTO", 12, 190, 14, 20, 175, 1450, 175, 20, 30000),
+    // Faixa de elite que guarda a entrada do refúgio. Os números são provisórios e configuráveis:
+    // a extrapolação linear da faixa zumbi daria ~266 PV no nível 18; os saqueadores recebem um
+    // acréscimo de elite (mais vida, dano, velocidade e recompensa) por serem o conteúdo final do mapa.
+    // A zona de perseguição é mais curta que a dos zumbis lentos: eles guardam o portão, não varrem o mapa.
+    make("scavenger-18", "scavenger", "SAQUEADOR", 18, 300, 22, 54, 170, 950, 380, 52, 70000),
+    make("scavenger-20", "scavenger", "SAQUEADOR", 20, 340, 25, 56, 175, 900, 430, 60, 78000),
+    // Chefe de área: o mais lento do mapa, resistente e brutal, com o maior respawn do protótipo.
+    make("mutant-30", "mutant", "MUTANTE", 30, 680, 36, 16, 150, 1350, 900, 110, 120000)
   ]);
 
   const BY_ID = Object.freeze(Object.fromEntries(ENEMIES.map(enemy => [enemy.id, enemy])));

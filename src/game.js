@@ -8,13 +8,52 @@
   const CombatRules = window.UmbralCombatRules;
   const EnemyRules = window.UmbralEnemyRules;
   const ItemRules = window.UmbralItemRules;
-  if (!State || !World || !Targeting || !CombatFeedback || !CombatRules || !EnemyRules || !ItemRules) throw new Error("Os módulos do jogo não carregaram.");
+  const AnimationRules = window.UmbralAnimationRules;
+  if (!State || !World || !Targeting || !CombatFeedback || !CombatRules || !EnemyRules || !ItemRules || !AnimationRules) throw new Error("Os módulos do jogo não carregaram.");
 
   const state = State.normalize(saved);
-  let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeEnemyIndex = null, selectedEnemyIndex = null, menuOpen = false, merchantMode = false, playerDying = false, reloadState = null;
+  let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeEnemyIndex = null, selectedEnemyIndex = null, menuOpen = false, merchantMode = false, playerDying = false, reloadState = null, attackAnimation = null;
   const enemies = [];
   const touch = { x: 0, y: 0 };
   const el = id => document.getElementById(id);
+
+  // Perfil visual por espécie: textura, escala, altura dos indicadores, alcance de contato, balanço,
+  // largura da barra de vida, raio do marcador de alvo e caixa de colisão. Cada espécie declarada em
+  // src/enemy-rules.js precisa de uma entrada aqui; o teste estático cobre essa correspondência.
+  const ENEMY_VISUALS = Object.freeze({
+    rat: Object.freeze({ key: "zombie-rat-idle", scale: 1, offset: 27, contact: 27, bob: 1.15, barWidth: 38, radius: 19, solid: Object.freeze({ w: 8, h: 6 }) }),
+    wolf: Object.freeze({ key: "zombie-wolf-idle", scale: 1.25, offset: 31, contact: 27, bob: 1.15, barWidth: 38, radius: 23, solid: Object.freeze({ w: 8, h: 6 }) }),
+    "slow-zombie": Object.freeze({ key: "slow-zombie-idle", scale: 1.2, offset: 43, contact: 31, bob: 0.45, barWidth: 44, radius: 27, solid: Object.freeze({ w: 8, h: 6 }) }),
+    // Humano hostil armado: celula 32x32 com corpo de 28 px, escalado para a altura do zumbi humano.
+    // O deslocamento dos indicadores acompanha o topo do corpo desenhado (ancora em 0.76 da celula).
+    scavenger: Object.freeze({ key: "scavenger-idle", scale: 1.9, offset: 46, contact: 33, bob: 0.6, barWidth: 46, radius: 28, solid: Object.freeze({ w: 10, h: 7 }) }),
+    // Bruto de nivel 30: o maior sprite do mapa, com area de contato equivalente ao tamanho.
+    mutant: Object.freeze({ key: "mutant-idle", scale: 2.15, offset: 56, contact: 40, bob: 0.35, barWidth: 52, radius: 32, solid: Object.freeze({ w: 13, h: 9 }) })
+  });
+  const FALLBACK_VISUAL = ENEMY_VISUALS.rat;
+  function visualFor(definition) {
+    const visual = ENEMY_VISUALS[definition?.species];
+    if (visual) return visual;
+    console.warn(`Sem perfil visual para a espécie ${definition?.species}; usando o do rato.`);
+    return FALLBACK_VISUAL;
+  }
+
+  // Assets de ambiente gerados por tools/build-environment-assets.py a partir do pack
+  // do mantenedor. A mata fecha as bordas (árvores, arbustos, capim, pedras e tocos) e
+  // o cenário urbano cobre a estrada (carros, postes, bancos, entulho).
+  const BORDER_ASSETS = [
+    "tree-spruce", "tree-spruce-sparse", "tree-normal", "tree-big", "tree-big-pine",
+    "tree-birch", "tree-birch-small", "tree-oak", "tree-oak-small", "tree-trunk",
+    "bush", "bush-wide", "grass-tuft-small", "grass-tuft", "grass-tuft-low",
+    "grass-tuft-tall", "rock-grass", "stump", "stump-mushrooms"
+  ];
+  const STREET_ASSETS = [
+    "car-wreck", "car-overturned", "car-scrap", "van-wreck", "truck-wreck", "motorcycle-wreck",
+    "street-light-side", "street-light-up", "street-light-overgrown", "bench", "hydrant",
+    "trash-can", "trash-bag", "traffic-cone", "stop-sign", "manhole", "metal-plates",
+    "iron-beam", "pallet", "cardboard", "shopping-cart", "refrigerator", "washing-machine",
+    "vending-machine", "gray-brick", "gray-brick-debris", "container", "exhaust-pipe"
+  ];
 
   // Mensagens operacionais continuam disponíveis para leitores de tela, sem cobrir o jogo.
   function announce(message) {
@@ -156,6 +195,31 @@
     return Boolean(player.getData("tapTarget") || pendingMeleeEnemyIndex !== null || cursors.left.isDown || cursors.right.isDown || cursors.up.isDown || cursors.down.isDown || moveKeys.A.isDown || moveKeys.D.isDown || moveKeys.W.isDown || moveKeys.S.isDown || Math.abs(touch.x) > 0.05 || Math.abs(touch.y) > 0.05);
   }
 
+  // A animação de ataque assume o sprite durante a janela da arma (a mesma duração da recarga);
+  // quando ela termina, o personagem volta a andar ou a ficar parado na direção em que olha.
+  function attackAnimationActive() {
+    if (!attackAnimation) return false;
+    if (sceneRef && sceneRef.time.now < attackAnimation.endsAt) return true;
+    attackAnimation = null;
+    if (player) player.anims.timeScale = 1;
+    return false;
+  }
+
+  function faceDirection(direction) {
+    if (!player || !AnimationRules.isValidDirection(direction)) return;
+    player.setData("direction", direction);
+    if (!attackAnimationActive() && player.anims.currentAnim?.key?.startsWith("player-idle-")) {
+      playPlayerAnimation(`player-idle-${direction}`, true);
+    }
+  }
+
+  // O timeScale do ataque fica preso ao sprite: idle, walk e death sempre voltam à velocidade normal.
+  function playPlayerAnimation(key, ignoreIfPlaying = false) {
+    if (!player || !key) return;
+    player.anims.timeScale = 1;
+    player.play(key, ignoreIfPlaying);
+  }
+
   function reloadFirearm() {
     const weapon = ItemRules.weaponForAction(state.equipment, "far");
     if (reloadState || state.ammo[weapon.id] >= weapon.magazineSize) return false;
@@ -186,13 +250,23 @@
       this.load.spritesheet("player-idle-right-down", "./assets/characters/male/Idle/idle_right_down.png", { frameWidth: 48, frameHeight: 64 });
       this.load.spritesheet("player-walk-right-down", "./assets/characters/male/Walk/walk_right_down.png", { frameWidth: 48, frameHeight: 64 });
       this.load.spritesheet("player-death", "./assets/characters/male/Death/death_normal.png", { frameWidth: 48, frameHeight: 64 });
+      this.load.spritesheet("player-attack-close", AnimationRules.sheetFor("close").file, { frameWidth: AnimationRules.sheetFor("close").frameWidth, frameHeight: AnimationRules.sheetFor("close").frameHeight });
+      this.load.spritesheet("player-attack-far", AnimationRules.sheetFor("far").file, { frameWidth: AnimationRules.sheetFor("far").frameWidth, frameHeight: AnimationRules.sheetFor("far").frameHeight });
       this.load.spritesheet("zombie-rat-idle", "./assets/enemies/zombie-rat/Um_rato_zombie-Idle.png", { frameWidth: 32, frameHeight: 32 });
       this.load.spritesheet("zombie-wolf-idle", "./assets/enemies/zombie-wolf/idle.png", { frameWidth: 32, frameHeight: 32 });
       this.load.spritesheet("slow-zombie-idle", "./assets/enemies/slow-zombie/idle.png", { frameWidth: 48, frameHeight: 48 });
+      this.load.spritesheet("scavenger-idle", "./assets/enemies/scavenger/idle.png", { frameWidth: 32, frameHeight: 32 });
+      this.load.spritesheet("mutant-idle", "./assets/enemies/mutant/idle.png", { frameWidth: 32, frameHeight: 32 });
       this.load.spritesheet("merchant-idle", "./assets/npcs/merchant/Um_npc_mercador_estilo_o-Idle.png", { frameWidth: 32, frameHeight: 32 });
-      ["ground-dark", "ground-bleak", "ground-detail", "small-oak", "bush", "tires-grass", "tire", "brick-debris", "garbage-bin", "barrel-rust-red", "destroyed-wall-corner", "destroyed-wall", "brick-wall-tile", "brick-ruin-tile"].forEach(key => {
+      // Pisos 512x512 a 2x, estrada, transicoes de area, parede e props da trilha.
+      ["ground-dark", "ground-bleak", "ground-urban", "ground-refuge", "ground-detail", "road",
+        "edge-bleak-dark", "edge-dark-urban", "edge-urban-refuge", "wall-brick",
+        "bush", "tires-grass", "tire", "brick-debris", "garbage-bin", "barrel-rust-red",
+        "destroyed-wall-corner", "destroyed-wall"].forEach(key => {
         this.load.image(key, `./assets/environment/trail/${key}.png`);
       });
+      BORDER_ASSETS.forEach(key => this.load.image(key, `./assets/environment/border/${key}.png`));
+      STREET_ASSETS.forEach(key => this.load.image(key, `./assets/environment/street/${key}.png`));
       this.load.audio("knife-stab", "./assets/audio/knife-stab.mp3");
       this.load.audio("revolver-shot", "./assets/audio/revolver-shot.mp3");
     }
@@ -208,25 +282,24 @@
       });
       World.groundDetails.forEach(([x, y]) => this.add.image(x, y, "ground-detail").setScale(2).setAlpha(0.7).setDepth(1));
 
-      const g = this.add.graphics().setDepth(1);
-      // Estrada linear conecta as três áreas hostis ao refúgio no extremo leste.
-      g.fillStyle(0x55483a, 1);
-      g.fillRoundedRect(-35, 355, World.world.width + 70, 190, 70);
-      g.lineStyle(3, 0x75624b, 0.7);
-      g.strokeRoundedRect(-35, 355, World.world.width + 70, 190, 70);
-      World.areas.slice(1).forEach(area => {
-        g.lineStyle(4, 0x17191a, 0.42);
-        g.lineBetween(area.startX, 0, area.startX, World.world.height);
+      // Divisas de área: dither de 96 px centrado no limite, no lugar de linhas pretas.
+      World.areaEdges.forEach(edge => {
+        this.add.tileSprite(edge.x - edge.width / 2, 0, edge.width, World.world.height, edge.key).setOrigin(0).setDepth(1);
       });
 
-      // Ruínas fixas ajudam a orientar o jogador e correspondem aos retângulos de colisão.
-      g.fillStyle(0x4a4c4d, 1);
-      World.solids.forEach(solid => g.fillRect(solid.x, solid.y, solid.w, solid.h));
-      g.lineStyle(2, 0x777064, 1);
-      World.solids.forEach(solid => g.strokeRect(solid.x, solid.y, solid.w, solid.h));
+      // Estrada linear conecta as três áreas hostis ao refúgio no extremo leste.
+      this.add.tileSprite(World.road.x, World.road.y, World.road.width, World.road.height, World.road.key).setOrigin(0).setDepth(1);
+
+      // Ruínas: paredes de tijolo do pack desenhadas sobre os retângulos de colisão.
+      // A profundidade y + h faz a parede cobrir o que está atrás dela.
+      World.solids.forEach(solid => {
+        if (solid.border) return;
+        this.add.tileSprite(solid.x, solid.y, solid.w, solid.h, "wall-brick").setOrigin(0).setDepth(solid.y + solid.h);
+      });
 
       World.props.forEach(prop => {
-        const sprite = this.add.image(prop.x, prop.y, prop.key).setScale(prop.scale).setOrigin(0.5, 1).setDepth(prop.y);
+        // Props "flat" são detalhes rentes ao chão (bueiro, placas): ficam abaixo dos personagens.
+        const sprite = this.add.image(prop.x, prop.y, prop.key).setScale(prop.scale).setOrigin(0.5, 1).setDepth(prop.flat ? 2 : prop.y);
         if (prop.solid) {
           this.solids.push({ x: prop.x - prop.solid.w / 2, y: prop.y - prop.solid.h, w: prop.solid.w, h: prop.solid.h });
         }
@@ -235,7 +308,7 @@
 
       World.areas.forEach((area, index) => {
         const color = index === World.areas.length - 1 ? "#f0d7a0" : "#d6c49f";
-        this.add.text((area.startX + area.endX) / 2, 58, area.name, this.labelStyle(color)).setOrigin(0.5).setDepth(900);
+        this.add.text((area.startX + area.endX) / 2, 170, area.name, this.labelStyle(color)).setOrigin(0.5).setDepth(900);
       });
 
       this.createCampfire();
@@ -253,7 +326,7 @@
 
       player = this.add.sprite(World.playerSpawn.x, World.playerSpawn.y, "player-idle", 0).setScale(1.6 * this.characterScaleFactor).setOrigin(0.5, 0.82).setDepth(World.playerSpawn.y);
       player.setData("direction", "down");
-      player.play("player-idle-down");
+      playPlayerAnimation("player-idle-down");
       this.targetMarker = this.add.graphics().setDepth(998);
       this.createEnemies();
 
@@ -298,16 +371,29 @@
     }
 
     createAnimations() {
-      const directions = ["down", "left-down", "left-up", "right-down", "right-up", "up"];
-      directions.forEach((direction, row) => {
-        if (direction === "right-down") return;
-        this.anims.create({ key: `player-idle-${direction}`, frames: this.anims.generateFrameNumbers("player-idle", { start: row * 8, end: row * 8 + 7 }), frameRate: 7, repeat: -1 });
-        this.anims.create({ key: `player-walk-${direction}`, frames: this.anims.generateFrameNumbers("player-walk", { start: row * 8, end: row * 8 + 7 }), frameRate: 10, repeat: -1 });
+      // As linhas das folhas direcionais seguem AnimationRules.DIRECTION_ROW
+      // (down, left-down, left-up, up, right-up, right-down) para idle, walk, death e ataques.
+      AnimationRules.DIRECTIONS.forEach(direction => {
+        const row = AnimationRules.rowFor(direction);
+        if (direction !== "right-down") {
+          this.anims.create({ key: `player-idle-${direction}`, frames: this.anims.generateFrameNumbers("player-idle", { start: row * 8, end: row * 8 + 7 }), frameRate: 7, repeat: -1 });
+          this.anims.create({ key: `player-walk-${direction}`, frames: this.anims.generateFrameNumbers("player-walk", { start: row * 8, end: row * 8 + 7 }), frameRate: 10, repeat: -1 });
+        }
+        this.anims.create({ key: `player-death-${direction}`, frames: this.anims.generateFrameNumbers("player-death", { start: row * 8, end: row * 8 + 7 }), frameRate: 9, repeat: 0 });
       });
       this.anims.create({ key: "player-idle-right-down", frames: this.anims.generateFrameNumbers("player-idle-right-down", { start: 0, end: 7 }), frameRate: 7, repeat: -1 });
       this.anims.create({ key: "player-walk-right-down", frames: this.anims.generateFrameNumbers("player-walk-right-down", { start: 0, end: 7 }), frameRate: 10, repeat: -1 });
-      directions.forEach((direction, row) => {
-        this.anims.create({ key: `player-death-${direction}`, frames: this.anims.generateFrameNumbers("player-death", { start: row * 8, end: row * 8 + 7 }), frameRate: 9, repeat: 0 });
+      ["close", "far"].forEach(action => {
+        const sheet = AnimationRules.sheetFor(action);
+        AnimationRules.DIRECTIONS.forEach(direction => {
+          const row = AnimationRules.rowFor(direction);
+          this.anims.create({
+            key: AnimationRules.attackKey(action, direction),
+            frames: this.anims.generateFrameNumbers(sheet.texture, { start: row * sheet.frameCount, end: row * sheet.frameCount + sheet.frameCount - 1 }),
+            frameRate: AnimationRules.BASE_FRAME_RATE,
+            repeat: 0
+          });
+        });
       });
     }
 
@@ -321,6 +407,17 @@
       if (!sound) return;
       if (sound.isPlaying) sound.stop();
       sound.play();
+    }
+
+    // Toca a animação direcional do ataque (faca para curta distância, pistola para armas de fogo).
+    playAttackAnimation(action) {
+      if (!player || playerDying) return;
+      const weapon = ItemRules.weaponForAction(state.equipment, action);
+      const direction = AnimationRules.directionOrDefault(player.getData("direction"));
+      const key = AnimationRules.attackKey(action, direction);
+      if (!this.anims.exists(key)) return;
+      player.play({ key, timeScale: AnimationRules.timeScaleFor(action, weapon) });
+      attackAnimation = { key, direction, action, endsAt: this.time.now + AnimationRules.attackWindowMs(action, weapon) };
     }
 
     showDamageNumber(target, amount, critical = false) {
@@ -380,7 +477,7 @@
       if (!enemy.visible || state.enemies[enemy.enemyIndex].hp <= 0) return;
       const definition = EnemyRules.definition(enemy.definitionId);
       const ratio = CombatFeedback.healthRatio(state.enemies[enemy.enemyIndex].hp, definition.maxHp);
-      const width = definition.species === "slow-zombie" ? 44 : 38;
+      const width = visualFor(definition).barWidth;
       const y = Math.round(enemy.y - enemy.indicatorOffset);
       const x = Math.round(enemy.x - width / 2);
       enemy.healthBar.fillStyle(0x090a0e, 0.92).fillRect(x, y, width, 6);
@@ -393,8 +490,7 @@
       this.targetMarker?.clear();
       const target = selectedEnemy();
       if (!target || !this.targetMarker) return;
-      const definition = EnemyRules.definition(target.definitionId);
-      const radius = definition.species === "slow-zombie" ? 27 : definition.species === "wolf" ? 23 : 19;
+      const radius = visualFor(EnemyRules.definition(target.definitionId)).radius;
       this.targetMarker.lineStyle(3, 0xf2c66d, 0.95);
       this.targetMarker.strokeEllipse(target.x, target.y - 2, radius * 2, Math.round(radius * 0.72));
       this.targetMarker.fillStyle(0xf2c66d, 0.22);
@@ -402,14 +498,9 @@
     }
 
     createEnemies() {
-      const spriteConfig = {
-        rat: { key: "zombie-rat-idle", scale: 1, offset: 27 },
-        wolf: { key: "zombie-wolf-idle", scale: 1.25, offset: 31 },
-        "slow-zombie": { key: "slow-zombie-idle", scale: 1.2, offset: 43 }
-      };
       World.enemySpawns.forEach((spawn, enemyIndex) => {
         const definition = EnemyRules.definition(spawn.id);
-        const visual = spriteConfig[definition.species];
+        const visual = visualFor(definition);
         const enemy = this.add.sprite(spawn.x, spawn.y, visual.key, 4).setScale(visual.scale * this.characterScaleFactor).setOrigin(0.5, 0.76).setDepth(spawn.y);
         enemy.enemyIndex = enemyIndex;
         enemy.definitionId = definition.id;
@@ -462,20 +553,22 @@
       if (playerDying) return;
       playerDying = true;
       actionReady = false;
+      attackAnimation = null;
+      player.anims.timeScale = 1;
       pendingMeleeEnemyIndex = null;
       selectedEnemyIndex = null;
       this.updateTargetMarker();
       player.setData("tapTarget", null);
       resetJoystick();
-      const direction = player.getData("direction") || "down";
-      player.play(`player-death-${direction}`, true);
+      const direction = AnimationRules.directionOrDefault(player.getData("direction"));
+      playPlayerAnimation(`player-death-${direction}`, true);
       announce("Você morreu.");
       this.time.delayedCall(950, () => {
         const penalty = State.applyDeathPenalty(state);
         state.hp = Math.max(1, Math.floor(maxHp() / 2));
         player.setPosition(World.playerSpawn.x, World.playerSpawn.y).setData("direction", "down");
         enemies.forEach(other => { other.setPosition(other.spawnX, other.spawnY); other.bobOffset = 0; });
-        player.play("player-idle-down", true);
+        playPlayerAnimation("player-idle-down", true);
         playerDying = false;
         actionReady = true;
         updateHud();
@@ -526,19 +619,22 @@
         if (Math.hypot(dx, dy) < 8) { player.setData("tapTarget", null); dx = dy = 0; }
         else { const length = Math.hypot(dx, dy); dx /= length; dy /= length; }
       }
+      const attacking = attackAnimationActive();
       if (dx || dy) {
-        const diagonal = Math.abs(dx) > 0 && Math.abs(dy) > 0;
-        const direction = diagonal ? (dx < 0 ? (dy < 0 ? "left-up" : "left-down") : (dy < 0 ? "right-up" : "right-down")) : (Math.abs(dx) > 0 ? (dx < 0 ? "left-down" : "right-down") : (dy < 0 ? "up" : "down"));
+        const direction = AnimationRules.directionFor(dx, dy);
         const animation = `player-walk-${direction}`;
         player.setData("direction", direction);
-        if (player.anims.currentAnim?.key !== animation) player.play(animation, true);
+        if (!attacking && player.anims.currentAnim?.key !== animation) playPlayerAnimation(animation, true);
         const length = Math.hypot(dx, dy), step = 145 * delta / 1000;
         const nx = Phaser.Math.Clamp(player.x + dx / length * step, 25, World.world.width - 25);
         const ny = Phaser.Math.Clamp(player.y + dy / length * step, 35, World.world.height - 30);
         if (!this.isBlocked(nx, player.y)) player.x = nx;
         if (!this.isBlocked(player.x, ny)) player.y = ny;
-      } else if (player.anims.currentAnim?.key?.startsWith("player-walk-")) {
-        player.play(player.anims.currentAnim.key.replace("player-walk-", "player-idle-"), true);
+      } else if (!attacking) {
+        const current = player.anims.currentAnim?.key || "";
+        if (current.startsWith("player-walk-") || current.startsWith("player-attack-")) {
+          playPlayerAnimation(`player-idle-${AnimationRules.directionOrDefault(player.getData("direction"))}`, true);
+        }
       }
       player.setDepth(player.y);
     }
@@ -547,6 +643,7 @@
       if (playerDying || !enemy.visible || state.enemies[enemy.enemyIndex].hp <= 0) return;
       if (enemy.bobOffset) { enemy.y -= enemy.bobOffset; enemy.bobOffset = 0; }
       const definition = EnemyRules.definition(enemy.definitionId);
+      const visual = visualFor(definition);
       const playerDistance = Phaser.Math.Distance.Between(player.x, player.y, enemy.x, enemy.y);
       const homeDistance = Phaser.Math.Distance.Between(enemy.x, enemy.y, enemy.spawnX, enemy.spawnY);
       let targetX = player.x, targetY = player.y, speed = definition.speed;
@@ -557,7 +654,7 @@
       const distance = Math.hypot(dx, dy);
       const angleSector = (Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) + 8) % 8;
       enemy.setFrame([2, 1, 0, 7, 6, 5, 4, 3][angleSector]);
-      const contactRange = definition.species === "slow-zombie" ? 31 : 27;
+      const contactRange = visual.contact;
       if (targetX === player.x && distance <= contactRange) {
         if (!enemy.attackAt || this.time.now >= enemy.attackAt) {
           enemy.attackAt = this.time.now + definition.attackCooldown;
@@ -574,10 +671,9 @@
         const step = speed * delta / 1000;
         const nx = Phaser.Math.Clamp(enemy.x + dx / distance * step, 12, World.world.width - 12);
         const ny = Phaser.Math.Clamp(enemy.y + dy / distance * step, 12, World.world.height - 12);
-        if (!this.isBlocked(nx, enemy.y, 8, 6)) enemy.x = nx;
-        if (!this.isBlocked(enemy.x, ny, 8, 6)) enemy.y = ny;
-        const bobStrength = definition.species === "slow-zombie" ? 0.45 : 1.15;
-        const bob = Math.sin(this.time.now / 78 + enemy.enemyIndex) * bobStrength;
+        if (!this.isBlocked(nx, enemy.y, visual.solid.w, visual.solid.h)) enemy.x = nx;
+        if (!this.isBlocked(enemy.x, ny, visual.solid.w, visual.solid.h)) enemy.y = ny;
+        const bob = Math.sin(this.time.now / 78 + enemy.enemyIndex) * visual.bob;
         enemy.y += bob; enemy.bobOffset = bob;
       }
       enemy.setDepth(enemy.y);
@@ -609,8 +705,11 @@
       context.moveTo(mapX(0), mapY(450));
       context.lineTo(mapX(World.world.width), mapY(450));
       context.stroke();
+      // Mata das bordas: o anel escuro mostra onde o mapa termina.
+      context.fillStyle = "#1d3323";
+      World.borderBands.forEach(band => context.fillRect(mapX(band.x), mapY(band.y), Math.max(1, band.w / World.world.width * (width - margin * 2)), Math.max(1, band.h / World.world.height * (height - margin * 2))));
       context.fillStyle = "#9ba2a6";
-      World.solids.forEach(solid => context.fillRect(mapX(solid.x), mapY(solid.y), Math.max(1, solid.w / World.world.width * (width - margin * 2)), Math.max(1, solid.h / World.world.height * (height - margin * 2))));
+      World.solids.filter(solid => !solid.border).forEach(solid => context.fillRect(mapX(solid.x), mapY(solid.y), Math.max(1, solid.w / World.world.width * (width - margin * 2)), Math.max(1, solid.h / World.world.height * (height - margin * 2))));
       enemies.forEach(enemy => {
         if (!enemy.visible || state.enemies[enemy.enemyIndex].hp <= 0) return;
         const selected = enemy.enemyIndex === selectedEnemyIndex;
@@ -708,7 +807,10 @@
     const cooldown = weapon.cooldown;
     actionReady = false;
     setTimeout(() => { actionReady = true; }, cooldown);
+    // O personagem vira para o alvo antes do golpe, para a animação apontar na direção certa.
+    faceDirection(AnimationRules.directionFor(target.x - player.x, target.y - player.y));
     sceneRef.playAttackSound(action);
+    sceneRef.playAttackAnimation(action);
     if (!CombatRules.rollHit(action, isPlayerMoving())) {
       sceneRef.showMissNumber(target);
       announce("O disparo errou o alvo durante o movimento.");

@@ -8,10 +8,12 @@ const freshEnemies = [
   { id: "wolf-5", hp: 92 }, { id: "wolf-5b", hp: 92 },
   { id: "wolf-6", hp: 108 }, { id: "wolf-6b", hp: 108 },
   { id: "slow-zombie-10", hp: 155 }, { id: "slow-zombie-10b", hp: 155 },
-  { id: "slow-zombie-11", hp: 172 }, { id: "slow-zombie-12", hp: 190 }
+  { id: "slow-zombie-11", hp: 172 }, { id: "slow-zombie-12", hp: 190 },
+  { id: "scavenger-18", hp: 300 }, { id: "scavenger-20", hp: 340 },
+  { id: "mutant-30", hp: 680 }
 ];
 
-test("normalize supplies a playable initial state with twelve scaled enemies", () => {
+test("normalize supplies a playable initial state with every scaled enemy", () => {
   const state = normalize();
   assert.equal(state.hp, 100);
   assert.equal(state.xp, 0);
@@ -19,7 +21,7 @@ test("normalize supplies a playable initial state with twelve scaled enemies", (
   assert.equal(state.coins, 0);
   assert.deepEqual(state.ammo, { revolver: 6, pistol: 12 });
   assert.deepEqual(state.ownedItems, ["knife", "revolver"]);
-  assert.deepEqual(state.cores, { 1: 0, 2: 0, 5: 0, 6: 0, 10: 0, 11: 0, 12: 0 });
+  assert.deepEqual(state.cores, { 1: 0, 2: 0, 5: 0, 6: 0, 10: 0, 11: 0, 12: 0, 18: 0, 20: 0, 30: 0 });
   assert.equal(state.action, "close");
   assert.deepEqual(state.skills, { blades: { level: 1, xp: 0 }, firearms: { level: 1, xp: 0 } });
   assert.deepEqual(state.equipment, { blade: "knife", firearm: "revolver", vest: null, helmet: null, pants: null });

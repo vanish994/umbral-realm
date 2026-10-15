@@ -53,7 +53,7 @@ test("all Phaser preload assets are available offline", () => {
 
 test("every integrated environment and UI asset is available offline", () => {
   const shell = shellEntries().map(localPath);
-  for (const directory of ["assets/environment/trail", "assets/ui", "assets/ui-smart"]) {
+  for (const directory of ["assets/environment/trail", "assets/environment/border", "assets/environment/street", "assets/ui", "assets/ui-smart"]) {
     const assets = fs.readdirSync(path.join(root, directory)).filter(file => file.endsWith(".png"));
     assert.ok(assets.length > 0);
     for (const asset of assets) {
@@ -195,5 +195,202 @@ test("manifest exposes installable PNG icon sizes and landscape mode", () => {
     const icon = manifest.icons.find(candidate => candidate.sizes === size && candidate.type === "image/png");
     assert.ok(icon, `missing ${size} PNG icon`);
     assert.ok(exists(icon.src), `missing icon file ${icon.src}`);
+  }
+});
+
+test("attack sheets declared in the animation rules exist, are pre-cached and are loaded by the scene", () => {
+  const rules = require("../src/animation-rules.js");
+  const shell = shellEntries().map(localPath);
+  const game = read("src/game.js");
+  for (const action of ["close", "far"]) {
+    const sheet = rules.sheetFor(action);
+    assert.ok(exists(sheet.file), `missing attack sheet ${sheet.file}`);
+    assert.ok(shell.includes(localPath(sheet.file)), `${sheet.file} is not pre-cached`);
+    assert.match(game, new RegExp(`load\\.spritesheet\\("${sheet.texture}", AnimationRules\\.sheetFor\\("${action}"\\)\\.file`));
+  }
+  assert.match(game, /playAttackAnimation\(action\)/);
+  assert.match(game, /attackAnimationActive\(\)/);
+  assert.match(game, /AnimationRules\.attackKey\(action, direction\)/);
+  assert.match(game, /AnimationRules\.timeScaleFor\(action, weapon\)/);
+  // O timeScale do ataque não pode ficar preso ao sprite depois do golpe.
+  assert.match(game, /function playPlayerAnimation/);
+  assert.match(game, /player\.anims\.timeScale = 1/);
+  assert.doesNotMatch(game, /player\.play\(`player-death-/, "death must go through playPlayerAnimation");
+});
+
+test("directional player sheets share one row order and the correct up row", () => {
+  const game = read("src/game.js");
+  const rules = require("../src/animation-rules.js");
+  assert.match(game, /AnimationRules\.DIRECTIONS\.forEach/);
+  assert.match(game, /AnimationRules\.rowFor\(direction\)/);
+  assert.doesNotMatch(game, /const directions = \[/, "the duplicated direction list must not come back");
+  const serialized = JSON.stringify(rules.DIRECTION_ROW);
+  assert.equal(rules.DIRECTION_ROW.up, 3);
+  assert.match(serialized, /"up":3/);
+});
+
+test("attack animation files record their drawing metadata next to the sheets", () => {
+  const knife = JSON.parse(read("assets/characters/male/Attack/knife-attack.json"));
+  assert.equal(knife.meta.frameWidth, 48);
+  assert.equal(knife.meta.frameHeight, 64);
+  assert.equal(knife.meta.columns, 12);
+  assert.equal(knife.meta.rows, 6);
+  assert.deepEqual(knife.meta.directionOrder, ["down", "left-down", "left-up", "up", "right-up", "right-down"]);
+  const shoot = JSON.parse(read("assets/characters/male/Shoot/pistol-shoot.json"));
+  assert.equal(shoot.meta.frameWidth, 48);
+  assert.equal(shoot.meta.image, "pistol-shoot.png");
+  assert.equal(shoot.meta.frameHeight, 64);
+  assert.equal(shoot.meta.columns, 8);
+  assert.equal(shoot.meta.rows, 6);
+  assert.equal(shoot.fireFrameIndexInAnimation, 4);
+});
+
+test("the knife source art and its converter stay in the repository", () => {
+  assert.ok(exists("docs/source-art/male-slash-source.jpeg"));
+  assert.ok(exists("tools/build-slash-sheet.py"));
+  const converter = read("tools/build-slash-sheet.py");
+  assert.match(converter, /def white_key/);
+  assert.match(converter, /HOLD_SEQUENCE/);
+  assert.match(converter, /DIRECTIONS = \["down", "left-down", "left-up", "up", "right-up", "right-down"\]/);
+});
+
+test("attack sheet PNGs keep the grid declared by the animation rules", () => {
+  const rules = require("../src/animation-rules.js");
+  const header = reference => {
+    const bytes = fs.readFileSync(path.join(root, localPath(reference)));
+    assert.equal(bytes.subarray(1, 4).toString("ascii"), "PNG", `${reference} must be a PNG`);
+    return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
+  };
+  for (const action of ["close", "far"]) {
+    const sheet = rules.sheetFor(action);
+    const size = header(sheet.file);
+    assert.equal(size.width, sheet.frameWidth * sheet.frameCount, `${sheet.file} width must fit ${sheet.frameCount} frames`);
+    assert.equal(size.height, sheet.frameHeight * rules.DIRECTIONS.length, `${sheet.file} height must fit 6 directions`);
+  }
+});
+
+test("every enemy species declared in the rules has art, a visual profile and an offline copy", () => {
+  const rules = require("../src/enemy-rules.js");
+  const game = read("src/game.js");
+  const shell = shellEntries().map(localPath);
+  const species = [...new Set(rules.ENEMIES.map(enemy => enemy.species))];
+  assert.ok(species.length >= 5);
+  for (const name of species) {
+    const key = name.includes("-") ? `"${name}"` : name;
+    assert.match(game, new RegExp(`${key.replace("-", "\\-")}: Object\\.freeze\\(\\{ key: "`), `espécie ${name} sem perfil visual em game.js`);
+  }
+  for (const name of ["scavenger", "mutant"]) {
+    assert.ok(species.includes(name), `${name} deve existir nas regras`);
+    const asset = `assets/enemies/${name}/idle.png`;
+    assert.ok(exists(asset), `faltando ${asset}`);
+    assert.ok(shell.includes(asset), `${asset} não está no cache offline`);
+    assert.ok(exists(`assets/enemies/${name}/idle.json`), `faltando metadados de ${name}`);
+    assert.match(game, new RegExp(`load\\.spritesheet\\("${name}-idle", "\\./${asset}"`), `${name} não é carregado pela cena`);
+  }
+});
+
+test("enemy sheets follow the rotation frame order confirmed with the maintainer art", () => {
+  const fs2 = fs;
+  const cellOf = (file, size) => {
+    const bytes = fs2.readFileSync(path.join(root, file));
+    assert.equal(bytes.subarray(1, 4).toString("ascii"), "PNG");
+    return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20), size };
+  };
+  for (const [file, size, columns, rows] of [
+    ["assets/enemies/zombie-rat/Um_rato_zombie-Idle.png", 32, 8, 1],
+    ["assets/enemies/zombie-wolf/idle.png", 32, 8, 1],
+    ["assets/enemies/slow-zombie/idle.png", 48, 8, 1],
+    ["assets/enemies/scavenger/idle.png", 32, 8, 1],
+    ["assets/enemies/mutant/idle.png", 32, 8, 1]
+  ]) {
+    const png = cellOf(file, size);
+    assert.equal(png.width, size * columns, `${file} deve ter ${columns} colunas de ${size}px`);
+    assert.equal(png.height, size * rows, `${file} deve ter ${rows} linha(s) de ${size}px`);
+  }
+  for (const name of ["scavenger", "mutant"]) {
+    const meta = JSON.parse(read(`assets/enemies/${name}/idle.json`));
+    assert.equal(meta.spritesheet.columns, 8);
+    assert.equal(meta.spritesheet.cell_size.width, 32);
+    assert.deepEqual(meta.meta.directionOrder, ["south", "south-east", "east", "north-east", "north", "north-west", "west", "south-west"]);
+    assert.match(meta.meta.animationNote, /poses paradas/);
+  }
+  const game = read("src/game.js");
+  assert.match(game, /enemy\.setFrame\(\[2, 1, 0, 7, 6, 5, 4, 3\]\[angleSector\]\)/);
+});
+
+test("no enemy can reach the refuge line from its spawn", () => {
+  const rules = require("../src/enemy-rules.js");
+  const world = require("../src/world-config.js");
+  const game = read("src/game.js");
+  const contactBySpecies = {};
+  const profilePattern = /(?:"([a-z-]+)"|([a-z-]+)): Object\.freeze\(\{ key: "[a-z-]+", scale: [\d.]+, offset: \d+, contact: (\d+)/g;
+  for (const match of game.matchAll(profilePattern)) {
+    contactBySpecies[match[1] || match[2]] = Number(match[3]);
+  }
+  assert.ok(Object.keys(contactBySpecies).length >= 5, "não foi possível ler ENEMY_VISUALS de game.js");
+  for (const spawn of world.enemySpawns) {
+    const definition = rules.definition(spawn.id);
+    const contact = contactBySpecies[definition.species];
+    assert.ok(Number.isFinite(contact), `espécie ${definition.species} sem área de contato`);
+    assert.ok(spawn.x + contact <= world.safeZoneX, `${spawn.id} alcança a clareira segura`);
+  }
+});
+
+test("todo prop do mapa tem PNG, carregamento na cena e cópia offline", () => {
+  const world = require("../src/world-config.js");
+  const game = read("src/game.js");
+  const shell = shellEntries().map(localPath);
+  const loaded = new Set([...game.matchAll(/this\.load\.image\(key,\s*`[^`]*\/\$\{key\}\.png`/g)].length ? [] : []);
+  const keyLists = ["BORDER_ASSETS", "STREET_ASSETS"];
+  const declared = new Set();
+  for (const name of keyLists) {
+    const match = game.match(new RegExp(`const ${name} = \\[([\\s\\S]*?)\\];`));
+    assert.ok(match, `${name} precisa existir em game.js`);
+    for (const item of match[1].matchAll(/"([^"]+)"/g)) declared.add(item[1]);
+  }
+  const trailMatch = game.match(/\["ground-dark"[\s\S]*?\]\.forEach\(key => \{\s*this\.load\.image\(key, `\.\/assets\/environment\/trail\/\$\{key\}\.png`\)/);
+  assert.ok(trailMatch, "a lista de assets da trilha precisa carregar por chave");
+  for (const key of trailMatch[0].matchAll(/"([^"]+)"/g)) declared.add(key[1]);
+  assert.ok(declared.size > 60, `poucos assets de ambiente declarados: ${declared.size}`);
+
+  const used = new Set([
+    ...world.props.map(prop => prop.key),
+    ...world.areas.map(area => area.ground),
+    ...world.areaEdges.map(edge => edge.key),
+    world.road.key,
+    "wall-brick",
+    "ground-detail"
+  ]);
+  for (const key of used) {
+    assert.ok(declared.has(key), `${key} é usado no mapa mas não é carregado pela cena`);
+    const folder = ["border", "street", "trail"].find(candidate =>
+      fs.existsSync(path.join(root, "assets", "environment", candidate, `${key}.png`)));
+    assert.ok(folder, `faltando PNG de ${key}`);
+    assert.ok(shell.includes(`assets/environment/${folder}/${key}.png`), `${key} não está no cache offline`);
+  }
+  for (const key of declared) {
+    const folder = ["border", "street", "trail"].find(candidate =>
+      fs.existsSync(path.join(root, "assets", "environment", candidate, `${key}.png`)));
+    assert.ok(folder, `a cena carrega ${key}, mas o PNG não existe`);
+  }
+});
+
+test("os pisos das áreas, a estrada e a parede têm as medidas que o mapa assume", () => {
+  const sizeOf = file => {
+    const header = fs.readFileSync(path.join(root, file));
+    return { width: header.readUInt32BE(16), height: header.readUInt32BE(20) };
+  };
+  for (const file of [
+    "assets/environment/trail/ground-dark.png",
+    "assets/environment/trail/ground-bleak.png",
+    "assets/environment/trail/ground-urban.png",
+    "assets/environment/trail/ground-refuge.png"
+  ]) {
+    assert.deepEqual(sizeOf(file), { width: 512, height: 512 }, `${file} deve ser uma lâmina 512x512 (16x16 tiles a 2x)`);
+  }
+  assert.deepEqual(sizeOf("assets/environment/trail/road.png"), { width: 64, height: 128 }, "a estrada precisa ter a altura declarada em World.road");
+  assert.deepEqual(sizeOf("assets/environment/trail/wall-brick.png"), { width: 32, height: 32 }, "o tijolo da parede é 1 tile a 2x");
+  for (const edge of require("../src/world-config.js").areaEdges) {
+    assert.deepEqual(sizeOf(`assets/environment/trail/${edge.key}.png`), { width: edge.width, height: 64 });
   }
 });
