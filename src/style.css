@@ -17,3 +17,16 @@
 .game-controls{position:absolute;inset:0;z-index:20;pointer-events:none}.joystick{position:absolute;left:14px;bottom:14px;width:112px;height:112px;display:grid;place-items:center;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none}.joystick-ring{width:92px;height:92px;border-radius:50%;border:2px solid #c9a66b99;background:#11131a88;box-shadow:inset 0 0 0 7px #11131a55,0 2px 12px #0007;display:grid;place-items:center}.joystick-knob{width:42px;height:42px;border-radius:50%;border:2px solid #dfc18c;background:linear-gradient(145deg,#806744dd,#32291fef);box-shadow:0 3px 8px #0009;transform:translate(0,0);pointer-events:none}.game-attack{position:absolute;right:15px;bottom:20px;pointer-events:auto;width:76px;height:76px;min-width:76px;min-height:76px;border-radius:50%;border:2px solid #c45e55;background:#5a2529eF;box-shadow:0 3px 12px #0009,inset 0 0 0 4px #29191acc;touch-action:manipulation}.game-attack span{font-size:25px}.game-attack small{font-size:9px;letter-spacing:.5px}.game-attack:active{transform:scale(.94);filter:brightness(1.25)}.controls{justify-content:flex-end}.actions{margin-left:auto}
 @media (max-width:440px) and (orientation:portrait){.joystick{left:7px;bottom:9px;width:102px;height:102px}.joystick-ring{width:84px;height:84px}.joystick-knob{width:38px;height:38px}.game-attack{right:9px;bottom:13px;width:68px;height:68px;min-width:68px;min-height:68px}.game-attack span{font-size:22px}}
 @media (orientation:landscape) and (max-height:600px){.joystick{left:8px;bottom:8px;width:88px;height:88px}.joystick-ring{width:72px;height:72px}.joystick-knob{width:34px;height:34px}.game-attack{right:10px;bottom:10px;width:62px;height:62px;min-width:62px;min-height:62px}.game-attack span{font-size:19px}}
+
+/* Tela cheia e bloqueio visual em retrato. */
+.fullscreen-button{border:1px solid #8c744d;background:#292831;color:#e7d6b5;border-radius:5px;padding:7px 8px;font-size:9px;letter-spacing:.4px;white-space:nowrap;min-height:30px}
+.fullscreen-button:active,#rotate-fullscreen:active{filter:brightness(1.3);transform:scale(.98)}
+.rotate-overlay{display:none;position:fixed;inset:0;z-index:99999;background:#0b0c11;align-items:center;justify-content:center;padding:24px;text-align:center}
+.rotate-card{width:min(100%,330px);border:1px solid #66543d;border-radius:12px;padding:28px 22px;background:linear-gradient(145deg,#20212a,#14151c);box-shadow:0 12px 40px #0009}
+.rotate-icon{display:block;font-size:48px;line-height:1;color:#c9a66b;margin-bottom:16px}
+.rotate-card strong{display:block;color:#e7dfd0;font-size:15px;letter-spacing:1.5px}
+.rotate-card p{font-size:13px;line-height:1.5;color:#b8b0a4;margin:12px 0 20px}
+#rotate-fullscreen{border:1px solid #c9a66b;background:#51402b;color:#fff0ce;border-radius:6px;padding:12px 18px;font-weight:700;letter-spacing:1px}
+@media (orientation:portrait){.rotate-overlay{display:flex}}
+@media (orientation:landscape){.rotate-overlay{display:none}}
+@media (max-width:440px){.fullscreen-button{font-size:8px;padding:6px;letter-spacing:0}.brand strong{letter-spacing:1px}}
