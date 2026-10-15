@@ -137,9 +137,14 @@
       this.anims.create({key:"player-walk-right-down",frames:this.anims.generateFrameNumbers("player-walk-right-down",{start:0,end:7}),frameRate:10,repeat:-1});
       this.anims.create({key:"guide-idle-right-down",frames:this.anims.generateFrameNumbers("guide-idle-right-down",{start:0,end:7}),frameRate:7,repeat:-1});
       this.anims.create({key:"guide-walk-right-down",frames:this.anims.generateFrameNumbers("guide-walk-right-down",{start:0,end:7}),frameRate:10,repeat:-1});
-      // O rato tem animações laterais em dois sentidos, não oito poses direcionais.
-      this.anims.create({key:"zombie-rat-walk-right",frames:[1,2,3].map(frame=>({key:"zombie-rat-idle",frame})),frameRate:8,repeat:-1});
-      this.anims.create({key:"zombie-rat-walk-left",frames:[5,6,7].map(frame=>({key:"zombie-rat-idle",frame})),frameRate:8,repeat:-1});
+      // O spritesheet do rato tem 8 poses direcionais estáticas, uma por quadro.
+      // Não reproduzir os 8 quadros como se fossem passos: isso mistura direções
+      // e faz o rato mostrar o rabo ao jogador.
+      const ratDirectionFrames = [6, 7, 0, 1, 2, 3, 4, 5];
+      // Ângulo Phaser: direita=0, baixo=PI/2, esquerda=PI, cima=-PI/2.
+      // Ordem angular: direita, direita-baixo, baixo, esquerda-baixo,
+      // esquerda, esquerda-cima, cima, direita-cima.
+      this.ratDirectionFrames = ratDirectionFrames;
       // Mostra apenas o primeiro quadro dos sprites; não executa animação no mercador.
       this.merchant=this.add.sprite(555,365,"merchant-idle",0).setFrame(0).setScale(1.9).setOrigin(0.5,0.82);
       this.merchantName=this.add.text(555,329,"MERCADOR",{fontFamily:"monospace",fontSize:"10px",color:"#f0d7a0",stroke:"#161718",strokeThickness:3}).setOrigin(0.5);
@@ -190,24 +195,16 @@
         const distance=Phaser.Math.Distance.Between(player.x,player.y,enemy.x,enemy.y);
         if(distance<185){
           const a=Math.atan2(player.y-enemy.y,player.x-enemy.x);
-          // A folha está organizada em oito direções: cima, diagonais e lados.
-          // Selecionar uma pose direcional impede o efeito de "girar" causado pelo loop.
-          // O spritesheet contém 8 poses: frente, diagonais inferiores, laterais,
-          // diagonais superiores e costas. A ordem visual do arquivo não é a ordem angular.
-          // Mapeamento explícito evita usar pose inferior ao perseguir pela diagonal superior.
-          // A pose é escolhida pelo ângulo real até o jogador. Não inverter o ângulo: isso faz o rato mostrar as costas durante a perseguição.
-          const angle=((a%(Math.PI*2))+(Math.PI*2))%(Math.PI*2);
-          // Esta imagem NÃO é uma folha de oito direções: são poses frontais
-          // nos quadros 0/4 e ciclos laterais nos quadros 1-3 e 5-7.
-          // Por isso, usar um frame como se cada um fosse uma direção causava moonwalk.
-          const horizontal = Math.abs(Math.cos(a)) > Math.abs(Math.sin(a));
-          if(horizontal){
-            const walkKey = Math.cos(a) >= 0 ? "zombie-rat-walk-right" : "zombie-rat-walk-left";
-            if(enemy.anims.currentAnim?.key !== walkKey) enemy.play(walkKey, true);
-          }else{
-            enemy.anims.stop();
-            enemy.setFrame(Math.sin(a) >= 0 ? 0 : 4);
-          }
+          // Converter o ângulo para uma das 8 poses do spritesheet.
+          // Cada quadro é uma direção, não um frame de caminhada.
+          const sector = ((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8;
+          // setor 0= direita; 1=baixo-direita; 2=baixo; ... 7=cima-direita.
+          // A folha começa com baixo no quadro 0, esquerda-baixo no 1,
+          // esquerda no 2, esquerda-cima no 3, cima no 4,
+          // direita-cima no 5, direita no 6 e direita-baixo no 7.
+          const frameBySector = [6, 7, 0, 1, 2, 3, 4, 5];
+          enemy.anims.stop();
+          enemy.setFrame(frameBySector[sector]);
           if(distance>27){
             enemy.x+=Math.cos(a)*24*delta/1000;
             enemy.y+=Math.sin(a)*24*delta/1000;
