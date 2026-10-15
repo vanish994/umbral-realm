@@ -24,7 +24,23 @@
     make("scavenger-18", "scavenger", "SAQUEADOR", 18, 300, 22, 54, 170, 950, 380, 52, 70000),
     make("scavenger-20", "scavenger", "SAQUEADOR", 20, 340, 25, 56, 175, 900, 430, 60, 78000),
     // Chefe de área: o mais lento do mapa, resistente e brutal, com o maior respawn do protótipo.
-    make("mutant-30", "mutant", "MUTANTE", 30, 680, 36, 16, 150, 1350, 900, 110, 120000)
+    make("mutant-30", "mutant", "MUTANTE", 30, 680, 36, 16, 150, 1350, 900, 110, 120000),
+    // Corredores subterrâneos (apêndice pós-refúgio — nunca inserir no meio: os 15
+    // primeiros índices são o contrato do save). Zumbis do esgoto são brutos lentos
+    // de corredor: mais resistentes que o zumbi lento da superfície, com perseguição
+    // curta porque as galerias já limitam o espaço. Arte reutilizada do zumbi lento
+    // com escala e matiz próprios em ENEMY_VISUALS (sem asset novo licenciado).
+    make("sewer-zombie-20", "sewer-zombie", "ZUMBI DO ESGOTO", 20, 320, 24, 23, 165, 1400, 420, 55, 45000),
+    make("sewer-zombie-20b", "sewer-zombie", "ZUMBI DO ESGOTO", 20, 320, 24, 23, 165, 1400, 420, 55, 45000),
+    make("sewer-zombie-21", "sewer-zombie", "ZUMBI DO ESGOTO", 21, 355, 26, 24, 170, 1350, 470, 62, 50000),
+    make("sewer-zombie-21b", "sewer-zombie", "ZUMBI DO ESGOTO", 21, 355, 26, 24, 170, 1350, 470, 62, 50000),
+    make("sewer-zombie-22", "sewer-zombie", "ZUMBI DO ESGOTO", 22, 410, 28, 25, 175, 1300, 560, 75, 60000),
+    // Reforços das áreas ampliadas do redesenho do mundo (apêndice final, na mesma
+    // ordem dos spawns): um rato a mais na área inicial maior, um lobo na mata e um
+    // zumbi lento na zona urbana, todos com os números da própria faixa.
+    make("rat-2c", "rat", "RATO ZUMBI", 2, 58, 5, 27, 180, 1150, 40, 5, 13000),
+    make("wolf-6c", "wolf", "LOBO ZUMBI", 6, 108, 9, 45, 230, 900, 95, 11, 20000),
+    make("slow-zombie-12b", "slow-zombie", "ZUMBI LENTO", 12, 190, 14, 20, 175, 1450, 175, 20, 30000)
   ]);
 
   const BY_ID = Object.freeze(Object.fromEntries(ENEMIES.map(enemy => [enemy.id, enemy])));

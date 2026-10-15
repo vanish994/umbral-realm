@@ -9,11 +9,14 @@
   const EnemyRules = window.UmbralEnemyRules;
   const ItemRules = window.UmbralItemRules;
   const AnimationRules = window.UmbralAnimationRules;
-  if (!State || !World || !Targeting || !CombatFeedback || !CombatRules || !EnemyRules || !ItemRules || !AnimationRules) throw new Error("Os módulos do jogo não carregaram.");
+  const DropRules = window.UmbralDropRules;
+  const ControlRules = window.UmbralControlRules;
+  if (!State || !World || !Targeting || !CombatFeedback || !CombatRules || !EnemyRules || !ItemRules || !AnimationRules || !DropRules || !ControlRules) throw new Error("Os módulos do jogo não carregaram.");
 
   const state = State.normalize(saved);
   let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeEnemyIndex = null, selectedEnemyIndex = null, menuOpen = false, merchantMode = false, playerDying = false, reloadState = null, attackAnimation = null;
   const enemies = [];
+  const groundDropSprites = [];
   const touch = { x: 0, y: 0 };
   const el = id => document.getElementById(id);
 
@@ -28,7 +31,10 @@
     // O deslocamento dos indicadores acompanha o topo do corpo desenhado (ancora em 0.76 da celula).
     scavenger: Object.freeze({ key: "scavenger-idle", scale: 1.9, offset: 46, contact: 33, bob: 0.6, barWidth: 46, radius: 28, solid: Object.freeze({ w: 10, h: 7 }) }),
     // Bruto de nivel 30: o maior sprite do mapa, com area de contato equivalente ao tamanho.
-    mutant: Object.freeze({ key: "mutant-idle", scale: 2.15, offset: 56, contact: 40, bob: 0.35, barWidth: 52, radius: 32, solid: Object.freeze({ w: 13, h: 9 }) })
+    mutant: Object.freeze({ key: "mutant-idle", scale: 2.15, offset: 56, contact: 40, bob: 0.35, barWidth: 52, radius: 32, solid: Object.freeze({ w: 13, h: 9 }) }),
+    // Bruto do esgoto: mesma folha do zumbi lento, maior e com matiz esverdeado para
+    // ler como outra espécie na penumbra dos corredores (sem asset novo).
+    "sewer-zombie": Object.freeze({ key: "slow-zombie-idle", scale: 1.5, offset: 52, contact: 36, bob: 0.4, barWidth: 50, radius: 30, solid: Object.freeze({ w: 11, h: 8 }), tint: 0xa9c68b })
   });
   const FALLBACK_VISUAL = ENEMY_VISUALS.rat;
   function visualFor(definition) {
@@ -89,6 +95,32 @@
     return nearestEnemy(maxRange);
   }
 
+  // Os botões touch têm ícone + rótulo: trocar só o texto preserva a estrutura visual.
+  function setButtonLabel(button, text) {
+    if (!button) return;
+    const label = button.querySelector("[data-control-label]");
+    if (label) label.textContent = text;
+    else button.textContent = text;
+  }
+
+  // FALAR/FOGUEIRA só existe na tela quando há interação ao alcance, com o mesmo
+  // alcance que `interact()` usa (fonte única em ControlRules). Fora dele o botão
+  // some e fica desabilitado — nada de botão decorativo que só anuncia "nada aqui".
+  function updateInteractControls() {
+    const target = player ? ControlRules.interactionFor(player, World.merchant, World.campfire) : null;
+    ["touch-interact", "interact"].forEach(id => {
+      const button = el(id);
+      if (!button) return;
+      button.hidden = !target;
+      button.disabled = !target;
+      button.classList.toggle("is-available", Boolean(target));
+      setButtonLabel(button, target?.label || "FALAR");
+      const hint = button.querySelector("[data-interact-hint]");
+      if (hint) hint.textContent = target?.hint || "";
+      button.setAttribute("aria-label", target ? `${target.label}: ${target.hint.toLowerCase()}` : "Interagir (indisponível)");
+    });
+  }
+
   function updateHud() {
     state.hp = Math.max(0, Math.min(maxHp(), state.hp));
     el("hp-label").textContent = `${state.hp} / ${maxHp()}`;
@@ -104,7 +136,7 @@
     el("xp-bar").style.width = `${state.xp / next * 100}%`;
     el("level").textContent = `Nv. ${state.level}`;
     el("coins").textContent = String(state.coins);
-    if (player) el("location-label").textContent = World.areaAt(player.x).name;
+    if (player) el("location-label").textContent = World.areaAt(player.x, player.y).name;
     el("charge-label").textContent = `${equippedFirearm.name}: ${loadedAmmo} / ${equippedFirearm.magazineSize}${CombatRules.DEVELOPMENT_INFINITE_RESERVE ? " • reserva ∞" : ""}${isReloading ? " • recarregando" : ""}`;
     el("world-ammo").textContent = `${equippedFirearm.name.toUpperCase()} • ${loadedAmmo}/${equippedFirearm.magazineSize}${CombatRules.DEVELOPMENT_INFINITE_RESERVE ? " • RESERVA ∞" : ""}${isReloading ? " • RECARREGANDO" : ""}`;
     ["action-close", "touch-action-close"].forEach(id => el(id)?.classList.toggle("selected", state.action === "close"));
@@ -140,9 +172,11 @@
     el("equipped-summary-title").textContent = `${equippedBlade.name.toUpperCase()} + ${equippedFirearm.name.toUpperCase()}`;
     el("equipped-summary-text").textContent = `Defesa equipada: ${Math.round(equippedDefense * 100)}%. Abra Itens para trocar o equipamento.`;
     const coreEntries = Object.entries(state.cores).filter(([, count]) => count > 0);
-    el("core-summary").textContent = coreEntries.length
+    const groundCount = Array.isArray(state.groundDrops) ? state.groundDrops.length : 0;
+    const groundText = groundCount > 0 ? ` ${groundCount} núcleo${groundCount === 1 ? "" : "s"} no chão: passe por cima para coletar.` : "";
+    el("core-summary").textContent = (coreEntries.length
       ? `Núcleos: ${coreEntries.map(([level, count]) => `Nv.${level} ×${count}`).join(" • ")}. ${merchantMode ? "Venda concluída ao falar com o mercador." : "Leve-os ao mercador."}`
-      : `Núcleos: nenhum.${merchantMode ? " Compre equipamentos com ouro." : " O mercador compra os encontrados."}`;
+      : `Núcleos: nenhum.${merchantMode ? " Compre equipamentos com ouro." : " O mercador compra os encontrados."}`) + groundText;
     document.querySelectorAll("[data-equip-item]").forEach(button => {
       const item = ItemRules.ITEMS[button.dataset.equipItem];
       const owned = state.ownedItems.includes(item.id);
@@ -154,15 +188,25 @@
       button.querySelector("b").textContent = equipped ? "EQUIPADO" : owned ? "EQUIPAR" : merchantMode ? `COMPRAR ${item.price}` : `${item.price} OURO`;
     });
     el("action-close").textContent = equippedBlade.name.toUpperCase();
-    el("touch-action-close").textContent = equippedBlade.name.toUpperCase();
     el("action-far").textContent = equippedFirearm.name.toUpperCase();
-    el("touch-action-far").textContent = equippedFirearm.id === "revolver" ? ".38" : "PISTOLA";
+    setButtonLabel(el("touch-action-close"), equippedBlade.name.toUpperCase());
+    setButtonLabel(el("touch-action-far"), equippedFirearm.id === "revolver" ? ".38" : "PISTOLA");
+    for (const [buttonId, item] of [["touch-action-close", equippedBlade], ["touch-action-far", equippedFirearm]]) {
+      const button = el(buttonId);
+      const icon = button?.querySelector(".touch-weapon-icon");
+      if (icon && icon.getAttribute("src") !== item.image) icon.src = item.image;
+      const detail = button?.querySelector("[data-weapon-detail]");
+      if (detail) detail.textContent = item.action === "far" ? `${loadedAmmo}/${item.magazineSize}` : "CURTO ALCANCE";
+    }
     ["reload", "touch-reload"].forEach(id => {
       const button = el(id);
       if (!button) return;
       button.disabled = Boolean(reloadState) || loadedAmmo >= equippedFirearm.magazineSize;
-      button.textContent = isReloading ? "RECARREGANDO…" : "RECARREGAR";
+      setButtonLabel(button, isReloading ? "RECARREGANDO…" : "RECARREGAR");
+      const detail = button.querySelector("[data-reload-detail]");
+      if (detail) detail.textContent = isReloading ? "…" : loadedAmmo >= equippedFirearm.magazineSize ? "CARREGADO" : `${equippedFirearm.magazineSize - loadedAmmo} VAGAS`;
     });
+    updateInteractControls();
     for (const [skillName, action] of [["blades", "close"], ["firearms", "far"]]) {
       const skill = state.skills[skillName];
       const required = CombatRules.skillXpNeeded(skill.level);
@@ -278,8 +322,19 @@
       this.solids = World.solids.map(solid => ({ ...solid }));
       this.cameras.main.setBackgroundColor("#17231c");
       World.areas.forEach(area => {
-        this.add.tileSprite(area.startX, 0, area.endX - area.startX, World.world.height, area.ground).setOrigin(0).setDepth(0);
+        this.add.tileSprite(area.startX, 0, area.endX - area.startX, World.surfaceHeight, area.ground).setOrigin(0).setDepth(0);
       });
+      // Subterrâneo: chão de concreto escurecido nas galerias e no poço (a rocha em
+      // volta fica no fundo escuro da cena), com véu de penumbra abaixo dos personagens.
+      const under = World.underground;
+      this.add.tileSprite(under.x, under.y, under.width, under.height, under.ground).setOrigin(0).setDepth(0).setTint(0x7e858c);
+      this.add.tileSprite(under.gapX, under.entrance.top, under.entrance.width, under.y - under.entrance.top + 32, under.ground).setOrigin(0).setDepth(0).setTint(0x7e858c);
+      const gloom = this.add.graphics().setDepth(2);
+      gloom.fillStyle(0x05070a, 0.34);
+      gloom.fillRect(under.x, under.y, under.width, under.height);
+      gloom.fillRect(under.gapX, under.entrance.top, under.entrance.width, under.y - under.entrance.top + 32);
+      this.add.text(under.entrance.x, under.entrance.top - 16, "ESGOTO ↓", this.labelStyle("#cfe8c9")).setOrigin(0.5).setDepth(900);
+      this.add.text(under.entrance.x, under.y + 52, under.name, this.labelStyle("#cfe8c9")).setOrigin(0.5).setDepth(900);
       World.groundDetails.forEach(([x, y]) => this.add.image(x, y, "ground-detail").setScale(2).setAlpha(0.7).setDepth(1));
 
       // Divisas de área: dither de 96 px centrado no limite, no lugar de linhas pretas.
@@ -329,6 +384,7 @@
       playPlayerAnimation("player-idle-down");
       this.targetMarker = this.add.graphics().setDepth(998);
       this.createEnemies();
+      this.syncGroundDropVisuals();
 
       this.physics.world.setBounds(0, 0, World.world.width, World.world.height);
       this.cameras.main.setBounds(0, 0, World.world.width, World.world.height);
@@ -358,6 +414,11 @@
     }
 
     createCampfire() {
+      this.createBonfireAt(World.campfire.x, World.campfire.y, 1, "FOGUEIRA");
+      this.createVillage();
+    }
+
+    createBonfireAt(x, y, scale, label) {
       const logs = this.add.graphics();
       logs.fillStyle(0x3a241b); logs.fillRect(-15, 5, 30, 6); logs.fillRect(-3, -7, 6, 30);
       logs.fillStyle(0x8f552f); logs.fillCircle(-12, 8, 3); logs.fillCircle(12, 8, 3);
@@ -365,9 +426,30 @@
       flame.fillStyle(0xd84b2a); flame.fillTriangle(-11, 7, 0, -24, 11, 7);
       flame.fillStyle(0xffa22f); flame.fillTriangle(-7, 6, 1, -15, 7, 6);
       flame.fillStyle(0xffdf78); flame.fillTriangle(-3, 5, 1, -7, 4, 5);
-      this.campfire = this.add.container(World.campfire.x, World.campfire.y, [logs, flame]).setDepth(World.campfire.y);
+      const glow = this.add.graphics();
+      glow.fillStyle(0xff9a3c, 0.10); glow.fillCircle(0, 0, 34);
+      const container = this.add.container(x, y, [glow, logs, flame]).setDepth(y).setScale(scale);
+      if (scale === 1) this.campfire = container;
       this.tweens.add({ targets: flame, scaleY: 0.86, scaleX: 1.08, alpha: 0.82, duration: 170, yoyo: true, repeat: -1 });
-      this.add.text(World.campfire.x, World.campfire.y + 22, "FOGUEIRA", this.labelStyle("#e8a45c")).setOrigin(0.5).setDepth(1000);
+      this.add.text(x, y + 24 * scale, label, this.labelStyle("#e8a45c")).setOrigin(0.5).setDepth(1000);
+      return container;
+    }
+
+    // Vila inicial: fogueira grande (1,7x a do refúgio) e barracas de lona desenhadas
+    // por gráficos — o pack não tem asset de barraca licenciado.
+    createVillage() {
+      const fire = World.village.bonfire;
+      this.createBonfireAt(fire.x, fire.y, 1.7, "FOGUEIRA DA VILA");
+      const light = this.add.graphics().setDepth(fire.y - 1);
+      light.fillStyle(0xff9a3c, 0.07); light.fillCircle(fire.x, fire.y, 120);
+      World.village.tents.forEach(tent => {
+        const g = this.add.graphics().setDepth(tent.y);
+        g.fillStyle(0x4c3f2a); g.fillTriangle(tent.x - 34, tent.y, tent.x, tent.y - 44, tent.x + 34, tent.y);
+        g.fillStyle(0x6b5b3e); g.fillTriangle(tent.x - 34, tent.y, tent.x, tent.y - 44, tent.x + 6, tent.y);
+        g.fillStyle(0x1c1710); g.fillTriangle(tent.x - 9, tent.y, tent.x, tent.y - 26, tent.x + 9, tent.y);
+        g.lineStyle(2, 0x2e2517); g.beginPath(); g.moveTo(tent.x, tent.y - 44); g.lineTo(tent.x, tent.y - 52); g.strokePath();
+        g.fillStyle(0x8f552f); g.fillRect(tent.x - 38, tent.y - 2, 76, 3);
+      });
     }
 
     createAnimations() {
@@ -502,6 +584,7 @@
         const definition = EnemyRules.definition(spawn.id);
         const visual = visualFor(definition);
         const enemy = this.add.sprite(spawn.x, spawn.y, visual.key, 4).setScale(visual.scale * this.characterScaleFactor).setOrigin(0.5, 0.76).setDepth(spawn.y);
+        if (visual.tint) enemy.setTint(visual.tint);
         enemy.enemyIndex = enemyIndex;
         enemy.definitionId = definition.id;
         enemy.spawnX = spawn.x;
@@ -530,6 +613,64 @@
         }
         this.updateEnemyIndicators(enemy);
       });
+    }
+
+    // Núcleos no chão: losango esverdeado pulsante desenhado sem asset novo, para o
+    // loot ser legível em tela pequena sem depender de uma imagem ainda não licenciada.
+    createGroundDropVisual(drop) {
+      const glow = this.add.graphics();
+      glow.fillStyle(0x7dff9a, 0.16);
+      glow.fillCircle(0, 0, 17);
+      glow.fillStyle(0x2fbf71, 1);
+      glow.fillTriangle(0, -11, 9, 0, -9, 0);
+      glow.fillTriangle(-9, 0, 9, 0, 0, 11);
+      glow.lineStyle(2, 0xeaffea, 0.95);
+      glow.strokeTriangle(0, -11, 9, 0, 0, 11);
+      glow.strokeTriangle(0, -11, -9, 0, 0, 11);
+      glow.fillStyle(0xeaffea, 1);
+      glow.fillCircle(0, 0, 3);
+      const label = this.add.text(0, 14, `Nv.${drop.level}`, this.labelStyle("#b8ffd0")).setOrigin(0.5);
+      const container = this.add.container(drop.x, drop.y, [glow, label]).setDepth(drop.y);
+      this.tweens.add({ targets: glow, scale: 1.18, alpha: 0.75, duration: 620, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+      const entry = { drop, container, glow };
+      groundDropSprites.push(entry);
+      return entry;
+    }
+
+    // Reconcilia cena e estado: cria visuais que faltam e destrói os de drops já
+    // coletados ou expulsos pelo teto FIFO. É a única porta de entrada/saída visual.
+    syncGroundDropVisuals() {
+      for (let index = groundDropSprites.length - 1; index >= 0; index -= 1) {
+        const entry = groundDropSprites[index];
+        if (!state.groundDrops.includes(entry.drop)) {
+          entry.container.destroy();
+          groundDropSprites.splice(index, 1);
+        }
+      }
+      state.groundDrops.forEach(drop => {
+        if (!groundDropSprites.some(entry => entry.drop === drop)) this.createGroundDropVisual(drop);
+      });
+    }
+
+    showCorePickupNumber(drop) {
+      const number = this.add.text(player.x, player.y - 48, `+ NÚCLEO Nv.${drop.level}`, {
+        fontFamily: "monospace", fontSize: "13px", fontStyle: "bold", color: "#8dffb0", stroke: "#0c2416", strokeThickness: 4
+      }).setOrigin(0.5).setDepth(2200);
+      this.tweens.add({ targets: number, y: number.y - 22, alpha: 0, duration: 800, ease: "Cubic.easeOut", onComplete: () => number.destroy() });
+    }
+
+    // Coleta por proximidade (sem botão extra no celular): passar por cima basta.
+    tryCollectGroundDrop() {
+      if (!player || playerDying || !state.groundDrops.length) return;
+      const candidate = DropRules.pickupCandidate(state.groundDrops, player.x, player.y);
+      if (!candidate) return;
+      state.groundDrops = DropRules.removeDrop(state.groundDrops, candidate);
+      state.cores[candidate.level] = (state.cores[candidate.level] || 0) + 1;
+      this.syncGroundDropVisuals();
+      this.showCorePickupNumber(candidate);
+      announce(`Núcleo nível ${candidate.level} coletado. Leve-o ao mercador.`);
+      updateHud();
+      persistGame();
     }
 
     scheduleEnemyRespawn(enemy) {
@@ -587,8 +728,14 @@
     movePlayer(delta) {
       if (playerDying) return;
       let dx = 0, dy = 0;
-      if (cursors.left.isDown || moveKeys.A.isDown) dx = -1; else if (cursors.right.isDown || moveKeys.D.isDown) dx = 1; else dx = touch.x;
-      if (cursors.up.isDown || moveKeys.W.isDown) dy = -1; else if (cursors.down.isDown || moveKeys.S.isDown) dy = 1; else dy = touch.y;
+      // Analógico de verdade: a inclinação define a velocidade (inclinar pouco = andar
+      // devagar para ajuste fino; inclinar tudo = velocidade máxima). Teclado, toque no
+      // mapa e perseguição automática continuam em velocidade cheia (speedScale 1).
+      let speedScale = 1;
+      const keyboardX = cursors.left.isDown || moveKeys.A.isDown ? -1 : cursors.right.isDown || moveKeys.D.isDown ? 1 : 0;
+      const keyboardY = cursors.up.isDown || moveKeys.W.isDown ? -1 : cursors.down.isDown || moveKeys.S.isDown ? 1 : 0;
+      if (keyboardX || keyboardY) { dx = keyboardX; dy = keyboardY; }
+      else { dx = touch.x; dy = touch.y; speedScale = Math.min(1, Math.hypot(dx, dy)); }
       const manualInput = Boolean(dx || dy);
       if (manualInput) {
         pendingMeleeEnemyIndex = null;
@@ -609,6 +756,7 @@
           } else {
             dx = approach.x;
             dy = approach.y;
+            speedScale = 1;
           }
         }
       }
@@ -616,6 +764,7 @@
       const target = player.getData("tapTarget");
       if (!dx && !dy && pendingMeleeEnemyIndex === null && target) {
         dx = target.x - player.x; dy = target.y - player.y;
+        speedScale = 1;
         if (Math.hypot(dx, dy) < 8) { player.setData("tapTarget", null); dx = dy = 0; }
         else { const length = Math.hypot(dx, dy); dx /= length; dy /= length; }
       }
@@ -625,7 +774,8 @@
         const animation = `player-walk-${direction}`;
         player.setData("direction", direction);
         if (!attacking && player.anims.currentAnim?.key !== animation) playPlayerAnimation(animation, true);
-        const length = Math.hypot(dx, dy), step = 145 * delta / 1000;
+        if (!attacking && player.anims.currentAnim?.key === animation) player.anims.timeScale = 0.55 + 0.45 * speedScale;
+        const length = Math.hypot(dx, dy), step = 145 * speedScale * delta / 1000;
         const nx = Phaser.Math.Clamp(player.x + dx / length * step, 25, World.world.width - 25);
         const ny = Phaser.Math.Clamp(player.y + dy / length * step, 35, World.world.height - 30);
         if (!this.isBlocked(nx, player.y)) player.x = nx;
@@ -647,7 +797,7 @@
       const playerDistance = Phaser.Math.Distance.Between(player.x, player.y, enemy.x, enemy.y);
       const homeDistance = Phaser.Math.Distance.Between(enemy.x, enemy.y, enemy.spawnX, enemy.spawnY);
       let targetX = player.x, targetY = player.y, speed = definition.speed;
-      if (homeDistance > definition.chaseRange + 65 || player.x > World.safeZoneX) { targetX = enemy.spawnX; targetY = enemy.spawnY; speed = Math.max(24, definition.speed); }
+      if (homeDistance > definition.chaseRange + 65 || World.isSafeX(player.x)) { targetX = enemy.spawnX; targetY = enemy.spawnY; speed = Math.max(24, definition.speed); }
       else if (playerDistance >= definition.chaseRange) return;
 
       const dx = targetX - enemy.x, dy = targetY - enemy.y;
@@ -694,7 +844,7 @@
       context.clip();
       context.fillStyle = "#091017";
       context.fillRect(0, 0, width, height);
-      const areaColors = ["#6d6339", "#253d2d", "#514638", "#294335"];
+      const areaColors = ["#6d6339", "#3d5a3a", "#253d2d", "#514638", "#294335"];
       World.areas.forEach((area, index) => {
         context.fillStyle = areaColors[index];
         context.fillRect(mapX(area.startX), margin, mapX(area.endX) - mapX(area.startX), height - margin * 2);
@@ -710,12 +860,22 @@
       World.borderBands.forEach(band => context.fillRect(mapX(band.x), mapY(band.y), Math.max(1, band.w / World.world.width * (width - margin * 2)), Math.max(1, band.h / World.world.height * (height - margin * 2))));
       context.fillStyle = "#9ba2a6";
       World.solids.filter(solid => !solid.border).forEach(solid => context.fillRect(mapX(solid.x), mapY(solid.y), Math.max(1, solid.w / World.world.width * (width - margin * 2)), Math.max(1, solid.h / World.world.height * (height - margin * 2))));
+      // Galerias subterrâneas: bloco escuro sob a cidade, ligado pelo poço.
+      context.fillStyle = "#394048";
+      context.fillRect(mapX(World.underground.x), mapY(World.underground.y), World.underground.width / World.world.width * (width - margin * 2), World.underground.height / World.world.height * (height - margin * 2));
+      context.fillRect(mapX(World.underground.gapX), mapY(World.underground.entrance.top), Math.max(1.5, World.underground.entrance.width / World.world.width * (width - margin * 2)), (World.underground.y - World.underground.entrance.top) / World.world.height * (height - margin * 2));
       enemies.forEach(enemy => {
         if (!enemy.visible || state.enemies[enemy.enemyIndex].hp <= 0) return;
         const selected = enemy.enemyIndex === selectedEnemyIndex;
         context.fillStyle = selected ? "#ffd166" : "#dc4d4d";
         context.beginPath();
         context.arc(mapX(enemy.x), mapY(enemy.y), selected ? 4 : 2.5, 0, Math.PI * 2);
+        context.fill();
+      });
+      context.fillStyle = "#59e88c";
+      state.groundDrops.forEach(drop => {
+        context.beginPath();
+        context.arc(mapX(drop.x), mapY(drop.y), 2.4, 0, Math.PI * 2);
         context.fill();
       });
       context.fillStyle = "#f1bd55";
@@ -731,6 +891,7 @@
     update(_, delta) {
       if (!player) return;
       this.movePlayer(delta);
+      this.tryCollectGroundDrop();
       enemies.forEach(enemy => {
         this.moveEnemy(enemy, delta);
         this.updateEnemyIndicators(enemy);
@@ -763,7 +924,6 @@
   document.addEventListener("pointerdown", startMusic);
   document.addEventListener("keydown", startMusic);
 
-  function near(a, b, range = 75) { return a && b && Phaser.Math.Distance.Between(a.x, a.y, b.x, b.y) <= range; }
   function selectAction(action) {
     if (menuOpen || playerDying) return;
     pendingMeleeEnemyIndex = null;
@@ -835,12 +995,21 @@
       sceneRef.updateEnemyIndicators(target);
       sceneRef.updateTargetMarker();
       state.coins += defeatedDefinition.coins;
+      // Ouro e XP continuam diretos; só o núcleo vira entidade física, para a coleta
+      // ser uma decisão de movimento (voltar ao local do abate) e não um crédito invisível.
       const coreDrop = EnemyRules.rollCoreDrop(defeatedDefinition);
-      if (coreDrop) state.cores[coreDrop.level] = (state.cores[coreDrop.level] || 0) + 1;
+      let groundDrop = null;
+      if (coreDrop) {
+        groundDrop = DropRules.createDrop(coreDrop.level, target.x, target.y, World.world);
+        if (groundDrop) {
+          state.groundDrops = DropRules.addDrop(state.groundDrops, groundDrop);
+          sceneRef.syncGroundDropVisuals();
+        }
+      }
       const levelsGained = State.grantXp(state, defeatedDefinition.xp);
       if (levelsGained > 0) state.hp = maxHp();
       sceneRef.showExperienceNumber(defeatedDefinition.xp);
-      announce(`+${defeatedDefinition.xp} XP${coreDrop ? ` e núcleo nível ${coreDrop.level}` : ""}.`);
+      announce(`+${defeatedDefinition.xp} XP${groundDrop ? ` e um núcleo nível ${groundDrop.level} caiu no chão: passe por cima para coletar` : ""}.`);
       const remaining = livingEnemyCount();
       el("quest-text").textContent = remaining > 0 ? `Restam ${remaining} inimigos antes da clareira.` : "A trilha está livre. Encontre a fogueira e o mercador.";
       sceneRef.scheduleEnemyRespawn(target);
@@ -917,7 +1086,10 @@
 
   function interact() {
     if (menuOpen || playerDying) return;
-    if (sceneRef?.merchant && near(player, sceneRef.merchant, 85)) {
+    // O alvo vem da mesma regra que libera o botão FALAR: se o botão não apareceu,
+    // não há interação escondida esperando nesta posição.
+    const target = player ? ControlRules.interactionFor(player, World.merchant, World.campfire) : null;
+    if (target?.kind === "merchant" && sceneRef?.merchant) {
       state.talked = true;
       const sale = sellAllCores();
       merchantMode = true;
@@ -928,7 +1100,7 @@
       announce(sale.amount > 0
         ? `Mercador comprou ${sale.amount} núcleo${sale.amount === 1 ? "" : "s"} por ${sale.total} de ouro. Equipamentos disponíveis para compra.`
         : "Mercador: Não há núcleos para vender. Veja os equipamentos disponíveis.");
-    } else if (sceneRef?.campfire && Phaser.Math.Distance.Between(player.x, player.y, World.campfire.x, World.campfire.y) <= 75) {
+    } else if (target?.kind === "campfire" && sceneRef?.campfire) {
       announce("A fogueira marca a clareira segura. O mercador está logo adiante.");
     } else if (nearestEnemy(100)) announce("Um inimigo zumbi bloqueia a trilha. Selecione uma arma e ataque.");
     else announce("Não há nada para interagir por perto.");
@@ -936,7 +1108,7 @@
 
   const joystick = el("joystick"), joystickKnob = el("joystick-knob");
   let joystickPointer = null;
-  function resetJoystick() { touch.x = 0; touch.y = 0; joystickPointer = null; joystickKnob.style.transform = "translate(0px, 0px)"; }
+  function resetJoystick() { touch.x = 0; touch.y = 0; joystickPointer = null; joystickKnob.style.transform = "translate(0px, 0px)"; joystick.classList.remove("is-active"); }
   function moveJoystick(event) {
     if (joystickPointer !== event.pointerId) return;
     const rect = joystick.getBoundingClientRect();
@@ -945,8 +1117,13 @@
     let x = event.clientX - cx, y = event.clientY - cy;
     const length = Math.hypot(x, y);
     if (length > max) { x = x / length * max; y = y / length * max; }
-    touch.x = x / max; touch.y = y / max;
+    // O knob mostra a deflexão bruta; o vetor de movimento passa pela zona morta e
+    // pela curva de precisão (ControlRules), então tremor central não anda e a
+    // inclinação leve anda devagar.
+    const analog = ControlRules.analogVector(x / max, y / max);
+    touch.x = analog.x; touch.y = analog.y;
     joystickKnob.style.transform = `translate(${x}px, ${y}px)`;
+    joystick.classList.toggle("is-active", analog.magnitude > 0);
   }
   joystick.addEventListener("pointerdown", event => { event.preventDefault(); joystickPointer = event.pointerId; joystick.setPointerCapture(event.pointerId); moveJoystick(event); });
   joystick.addEventListener("pointermove", moveJoystick);

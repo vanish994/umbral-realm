@@ -7,7 +7,7 @@
   <meta name="description" content="Protótipo jogável de sobrevivência zumbi em Umbral Realm.">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./src/style.css?v=56">
+  <link rel="stylesheet" href="./src/style.css?v=60">
   <title>Umbral Realm — Protótipo jogável</title>
 </head>
 <body>
@@ -112,18 +112,18 @@
         </div>
       </section>
       <div class="game-controls" aria-label="Controles do jogo">
-        <div id="joystick" class="joystick" role="application" aria-label="Joystick virtual para movimentar o personagem"><div class="joystick-ring"><div id="joystick-knob" class="joystick-knob"></div></div></div>
+        <div id="joystick" class="joystick" role="application" aria-label="Joystick virtual para movimentar o personagem"><div class="joystick-ring"><span class="joystick-axis joystick-axis-v"></span><span class="joystick-axis joystick-axis-h"></span><div id="joystick-knob" class="joystick-knob"></div></div></div>
         <div class="touch-actions" aria-label="Armas e interação">
           <div class="touch-weapons" role="group" aria-label="Selecionar arma">
-            <button id="touch-action-close" class="touch-command selected" type="button" aria-pressed="true">FACA</button>
-            <button id="touch-action-far" class="touch-command" type="button" aria-pressed="false">.38</button>
+            <button id="touch-action-close" class="touch-weapon selected" type="button" aria-pressed="true"><img class="touch-weapon-icon" src="./assets/items/knife.png" alt=""><span class="touch-weapon-text"><b data-control-label>FACA</b><small data-weapon-detail>CURTO ALCANCE</small></span></button>
+            <button id="touch-action-far" class="touch-weapon" type="button" aria-pressed="false"><img class="touch-weapon-icon" src="./assets/items/revolver.png" alt=""><span class="touch-weapon-text"><b data-control-label>.38</b><small data-weapon-detail>6/6</small></span></button>
           </div>
           <div class="touch-utility">
-            <button id="touch-reload" class="touch-command reload-command" type="button">RECARREGAR</button>
-            <button id="touch-interact" class="touch-command interact-command" type="button">FALAR</button>
+            <button id="touch-reload" class="touch-utility-btn reload-command" type="button"><svg class="touch-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 3v4h-4"/></svg><span class="touch-btn-text"><b data-control-label>RECARREGAR</b><small data-reload-detail>PRONTO</small></span></button>
+            <button id="touch-interact" class="touch-utility-btn interact-command" type="button" hidden disabled><svg class="touch-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-8 8H4l2.3-2.9A8 8 0 1 1 21 12Z"/></svg><span class="touch-btn-text"><b data-control-label>FALAR</b><small data-interact-hint>MERCADOR</small></span></button>
           </div>
         </div>
-        <button id="attack" class="action danger game-attack" aria-label="Atacar"><span>✦</span><small>ATACAR</small></button>
+        <button id="attack" class="action danger game-attack" aria-label="Atacar"><svg class="attack-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg><small>ATACAR</small></button>
       </div>
     </section>
     <section class="bottom-panel">
@@ -133,23 +133,25 @@
         <div class="actions">
           <div class="weapon-select"><button id="action-close" class="weapon selected" aria-pressed="true">FACA</button><button id="action-far" class="weapon" aria-pressed="false">REVÓLVER .38</button></div>
           <button id="reload" class="action secondary">RECARREGAR</button>
-          <button id="interact" class="action secondary">FALAR</button>
+          <button id="interact" class="action secondary" hidden disabled>FALAR</button>
         </div>
       </div>
       <footer class="save-footer"><button id="save" class="save">SALVAR</button></footer>
     </section>
   </main>
   <script src="./vendor/phaser/phaser-3.80.1.min.js"></script>
-  <script src="./src/combat-rules.js?v=56"></script>
-  <script src="./src/enemy-rules.js?v=56"></script>
-  <script src="./src/item-rules.js?v=56"></script>
-  <script src="./src/game-state.js?v=56"></script>
-  <script src="./src/world-config.js?v=56"></script>
-  <script src="./src/targeting.js?v=56"></script>
-  <script src="./src/combat-feedback.js?v=56"></script>
-  <script src="./src/animation-rules.js?v=56"></script>
+  <script src="./src/combat-rules.js?v=60"></script>
+  <script src="./src/enemy-rules.js?v=60"></script>
+  <script src="./src/item-rules.js?v=60"></script>
+  <script src="./src/drop-rules.js?v=60"></script>
+  <script src="./src/game-state.js?v=60"></script>
+  <script src="./src/world-config.js?v=60"></script>
+  <script src="./src/targeting.js?v=60"></script>
+  <script src="./src/combat-feedback.js?v=60"></script>
+  <script src="./src/animation-rules.js?v=60"></script>
+  <script src="./src/control-rules.js?v=60"></script>
   <div id="rotate-overlay" class="rotate-overlay" role="dialog" aria-modal="true" aria-label="Gire o dispositivo"><div class="rotate-card"><span class="rotate-icon">↻</span><strong>JOGUE NA HORIZONTAL</strong><p>Gire o celular para a horizontal para entrar no Umbral Realm.</p><button id="rotate-fullscreen" type="button">TELA CHEIA</button></div></div>
-  <script src="./src/game.js?v=56"></script>
-  <script>if ('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js?v=56').catch(()=>{}));</script>
+  <script src="./src/game.js?v=60"></script>
+  <script>if ('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js?v=60').catch(()=>{}));</script>
 </body>
 </html>

@@ -43,12 +43,26 @@
 | Calça tática | Pernas | 7% de defesa |
 
 - Sete itens equipáveis e persistentes: o personagem começa somente com faca e revólver `.38`; katana, pistola, colete, capacete e calça tática são comprados do mercador e ficam permanentemente disponíveis. Faca/katana usam Lâminas; revólver/pistola usam Armas de Fogo. A aproximação automática funciona com a arma branca equipada. Armas de fogo usam carregadores persistentes (6 no revólver e 12 na pistola), recarga manual/automática e reserva infinita temporária pela flag `DEVELOPMENT_INFINITE_RESERVE`; a precisão cai durante o movimento. Colete, capacete e calça somam até 30% de redução de dano; nenhum equipamento é desenhado sobre o personagem no mundo.
+- Controles touch reformulados (v58): analógico maior (116 px em landscape baixo, contra 88 px antes) e afastado da borda (20/18 px na diagonal direita-cima), com zona morta de 0,12, curva de precisão e velocidade proporcional à inclinação (`src/control-rules.js`); cluster de armas como seletor segmentado com ícone da arma equipada, nome e detalhe vivo (alcance/munição); recarregar com vagas restantes; botão de ataque circular com mira. O botão FALAR (ou FOGUEIRA na clareira) só aparece e só fica habilitado dentro do alcance real de interação (mercador 85 px, fogueira 75 px, fonte única em `ControlRules.interactionFor`, usada também por `interact()`).
 - HUD de vida, XP, nível, moedas e munição; controles de arma, ataque e interação acessíveis sobre a cena na orientação horizontal. O botão MENU pausa a cena e abre o terminal de campo horizontal aprovado: mesa de madeira com papéis, lápis, USB, cartão médico e disco, aparelho central largo e quatro páginas fixas sem rolagem — Personagem, Status, Habilidades e Equipamentos. Todos os dados exibidos vêm do estado real, e a página Equipamentos preserva compra, posse, troca e remoção dos sete itens. Cada inimigo exibe nome, nível e barra de vida individual no mundo. Dano comum aparece em vermelho e crítico em dourado com texto, flash e tremor; XP geral ganho aparece em branco sobre o jogador e ouro atualiza silenciosamente. Avisos visuais e toast foram removidos, mantendo somente uma região invisível para leitores de tela.
 - Mercador funcional: vende cinco equipamentos, compra automaticamente os núcleos carregados e persiste saldo e propriedade.
 - Salvamento local do estado numérico, agora normalizado contra campos ausentes/corrompidos e acionado também após alterações relevantes e ao ocultar/sair da página.
 - Manifesto, orientação horizontal e service worker. Phaser, shell e sprites usados pela cena são locais e pré-carregados para uso após a primeira visita.
 - Um único workflow de deploy Pages. O segundo workflow apenas reorganiza assets e faz commit; ele não publica o site.
-- Setenta testes Node (`npm run check`) cobrindo estado, regras de combate, referências estáticas, shell offline, requisitos do manifesto, folhas de animação, perfis de espécie e a geometria do mapa (contenção das bordas, alcance do mercador e dos spawns, medidas dos pisos, estrada e parede).
+- Mundo redesenhado (v60): superfície de 4300 px com cinco áreas e respiro entre as faixas — Subúrbio (ratos, 5) -> **Vila da Foguera** -> Mata das Ruínas (lobos, 5) -> Zona Urbana (zumbis lentos + elites, 8) -> Clareira do Refúgio, mais o subterrâneo. A vila inicial é uma clareira de 650 px cercada por anel de árvores com colisão e vãos só na estrada de terra, com fogueira grande desenhada (1,7x), quatro barracas de lona desenhadas por gráficos (o pack não tem asset de barraca), bancos, postes, suprimentos e o mercador — que saiu do refúgio do leste para a vila. Vila e refúgio são zonas seguras (`World.isSafeX`): inimigos desistem ao jogador entrar. Os 23 inimigos mantêm os índices/ids dos saves (reforços só como apêndice). O teste BFS prova alcance de mercador, fogueira e todos os spawns no mundo novo.
+- Área subterrânea nível 20–22 sob a zona urbana: mundo expandido para 2500×1500, com a superfície preservada nos primeiros 900 px. Um poço de 48 px na mata sul da cidade (bueiro "ESGOTO ↓", único vão nas duas faixas sul) desce a três galerias de tijolo em zigue-zague (passagem oeste, depois leste), cercadas de rocha sólida invisível; o chão é o concreto do pack escurecido, com véu de penumbra. Cinco **Zumbis do Esgoto** (20, 20, 21, 21, 22) reutilizam a folha do zumbi lento com escala 1,5 e matiz esverdeado. As listas de inimigos só ganharam apêndice no fim, então saves antigos mantêm os 15 primeiros índices/ids. O teste BFS existente prova que todos os spawns (inclusive os das galerias) continuam alcançáveis e nenhuma célula alcançável encosta na beirada do mundo; um render offline (`tools/render-map-preview.py`) conferiu a geometria — o preview não aplica o tint/penumbra da cena, então as cores finais só aparecem no jogo.
+- Drops físicos de núcleos: ao morrer, o inimigo pode deixar um núcleo do próprio nível no chão
+  (losango esverdeado pulsante com rótulo de nível, desenhado por gráficos sem asset novo), visível
+  também no minimapa. A coleta é por proximidade (raio de 36 px em `src/drop-rules.js`) ao passar
+  por cima, com texto flutuante e anúncio acessível; só então o núcleo entra na mochila vendável.
+  Os drops persistem no save (`state.groundDrops`, normalizados contra níveis desconhecidos e
+  coordenadas corrompidas, com teto FIFO de 40) e sobrevivem à recarga da página. Ouro e XP
+  continuam creditados diretamente na morte — decisão deliberada para não mudar a economia já
+  testada; tabelas de drop por espécie continuam pendentes.
+- Oitenta e nove testes Node (`npm run check`) cobrindo estado, regras de combate, drops físicos
+  (`src/drop-rules.js` e persistência em `game-state`), referências estáticas, shell offline,
+  requisitos do manifesto, folhas de animação, perfis de espécie e a geometria do mapa (contenção
+  das bordas, alcance do mercador e dos spawns, medidas dos pisos, estrada e parede).
 
 ### Parcial ou provisório
 
@@ -56,7 +70,10 @@
 - Combate respeita alcance, cadência, carregador e recarga e reproduz efeitos distintos por categoria. Armas de fogo têm 94% de precisão parado e 76% em movimento. A música `Wasteland`, de We Are All Astronauts, começa em volume baixo após a primeira interação e repete em loop. Ainda não há controles de volume, projétil visível, sangramento, fio da faca ou sujeira do revólver; o impacto continua sendo aplicado no início do golpe, não no quadro de clarão da animação.
 - A morte anima o spritesheet direcional real, recupera metade da vida, reposiciona o jogador e aplica perda regressiva de XP geral e de skills.
 - XP geral e skills independentes de Lâminas e Armas de Fogo existem e são salvas. Cada acerto válido concede 4 XP à skill usada; o requisito parte de 20 e cresce por fator aproximado de 1,45 por nível. Cada nível adiciona 4% à faixa de dano-base da categoria; cada nível geral adiciona 1,5%, mantendo a skill como influência principal. A vida máxima do jogador parte de 100 e cresce 12 por nível. Esses números receberam testes de coerência, mas ainda não foram validados por playtest prolongado.
-- Ouro e XP são creditados diretamente. Núcleos por nível têm chance de drop configurável e inventário persistente, mas ainda não aparecem como entidades físicas coletáveis no chão.
+- Ouro e XP são creditados diretamente. Núcleos por nível têm chance de drop configurável e agora
+  caem como entidades físicas coletáveis no chão (ver "Drops físicos de núcleos" acima); o visual é
+  um losango desenhado por código, sem asset dedicado licenciado, e a coleta por proximidade ainda
+  não foi validada em aparelho Android real.
 - O save preserva progresso e combate, mas não posição do jogador nem tempo restante de respawn.
 - Em telas horizontais baixas, o painel detalhado é ocultado para liberar o mapa; os comandos essenciais permanecem sobre a cena.
 
@@ -67,7 +84,7 @@
   os dois são hoje perseguidores corpo a corpo com corpo a corpo idêntico ao dos zumbis.
 - Tabelas de drop por espécie: o saqueador e o mutante usam a rolagem genérica de núcleos.
 - Projétil visível e sincronização do dano com o quadro de clarão do disparo.
-- Drops representados fisicamente no mundo e tabelas distintas por espécie.
+- Tabelas de drop distintas por espécie (os drops físicos de núcleos já existem). 
 - Medicamentos e munição encontrada/comprada; a recarga com reserva de desenvolvimento já existe.
 - Fio da faca, sujeira e manutenção das armas.
 - Testes automatizados de navegador e validação em aparelho Android real.
@@ -86,7 +103,8 @@
 
 1. **Validar e estabilizar o loop atual em navegador/Android:** carga, landscape, joystick, todos os botões, colisões do jogador e rato, morte, respawn, reload e modo offline. Corrigir qualquer regressão antes de ampliar sistemas.
 2. **Validar balanceamento dos inimigos em playtest:** as definições e testes puros existem; medir tempo para matar, dano recebido, progressão e espaço de perseguição no Android.
-3. **Materializar drops no mundo:** transformar a rolagem persistente de núcleos em coleta explícita sem quebrar a venda já funcional.
+3. ~~**Materializar drops no mundo**~~ — concluído: núcleos caem no chão, persistem e são coletados
+   por proximidade (`src/drop-rules.js`); falta apenas validar a legibilidade/coleta no Android.
 4. **Ampliar o comerciante:** adicionar compra de munição/medicamentos, estoque e testes de transações inválidas.
 5. **Diferenciar IA e animações dos inimigos:** as cinco espécies já têm faixas, perfis visuais e arte próprias, mas ainda precisam de estados visuais de ataque/morte e comportamentos distintos — em especial o saqueador (patrulha/tiro) e o mutante (investida ou ataque em área), que hoje perseguem como zumbis.
 6. **Refinar feedback de combate:** as animações direcionais de ataque existem; falta projétil visível e alinhar impacto/clarão sem comprometer cadência, seleção e multitoque.
@@ -94,6 +112,7 @@
 
 ## Decisões pequenas adotadas
 
+- Só o núcleo virou drop físico; ouro e XP continuam diretos na morte. A coleta é por proximidade (36 px) sem botão extra, para não disputar espaço com os comandos touch existentes, e os drops têm teto FIFO de 40 no save para sessões longas de farm não inflarem o `localStorage`. O visual é desenhado por gráficos (sem asset novo) até existir arte de núcleo licenciada.
 - As ações de curta e longa distância representam os slots de Lâminas e Armas de Fogo. Faca e revólver `.38` são o equipamento inicial; os demais itens precisam ser comprados. Revólver usa 6 tiros e pistola 12, ambos com carregador consumível e reserva infinita temporária. Os números ainda não foram promovidos a balanceamento definitivo.
 - As animações de ataque não bloqueiam o movimento: durante a janela de ataque o sprite mantém a pose de golpe/disparo e a caminhada volta quando a janela termina. A duração é a recarga da arma limitada a 260–620 ms (`ATTACK_WINDOW_MS`), para golpes curtos não ficarem lentos nem disparos pesados prenderem o personagem.
 - A folha de faca também representa o ataque de katana e a folha de pistola também representa o disparo do revólver; são as duas únicas artes de ataque disponíveis para o personagem masculino.

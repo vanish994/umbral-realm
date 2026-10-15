@@ -111,3 +111,45 @@
 .smartphone-nav.field-nav{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:5px 12px;border-top:1px solid #48544b;background:#121a1cf2}.field-nav .menu-tab{height:44px;padding:3px;color:#87948a;font-size:7px}.field-nav .menu-tab span{display:inline;margin:0 7px 0 0;font-size:14px;vertical-align:middle}.field-nav .menu-tab.active{color:#e1e1cb;background:#283633;border:1px solid #768154;box-shadow:inset 0 0 0 2px #1b2825}.field-home-indicator{width:82px;height:4px;margin:0 auto;background:#a2a79a;opacity:.68}
 @media (orientation:landscape) and (max-height:430px){.smartphone-device.field-phone{height:88vh;width:min(92vw,900px);padding:10px}.smartphone-screen.field-screen{inset:12px 17px;grid-template-rows:43px minmax(0,1fr) 46px 4px}.field-header.smartphone-header{padding:5px 9px}.smartphone-content.field-content{padding:5px 9px}.field-page-title{height:24px;margin-bottom:3px}.character-layout{height:calc(100% - 27px);gap:4px}.survivor-card{padding:5px}.survivor-card>img{width:42px;height:52px}.character-vitals,.current-loadout{padding:5px}.field-stat-grid article{min-height:58px;padding:6px}.field-note{margin-top:4px;padding:5px}.field-skill-card{height:58px;padding:5px;margin-bottom:4px}.field-inventory-page.active{grid-template-rows:24px 59px 16px minmax(0,1fr);gap:2px}.field-equipped-slot{grid-template-columns:31px 1fr;padding:3px}.field-equipped-slot img{width:28px;height:30px}.field-item-grid{gap:3px}.field-nav .menu-tab{height:36px}.desk-paper{height:28%}}
 @media (max-width:700px){.smartphone-device.field-phone{width:96vw}.field-signal{display:none}.field-header.smartphone-header{grid-template-columns:1fr 1fr 32px}.field-stat-grid{gap:4px}.field-skill-card{grid-template-columns:38px 1fr 105px}}
+
+/* Controles touch v58: analógico maior e preciso + cluster de ações profissional.
+   Fica no fim da folha para vencer as regras antigas dos mesmos seletores. */
+.joystick{left:24px;bottom:22px;width:132px;height:132px}
+.joystick-ring{position:relative;width:110px;height:110px;border:1px solid #d8bc7f66;background:radial-gradient(circle at 50% 42%,#1d212bcc,#101218e6 68%);box-shadow:inset 0 0 0 6px #0b0d12a6,inset 0 0 22px #000a,0 6px 18px #0009}
+.joystick-axis{position:absolute;background:#d8bc7f2e;border-radius:2px;pointer-events:none}
+.joystick-axis-v{left:50%;top:10px;bottom:10px;width:2px;transform:translateX(-50%)}
+.joystick-axis-h{top:50%;left:10px;right:10px;height:2px;transform:translateY(-50%)}
+.joystick-knob{position:relative;z-index:1;width:50px;height:50px;border:1px solid #ecd39b;background:radial-gradient(circle at 35% 30%,#a8895a,#5d4a2e 58%,#2e2517);box-shadow:0 4px 10px #000b,inset 0 1px 2px #ffe9b866,inset 0 -3px 6px #0008}
+.joystick.is-active .joystick-ring{border-color:#e8c987aa;box-shadow:inset 0 0 0 6px #0b0d12a6,inset 0 0 22px #000a,0 6px 18px #0009,0 0 14px #c9a66b33}
+.touch-actions{right:120px;bottom:24px;width:136px;display:flex;flex-direction:column;gap:6px}
+.touch-weapons{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border:1px solid #ffffff1f;border-radius:14px;background:linear-gradient(180deg,#171a22f2,#0e1016f5);box-shadow:0 8px 20px #000a,inset 0 1px 0 #ffffff14}
+.touch-weapon{position:relative;display:flex;align-items:center;gap:6px;min-height:50px;padding:5px 6px;border:1px solid transparent;border-radius:10px;background:transparent;color:#b9b2a4;cursor:pointer;touch-action:manipulation;text-align:left}
+.touch-weapon-icon{width:26px;height:26px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 2px 3px #000)}
+.touch-weapon-text{display:grid;gap:1px;min-width:0}
+.touch-weapon-text b{font-size:9px;letter-spacing:.6px;color:#e8e2d2;white-space:nowrap}
+.touch-weapon-text small{font-size:6.5px;letter-spacing:.8px;color:#8f8a7d;white-space:nowrap}
+.touch-weapon.selected{background:linear-gradient(180deg,#4d3d22,#33270f);border-color:#c9a66b88;box-shadow:inset 0 0 0 1px #ffd98a2e,0 2px 8px #0008}
+.touch-weapon.selected::after{content:"";position:absolute;left:8px;right:8px;bottom:3px;height:2px;border-radius:2px;background:#e8c987}
+.touch-weapon.selected .touch-weapon-text small{color:#cbb27a}
+.touch-weapon:active{transform:scale(.96);filter:brightness(1.25)}
+.touch-utility{display:flex;gap:6px}
+.touch-utility-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:5px 7px;border:1px solid #ffffff1f;border-radius:12px;background:linear-gradient(180deg,#1a1e27f2,#10131af5);color:#d9d2c0;box-shadow:0 6px 16px #0009,inset 0 1px 0 #ffffff12;cursor:pointer;touch-action:manipulation}
+.touch-btn-icon{width:16px;height:16px;flex:0 0 auto}
+.touch-btn-text{display:grid;gap:0;text-align:left}
+.touch-btn-text b{font-size:8px;letter-spacing:.7px;white-space:nowrap}
+.touch-btn-text small{font-size:6px;letter-spacing:.8px;color:#8f8a7d;white-space:nowrap}
+.touch-utility-btn:active{transform:scale(.96);filter:brightness(1.3)}
+.touch-utility-btn:disabled{opacity:.45;filter:grayscale(.6)}
+.touch-utility-btn[hidden],#interact[hidden]{display:none!important}
+.interact-command{border-color:#7fae7f88;background:linear-gradient(180deg,#274435f5,#16281df8);color:#dff5df}
+.interact-command .touch-btn-text small{color:#9fc79f}
+.interact-command.is-available{animation:interact-in .22s ease-out,interact-pulse 1.6s ease-in-out .3s infinite}
+@keyframes interact-in{from{opacity:0;transform:translateY(6px) scale(.92)}to{opacity:1;transform:none}}
+@keyframes interact-pulse{0%,100%{box-shadow:0 6px 16px #0009,0 0 0 0 #7fc97f00}50%{box-shadow:0 6px 16px #0009,0 0 0 5px #7fc97f2e}}
+.game-attack{right:18px;bottom:24px;width:88px;height:88px;min-width:88px;min-height:88px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:50%;border:1px solid #ff9a8a88;background:radial-gradient(circle at 38% 30%,#8a3238,#5a2027 58%,#38151b);color:#ffe9e2;box-shadow:0 8px 20px #000b,inset 0 0 0 5px #ffffff10,inset 0 -6px 12px #0007;touch-action:none}
+.attack-icon{width:30px;height:30px}
+.game-attack small{font-size:8px;letter-spacing:1.2px;font-weight:700}
+.game-attack:active{transform:scale(.93);filter:brightness(1.3)}
+@media (max-width:440px) and (orientation:portrait){.joystick{left:18px;bottom:20px;width:120px;height:120px}.joystick-ring{width:100px;height:100px}.joystick-knob{width:46px;height:46px}.touch-actions{right:104px;bottom:20px;width:126px}.game-attack{right:14px;bottom:20px;width:78px;height:78px;min-width:78px;min-height:78px}.attack-icon{width:26px;height:26px}}
+@media (orientation:landscape) and (max-height:600px){.joystick{left:20px;bottom:18px;width:116px;height:116px}.joystick-ring{width:96px;height:96px}.joystick-knob{width:44px;height:44px}.touch-actions{right:100px;bottom:18px;width:128px;gap:5px}.touch-weapon{min-height:44px;padding:4px 5px}.touch-weapon-icon{width:23px;height:23px}.touch-utility-btn{min-height:36px}.game-attack{right:16px;bottom:18px;width:72px;height:72px;min-width:72px;min-height:72px}.attack-icon{width:25px;height:25px}.game-attack small{font-size:7px}}
+@media (orientation:landscape) and (max-height:380px){.joystick{left:16px;bottom:14px;width:104px;height:104px}.joystick-ring{width:86px;height:86px}.joystick-knob{width:40px;height:40px}.touch-actions{right:92px;bottom:14px;width:120px;gap:4px}.touch-weapons{padding:3px;border-radius:12px}.touch-weapon{min-height:38px;border-radius:9px}.touch-weapon-icon{width:20px;height:20px}.touch-weapon-text b{font-size:8px}.touch-utility-btn{min-height:32px;border-radius:10px}.game-attack{right:14px;bottom:14px;width:66px;height:66px;min-width:66px;min-height:66px}.attack-icon{width:22px;height:22px}}
