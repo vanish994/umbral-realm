@@ -18,6 +18,8 @@ test("normalize supplies a playable initial state with twelve scaled enemies", (
   assert.equal(state.level, 1);
   assert.equal(state.coins, 0);
   assert.deepEqual(state.ammo, { revolver: 6, pistol: 12 });
+  assert.deepEqual(state.ownedItems, ["knife", "revolver"]);
+  assert.deepEqual(state.cores, { 1: 0, 2: 0, 5: 0, 6: 0, 10: 0, 11: 0, 12: 0 });
   assert.equal(state.action, "close");
   assert.deepEqual(state.skills, { blades: { level: 1, xp: 0 }, firearms: { level: 1, xp: 0 } });
   assert.deepEqual(state.equipment, { blade: "knife", firearm: "revolver", vest: null, helmet: null, pants: null });
@@ -52,6 +54,14 @@ test("normalize migrates four-rat and single-rat legacy saves", () => {
   assert.equal(alive.enemies[0].hp, 16);
   const defeated = normalize({ enemyHp: 70, defeated: true });
   assert.equal(defeated.enemies[0].hp, 0);
+});
+
+test("normalize starts with only the knife and revolver and preserves purchased items and cores", () => {
+  const state = normalize({ ownedItems: ["knife", "revolver", "pistol", "invalid"], cores: { 1: 2, 12: 3, 99: 8 } });
+  assert.deepEqual(state.ownedItems, ["knife", "revolver", "pistol"]);
+  assert.equal(state.cores[1], 2);
+  assert.equal(state.cores[12], 3);
+  assert.equal(state.cores[99], undefined);
 });
 
 test("normalize clamps magazines and migrates legacy revolver charges", () => {

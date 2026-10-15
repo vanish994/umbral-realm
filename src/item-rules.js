@@ -4,13 +4,13 @@
   root.UmbralItemRules = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, () => {
   const ITEMS = Object.freeze({
-    knife: Object.freeze({ id: "knife", name: "Faca", slot: "blade", action: "close", minDamage: 9, maxDamage: 13, cooldown: 320, image: "./assets/items/knife.png" }),
-    katana: Object.freeze({ id: "katana", name: "Katana", slot: "blade", action: "close", minDamage: 17, maxDamage: 23, cooldown: 650, image: "./assets/items/katana.png" }),
-    revolver: Object.freeze({ id: "revolver", name: "Revólver .38", slot: "firearm", action: "far", minDamage: 20, maxDamage: 28, cooldown: 700, magazineSize: 6, reloadMs: 1800, image: "./assets/items/revolver.png" }),
-    pistol: Object.freeze({ id: "pistol", name: "Pistola", slot: "firearm", action: "far", minDamage: 16, maxDamage: 22, cooldown: 450, magazineSize: 12, reloadMs: 1300, image: "./assets/items/pistol.png" }),
-    vest: Object.freeze({ id: "vest", name: "Colete", slot: "vest", defense: 0.15, image: "./assets/items/vest.png" }),
-    helmet: Object.freeze({ id: "helmet", name: "Capacete", slot: "helmet", defense: 0.08, image: "./assets/items/helmet.png" }),
-    pants: Object.freeze({ id: "pants", name: "Calça tática", slot: "pants", defense: 0.07, image: "./assets/items/pants.png" })
+    knife: Object.freeze({ id: "knife", name: "Faca", slot: "blade", action: "close", minDamage: 9, maxDamage: 13, cooldown: 320, price: 0, image: "./assets/items/knife.png" }),
+    katana: Object.freeze({ id: "katana", name: "Katana", slot: "blade", action: "close", minDamage: 17, maxDamage: 23, cooldown: 650, price: 140, image: "./assets/items/katana.png" }),
+    revolver: Object.freeze({ id: "revolver", name: "Revólver .38", slot: "firearm", action: "far", minDamage: 20, maxDamage: 28, cooldown: 700, magazineSize: 6, reloadMs: 1800, price: 0, image: "./assets/items/revolver.png" }),
+    pistol: Object.freeze({ id: "pistol", name: "Pistola", slot: "firearm", action: "far", minDamage: 16, maxDamage: 22, cooldown: 450, magazineSize: 12, reloadMs: 1300, price: 180, image: "./assets/items/pistol.png" }),
+    vest: Object.freeze({ id: "vest", name: "Colete", slot: "vest", defense: 0.15, price: 120, image: "./assets/items/vest.png" }),
+    helmet: Object.freeze({ id: "helmet", name: "Capacete", slot: "helmet", defense: 0.08, price: 80, image: "./assets/items/helmet.png" }),
+    pants: Object.freeze({ id: "pants", name: "Calça tática", slot: "pants", defense: 0.07, price: 90, image: "./assets/items/pants.png" })
   });
 
   const DEFAULT_EQUIPMENT = Object.freeze({ blade: "knife", firearm: "revolver", vest: null, helmet: null, pants: null });

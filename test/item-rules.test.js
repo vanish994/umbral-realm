@@ -30,4 +30,5 @@ test("equippable weapons expose distinct damage and cooldown tradeoffs", () => {
   assert.deepEqual([ITEMS.knife.minDamage, ITEMS.knife.maxDamage, ITEMS.knife.cooldown], [9, 13, 320]);
   assert.deepEqual([ITEMS.revolver.magazineSize, ITEMS.revolver.reloadMs], [6, 1800]);
   assert.deepEqual([ITEMS.pistol.magazineSize, ITEMS.pistol.reloadMs], [12, 1300]);
+  assert.deepEqual([ITEMS.katana.price, ITEMS.pistol.price, ITEMS.vest.price, ITEMS.helmet.price, ITEMS.pants.price], [140, 180, 120, 80, 90]);
 });

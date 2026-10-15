@@ -11,7 +11,7 @@
   if (!State || !World || !Targeting || !CombatFeedback || !CombatRules || !EnemyRules || !ItemRules) throw new Error("Os módulos do jogo não carregaram.");
 
   const state = State.normalize(saved);
-  let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeEnemyIndex = null, menuOpen = false, reloadState = null;
+  let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeEnemyIndex = null, menuOpen = false, merchantMode = false, reloadState = null;
   const enemies = [];
   const touch = { x: 0, y: 0 };
   const el = id => document.getElementById(id);
@@ -71,12 +71,19 @@
     }
     el("equipped-summary-title").textContent = `${equippedBlade.name.toUpperCase()} + ${equippedFirearm.name.toUpperCase()}`;
     el("equipped-summary-text").textContent = `Defesa equipada: ${Math.round(equippedDefense * 100)}%. Abra Itens para trocar o equipamento.`;
+    const coreEntries = Object.entries(state.cores).filter(([, count]) => count > 0);
+    el("core-summary").textContent = coreEntries.length
+      ? `Núcleos: ${coreEntries.map(([level, count]) => `Nv.${level} ×${count}`).join(" • ")}. ${merchantMode ? "Venda concluída ao falar com o mercador." : "Leve-os ao mercador."}`
+      : `Núcleos: nenhum.${merchantMode ? " Compre equipamentos com ouro." : " O mercador compra os encontrados."}`;
     document.querySelectorAll("[data-equip-item]").forEach(button => {
       const item = ItemRules.ITEMS[button.dataset.equipItem];
-      const equipped = state.equipment[item.slot] === item.id;
+      const owned = state.ownedItems.includes(item.id);
+      const equipped = owned && state.equipment[item.slot] === item.id;
       button.classList.toggle("equipped", equipped);
+      button.classList.toggle("locked", !owned);
       button.setAttribute("aria-pressed", String(equipped));
-      button.querySelector("b").textContent = equipped ? "EQUIPADO" : "EQUIPAR";
+      button.setAttribute("aria-label", owned ? `${item.name}: ${equipped ? "equipado" : "equipar"}` : `${item.name}: custa ${item.price} ouro no mercador`);
+      button.querySelector("b").textContent = equipped ? "EQUIPADO" : owned ? "EQUIPAR" : merchantMode ? `COMPRAR ${item.price}` : `${item.price} OURO`;
     });
     el("action-close").textContent = equippedBlade.name.toUpperCase();
     el("touch-action-close").textContent = equippedBlade.name.toUpperCase();
@@ -592,10 +599,12 @@
       target.setVisible(false); target.nameLabel.setVisible(false);
       sceneRef.updateEnemyIndicators(target);
       state.coins += defeatedDefinition.coins;
+      const coreDrop = EnemyRules.rollCoreDrop(defeatedDefinition);
+      if (coreDrop) state.cores[coreDrop.level] = (state.cores[coreDrop.level] || 0) + 1;
       const levelsGained = State.grantXp(state, defeatedDefinition.xp);
       if (levelsGained > 0) state.hp = maxHp();
       sceneRef.showExperienceNumber(defeatedDefinition.xp);
-      announce(`+${defeatedDefinition.xp} XP`);
+      announce(`+${defeatedDefinition.xp} XP${coreDrop ? ` e núcleo nível ${coreDrop.level}` : ""}.`);
       const remaining = livingEnemyCount();
       el("quest-text").textContent = remaining > 0 ? `Restam ${remaining} inimigos antes da clareira.` : "A trilha está livre. Encontre a fogueira e o mercador.";
       sceneRef.scheduleEnemyRespawn(target);
@@ -620,14 +629,36 @@
     el("menu-title").textContent = menuTitles[page];
   }
 
-  function equipItem(itemId) {
+  function useInventoryItem(itemId) {
     const item = ItemRules.ITEMS[itemId];
     if (!item) return;
+    let purchased = false;
+    if (!state.ownedItems.includes(item.id)) {
+      if (!merchantMode) { announce(`${item.name} só pode ser comprado com o mercador.`); return; }
+      if (state.coins < item.price) { announce(`Ouro insuficiente para comprar ${item.name}.`); return; }
+      state.coins -= item.price;
+      state.ownedItems.push(item.id);
+      purchased = true;
+    }
     const wasEquipped = state.equipment[item.slot] === item.id;
     state.equipment = ItemRules.equip(state.equipment, itemId);
     updateHud();
     persistGame();
-    announce(!item.action && wasEquipped ? `${item.name} removido.` : `${item.name} equipado.`);
+    if (purchased) announce(`${item.name} comprado por ${item.price} de ouro e equipado.`);
+    else if (wasEquipped && !item.action) announce(`${item.name} removido.`);
+    else announce(`${item.name} equipado.`);
+  }
+
+  function sellAllCores() {
+    let total = 0;
+    let amount = 0;
+    Object.entries(state.cores).forEach(([level, count]) => {
+      total += count * EnemyRules.coreValue(level);
+      amount += count;
+      state.cores[level] = 0;
+    });
+    state.coins += total;
+    return { amount, total };
   }
 
   function setMenuOpen(open) {
@@ -642,6 +673,7 @@
       sceneRef?.scene.pause();
       el("close-menu").focus();
     } else {
+      merchantMode = false;
       sceneRef?.scene.resume();
       el("open-menu").focus();
     }
@@ -650,8 +682,16 @@
   function interact() {
     if (menuOpen) return;
     if (sceneRef?.merchant && near(player, sceneRef.merchant, 85)) {
-      state.talked = true; persistGame();
-      announce("Mercador: Você atravessou a trilha. Tenho suprimentos para quem conseguir moedas.");
+      state.talked = true;
+      const sale = sellAllCores();
+      merchantMode = true;
+      selectMenuPage("inventory");
+      setMenuOpen(true);
+      el("menu-title").textContent = "MERCADOR";
+      persistGame();
+      announce(sale.amount > 0
+        ? `Mercador comprou ${sale.amount} núcleo${sale.amount === 1 ? "" : "s"} por ${sale.total} de ouro. Equipamentos disponíveis para compra.`
+        : "Mercador: Não há núcleos para vender. Veja os equipamentos disponíveis.");
     } else if (sceneRef?.campfire && Phaser.Math.Distance.Between(player.x, player.y, World.campfire.x, World.campfire.y) <= 75) {
       announce("A fogueira marca a clareira segura. O mercador está logo adiante.");
     } else if (nearestEnemy(100)) announce("Um inimigo zumbi bloqueia a trilha. Selecione uma arma e ataque.");
@@ -679,12 +719,12 @@
   ["action-far", "touch-action-far"].forEach(id => el(id)?.addEventListener("click", () => selectAction("far")));
   ["interact", "touch-interact"].forEach(id => el(id)?.addEventListener("click", interact));
   ["reload", "touch-reload"].forEach(id => el(id)?.addEventListener("click", reloadFirearm));
-  el("attack").addEventListener("click", resolveAction);
+  el("attack").addEventListener("pointerdown", event => { event.preventDefault(); resolveAction(); });
   el("save").addEventListener("click", () => persistGame(true));
-  el("open-menu").addEventListener("click", () => setMenuOpen(!menuOpen));
+  el("open-menu").addEventListener("click", () => { merchantMode = false; setMenuOpen(!menuOpen); });
   el("close-menu").addEventListener("click", () => setMenuOpen(false));
   document.querySelectorAll("[data-menu-tab]").forEach(button => button.addEventListener("click", () => selectMenuPage(button.dataset.menuTab)));
-  document.querySelectorAll("[data-equip-item]").forEach(button => button.addEventListener("click", () => equipItem(button.dataset.equipItem)));
+  document.querySelectorAll("[data-equip-item]").forEach(button => button.addEventListener("click", () => useInventoryItem(button.dataset.equipItem)));
   document.querySelectorAll("[data-open-item-slot]").forEach(button => button.addEventListener("click", () => selectMenuPage("inventory")));
   document.addEventListener("keydown", event => {
     if (event.key === "Escape" && menuOpen) { setMenuOpen(false); return; }

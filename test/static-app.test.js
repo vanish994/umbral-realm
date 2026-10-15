@@ -139,11 +139,22 @@ test("smartphone inventory exposes all seven equippable items", () => {
   assert.match(css, /\.inventory-grid\{[^}]*grid-template-rows:repeat\(4,minmax\(0,1fr\)\)/);
 });
 
-test("landscape scene exposes essential touch commands", () => {
+test("landscape scene exposes essential touch commands and immediate multi-touch attack", () => {
   const html = read("index.html");
+  const game = read("src/game.js");
   for (const id of ["joystick", "touch-action-close", "touch-action-far", "touch-reload", "touch-interact", "attack"]) {
     assert.match(html, new RegExp(`id="${id}"`), `missing touch control ${id}`);
   }
+  assert.match(game, /el\("attack"\)\.addEventListener\("pointerdown"/);
+  assert.match(read("src/style.css"), /\.game-attack\{[^}]*touch-action:none/);
+});
+
+test("merchant trade exposes core inventory and equipment prices", () => {
+  const html = read("index.html");
+  const game = read("src/game.js");
+  assert.match(html, /id="core-summary"/);
+  assert.match(game, /sellAllCores/);
+  assert.match(game, /merchantMode/);
 });
 
 test("manifest exposes installable PNG icon sizes and landscape mode", () => {

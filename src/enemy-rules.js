@@ -25,5 +25,17 @@
     const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
     return 100 + (safeLevel - 1) * 12;
   }
-  return { ENEMIES, BY_ID, definition, playerMaxHp };
+  function coreDropChance(level) {
+    const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
+    return Math.min(0.5, 0.22 + safeLevel * 0.02);
+  }
+  function coreValue(level) {
+    const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
+    return safeLevel * 6;
+  }
+  function rollCoreDrop(enemy, random = Math.random) {
+    if (!enemy || (Number(random()) || 0) >= coreDropChance(enemy.level)) return null;
+    return { level: enemy.level, value: coreValue(enemy.level) };
+  }
+  return { ENEMIES, BY_ID, definition, playerMaxHp, coreDropChance, coreValue, rollCoreDrop };
 });

@@ -32,6 +32,18 @@
     };
   }
 
+  function normalizeOwnedItems(raw, equipment) {
+    const owned = new Set(["knife", "revolver"]);
+    if (Array.isArray(raw)) raw.filter(itemId => ItemRules.ITEMS[itemId]).forEach(itemId => owned.add(itemId));
+    else Object.values(ItemRules.normalizeEquipment(equipment)).filter(Boolean).forEach(itemId => owned.add(itemId));
+    return [...owned];
+  }
+
+  function normalizeCores(raw = {}) {
+    const levels = [...new Set(EnemyRules.ENEMIES.map(enemy => enemy.level))];
+    return Object.fromEntries(levels.map(level => [level, integer(raw[level], 0, 0, Number.MAX_SAFE_INTEGER)]));
+  }
+
   function normalize(raw = {}) {
     let level = integer(raw.level, 1, 1, MAX_LEVEL);
     let xp = integer(raw.xp, 0, 0, Number.MAX_SAFE_INTEGER);
@@ -63,6 +75,12 @@
       }));
     }
 
+    const equipment = ItemRules.normalizeEquipment(raw.equipment);
+    const ownedItems = normalizeOwnedItems(raw.ownedItems, raw.equipment);
+    Object.entries(equipment).forEach(([slot, itemId]) => {
+      if (itemId && !ownedItems.includes(itemId)) equipment[slot] = ItemRules.DEFAULT_EQUIPMENT[slot];
+    });
+
     return {
       hp: integer(raw.hp, maxHp(level), 1, maxHp(level)),
       xp,
@@ -70,11 +88,13 @@
       coins: integer(raw.coins, 0, 0, Number.MAX_SAFE_INTEGER),
       talked: Boolean(raw.talked),
       ammo: normalizeAmmo(raw.ammo, raw.charges),
+      ownedItems,
+      cores: normalizeCores(raw.cores),
       skills: {
         blades: CombatRules.normalizeSkill(raw.skills?.blades),
         firearms: CombatRules.normalizeSkill(raw.skills?.firearms)
       },
-      equipment: ItemRules.normalizeEquipment(raw.equipment),
+      equipment,
       enemies,
       action: raw.action === "far" ? "far" : "close"
     };

@@ -1,6 +1,6 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { ENEMIES, definition, playerMaxHp } = require("../src/enemy-rules.js");
+const { ENEMIES, definition, playerMaxHp, coreDropChance, coreValue, rollCoreDrop } = require("../src/enemy-rules.js");
 
 test("enemy roster follows the requested level bands", () => {
   assert.deepEqual(ENEMIES.filter(enemy => enemy.species === "rat").map(enemy => enemy.level), [1, 1, 2, 2]);
@@ -22,6 +22,13 @@ test("wolves are fastest while slow zombies hit harder", () => {
   assert.ok(definition("wolf-6").speed > definition("rat-2").speed);
   assert.ok(definition("rat-2").speed > definition("slow-zombie-10").speed);
   assert.ok(definition("slow-zombie-10").damage > definition("wolf-6").damage);
+});
+
+test("higher-level enemies have more valuable cores and a greater drop chance", () => {
+  assert.ok(coreDropChance(12) > coreDropChance(1));
+  assert.ok(coreValue(12) > coreValue(1));
+  assert.deepEqual(rollCoreDrop(definition("wolf-5"), () => 0), { level: 5, value: 30 });
+  assert.equal(rollCoreDrop(definition("wolf-5"), () => 0.99), null);
 });
 
 test("player health scales moderately with general level", () => {
