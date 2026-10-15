@@ -74,6 +74,16 @@ test("combat audio files loaded by Phaser exist and are available offline", () =
   }
 });
 
+test("background music streams after interaction, loops quietly, and is cached", () => {
+  const game = read("src/game.js");
+  const music = "./docs/wasteland-we-are-all-astronauts-main-version-37037-02-20.mp3";
+  assert.match(game, /new Audio\("\.\/docs\/wasteland-we-are-all-astronauts-main-version-37037-02-20\.mp3"\)/);
+  assert.match(game, /backgroundMusic\.loop = true/);
+  assert.match(game, /backgroundMusic\.volume = 0\.16/);
+  assert.ok(exists(music));
+  assert.ok(shellEntries().includes(music));
+});
+
 test("all local CSS image references exist", () => {
   const css = read("src/style.css");
   const references = [...css.matchAll(/url\(["']?(\.\.\/[^"')]+)["']?\)/g)].map(match => match[1]);
@@ -82,6 +92,13 @@ test("all local CSS image references exist", () => {
     const fromRoot = reference.replace(/^\.\.\//, "");
     assert.ok(exists(fromRoot), `missing CSS asset ${reference}`);
   }
+});
+
+test("operational notices remain accessible without visual toast overlays", () => {
+  const html = read("index.html");
+  assert.doesNotMatch(html, /id="toast"|id="status"/);
+  assert.match(html, /id="announcer"[^>]*class="sr-only"/);
+  assert.doesNotMatch(read("src/style.css"), /#toast/);
 });
 
 test("landscape scene exposes essential touch commands", () => {

@@ -8,17 +8,15 @@
   if (!State || !World || !Targeting || !CombatFeedback) throw new Error("Os módulos do jogo não carregaram.");
 
   const state = State.normalize(saved);
-  let sceneRef, player, cursors, moveKeys, toastTimer, actionReady = true, pendingMeleeRatId = null;
+  let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeRatId = null;
   const rats = [];
   const touch = { x: 0, y: 0 };
   const el = id => document.getElementById(id);
 
-  function say(message) {
-    el("status").textContent = message;
-    el("toast").textContent = message;
-    el("toast").classList.add("show");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el("toast").classList.remove("show"), 2300);
+  // Mensagens operacionais continuam disponíveis para leitores de tela, sem cobrir o jogo.
+  function announce(message) {
+    const announcer = el("announcer");
+    if (announcer) announcer.textContent = message;
   }
 
   function maxHp() { return State.maxHp(state.level); }
@@ -60,10 +58,10 @@
   function persistGame(showFeedback = false) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      if (showFeedback) say("Progresso salvo neste dispositivo.");
+      if (showFeedback) announce("Progresso salvo neste dispositivo.");
       return true;
     } catch {
-      if (showFeedback) say("Não foi possível salvar neste navegador.");
+      if (showFeedback) announce("Não foi possível salvar neste navegador.");
       return false;
     }
   }
@@ -134,6 +132,10 @@
         close: this.sound.add("knife-stab", { volume: 0.58 }),
         far: this.sound.add("revolver-shot", { volume: 0.48 })
       };
+      this.backgroundMusic = new Audio("./docs/wasteland-we-are-all-astronauts-main-version-37037-02-20.mp3");
+      this.backgroundMusic.loop = true;
+      this.backgroundMusic.volume = 0.16;
+      this.backgroundMusic.preload = "none";
       this.merchant = this.add.sprite(World.merchant.x, World.merchant.y, "merchant-idle", 0).setScale(1.6).setOrigin(0.5, 0.82).setDepth(World.merchant.y);
       this.merchantName = this.add.text(World.merchant.x, World.merchant.y - 35, "MERCADOR", this.labelStyle("#f0d7a0")).setOrigin(0.5).setDepth(1000);
 
@@ -186,6 +188,11 @@
       this.anims.create({ key: "player-walk-right-down", frames: this.anims.generateFrameNumbers("player-walk-right-down", { start: 0, end: 7 }), frameRate: 10, repeat: -1 });
     }
 
+    startBackgroundMusic() {
+      if (!this.backgroundMusic || !this.backgroundMusic.paused) return Promise.resolve();
+      return this.backgroundMusic.play();
+    }
+
     playAttackSound(action) {
       const sound = this.attackSounds?.[action];
       if (!sound) return;
@@ -207,6 +214,25 @@
         y: number.y - 22,
         alpha: 0,
         duration: 650,
+        ease: "Cubic.easeOut",
+        onComplete: () => number.destroy()
+      });
+    }
+
+    showExperienceNumber(amount) {
+      const number = this.add.text(player.x, player.y - 48, CombatFeedback.experienceLabel(amount), {
+        fontFamily: "monospace",
+        fontSize: "14px",
+        fontStyle: "bold",
+        color: "#ffffff",
+        stroke: "#101820",
+        strokeThickness: 4
+      }).setOrigin(0.5).setDepth(2200);
+      this.tweens.add({
+        targets: number,
+        y: number.y - 24,
+        alpha: 0,
+        duration: 850,
         ease: "Cubic.easeOut",
         onComplete: () => number.destroy()
       });
@@ -255,7 +281,7 @@
         this.updateRatIndicators(rat);
         updateHud();
         persistGame();
-        say("Um rato zumbi voltou à trilha.");
+        announce("Um rato zumbi voltou à trilha.");
       });
     }
 
@@ -331,13 +357,13 @@
           rat.attackAt = this.time.now + 1150;
           state.hp = Math.max(0, state.hp - 5);
           this.showDamageNumber(player, 5);
-          el("status").textContent = "Um rato zumbi atingiu você.";
+          announce("Um rato zumbi atingiu você.");
           if (state.hp === 0) {
             state.hp = Math.floor(maxHp() / 2);
             pendingMeleeRatId = null;
             player.setPosition(World.playerSpawn.x, World.playerSpawn.y).setData("tapTarget", null);
             rats.forEach(other => { other.setPosition(other.spawnX, other.spawnY); other.bobOffset = 0; });
-            say("Você recuou para o início da trilha e recuperou o fôlego.");
+            announce("Você recuou para o início da trilha e recuperou o fôlego.");
           }
           updateHud(); persistGame();
         }
@@ -379,12 +405,21 @@
     scene: [WorldScene]
   };
   new Phaser.Game(config);
+  const startMusic = () => {
+    if (!sceneRef?.backgroundMusic) return;
+    sceneRef.startBackgroundMusic().then(() => {
+      document.removeEventListener("pointerdown", startMusic);
+      document.removeEventListener("keydown", startMusic);
+    }).catch(() => {});
+  };
+  document.addEventListener("pointerdown", startMusic);
+  document.addEventListener("keydown", startMusic);
 
   function near(a, b, range = 75) { return a && b && Phaser.Math.Distance.Between(a.x, a.y, b.x, b.y) <= range; }
   function selectAction(action) {
     pendingMeleeRatId = null;
     state.action = action; updateHud(); persistGame();
-    say(action === "close" ? "Faca selecionada: atacar aproxima você do rato mais próximo." : "Revólver .38 selecionado: cada disparo consome uma munição.");
+    announce(action === "close" ? "Faca selecionada: atacar aproxima você do rato mais próximo." : "Revólver .38 selecionado: cada disparo consome uma munição.");
   }
 
   function resolveAction(allowApproach = true, forcedTarget = null) {
@@ -396,19 +431,19 @@
 
     if (!target && state.action === "close" && allowApproach) {
       const approachTarget = nearestRat();
-      if (!approachTarget) { say("Não há ratos vivos para atacar."); return; }
+      if (!approachTarget) { announce("Não há ratos vivos para atacar."); return; }
       pendingMeleeRatId = approachTarget.ratId;
       player.setData("tapTarget", null);
-      say(`Aproximando da faca até o Rato ${approachTarget.ratId + 1}. Use o joystick para cancelar.`);
+      announce(`Aproximando da faca até o Rato ${approachTarget.ratId + 1}. Use o joystick para cancelar.`);
       return;
     }
-    if (!target) { say(state.action === "close" ? "Não foi possível alcançar o rato com a faca." : "Nenhum rato ao alcance do revólver."); return; }
+    if (!target) { announce(state.action === "close" ? "Não foi possível alcançar o rato com a faca." : "Nenhum rato ao alcance do revólver."); return; }
 
     pendingMeleeRatId = null;
     let damage, cooldown;
     if (state.action === "close") { damage = 13; cooldown = 500; }
     else {
-      if (state.charges <= 0) { say("O revólver está sem munição. Selecione a faca."); return; }
+      if (state.charges <= 0) { announce("O revólver está sem munição. Selecione a faca."); return; }
       state.charges -= 1; damage = 24; cooldown = 700;
     }
     actionReady = false;
@@ -420,16 +455,17 @@
     sceneRef.playAttackSound(state.action);
     sceneRef.showDamageNumber(target, damage);
     sceneRef.updateRatIndicators(target);
-    el("status").textContent = `${state.action === "close" ? "Golpe de faca" : "Disparo"} atingiu o Rato ${target.ratId + 1}.`;
+    announce(`${state.action === "close" ? "Golpe de faca" : "Disparo"} atingiu o rato.`);
     if (ratState.hp === 0) {
       target.setVisible(false); target.nameLabel.setVisible(false);
       sceneRef.updateRatIndicators(target);
       state.coins += 8;
       const levelsGained = State.grantXp(state, 50);
       if (levelsGained > 0) state.hp = maxHp();
+      sceneRef.showExperienceNumber(50);
+      announce("+50 XP");
       const remaining = livingRatCount();
       el("quest-text").textContent = remaining > 0 ? `Restam ${remaining} ratos antes da clareira.` : "A trilha está livre. Encontre a fogueira e o mercador.";
-      say(levelsGained > 0 ? `Rato derrotado! +50 XP, +8 moedas. Nível ${state.level}!` : `Rato derrotado! +50 XP e +8 moedas. Restam ${remaining}.`);
       sceneRef.scheduleRatRespawn(target);
     }
     updateHud(); persistGame();
@@ -438,11 +474,11 @@
   function interact() {
     if (sceneRef?.merchant && near(player, sceneRef.merchant, 85)) {
       state.talked = true; persistGame();
-      say("Mercador: Você atravessou a trilha. Tenho suprimentos para quem conseguir moedas.");
+      announce("Mercador: Você atravessou a trilha. Tenho suprimentos para quem conseguir moedas.");
     } else if (sceneRef?.campfire && Phaser.Math.Distance.Between(player.x, player.y, World.campfire.x, World.campfire.y) <= 75) {
-      say("A fogueira marca a clareira segura. O mercador está logo adiante.");
-    } else if (nearestRat(100)) say("Um rato zumbi bloqueia a trilha. Selecione uma arma e ataque.");
-    else say("Não há nada para interagir por perto.");
+      announce("A fogueira marca a clareira segura. O mercador está logo adiante.");
+    } else if (nearestRat(100)) announce("Um rato zumbi bloqueia a trilha. Selecione uma arma e ataque.");
+    else announce("Não há nada para interagir por perto.");
   }
 
   const joystick = el("joystick"), joystickKnob = el("joystick-knob");
@@ -480,8 +516,8 @@
   async function enterFullscreenAndLandscape() {
     try { if (!document.fullscreenElement && document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen({ navigationUI: "hide" }); } catch (_) {}
     try { if (screen.orientation && typeof screen.orientation.lock === "function") await screen.orientation.lock("landscape"); }
-    catch (_) { say("Gire o celular para a horizontal. Se possível, ative a rotação automática do Android."); }
-    if (!document.fullscreenElement && !document.documentElement.requestFullscreen) say("Seu navegador não oferece tela cheia por aqui. Abra o jogo instalado na tela inicial e gire o celular.");
+    catch (_) { announce("Gire o celular para a horizontal. Se possível, ative a rotação automática do Android."); }
+    if (!document.fullscreenElement && !document.documentElement.requestFullscreen) announce("Seu navegador não oferece tela cheia por aqui. Abra o jogo instalado na tela inicial e gire o celular.");
   }
   const fullscreenButton = el("fullscreen");
   el("rotate-fullscreen")?.addEventListener("click", enterFullscreenAndLandscape);

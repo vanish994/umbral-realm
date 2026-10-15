@@ -16,5 +16,11 @@
     return `-${Math.floor(damage)}`;
   }
 
-  return { healthRatio, damageLabel };
+  function experienceLabel(amount) {
+    const xp = Number(amount);
+    if (!Number.isFinite(xp) || xp <= 0) return "+0 XP";
+    return `+${Math.floor(xp)} XP`;
+  }
+
+  return { healthRatio, damageLabel, experienceLabel };
 });

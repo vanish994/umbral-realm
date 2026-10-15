@@ -1,13 +1,13 @@
-const CACHE = "umbral-realm-playtest-v37";
+const CACHE = "umbral-realm-playtest-v38";
 const SHELL = [
   "./",
   "./index.html",
-  "./src/style.css?v=37",
-  "./src/game-state.js?v=37",
-  "./src/world-config.js?v=37",
-  "./src/targeting.js?v=37",
-  "./src/combat-feedback.js?v=37",
-  "./src/game.js?v=37",
+  "./src/style.css?v=38",
+  "./src/game-state.js?v=38",
+  "./src/world-config.js?v=38",
+  "./src/targeting.js?v=38",
+  "./src/combat-feedback.js?v=38",
+  "./src/game.js?v=38",
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./icons/icon-192.png",
@@ -49,7 +49,8 @@ const SHELL = [
   "./assets/ui-smart/vitality.png",
   "./assets/ui-smart/coin.png",
   "./assets/audio/knife-stab.mp3",
-  "./assets/audio/revolver-shot.mp3"
+  "./assets/audio/revolver-shot.mp3",
+  "./docs/wasteland-we-are-all-astronauts-main-version-37037-02-20.mp3"
 ];
 
 self.addEventListener("install", event => {
