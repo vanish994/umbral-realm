@@ -268,3 +268,70 @@ test("attack sheet PNGs keep the grid declared by the animation rules", () => {
     assert.equal(size.height, sheet.frameHeight * rules.DIRECTIONS.length, `${sheet.file} height must fit 6 directions`);
   }
 });
+
+test("every enemy species declared in the rules has art, a visual profile and an offline copy", () => {
+  const rules = require("../src/enemy-rules.js");
+  const game = read("src/game.js");
+  const shell = shellEntries().map(localPath);
+  const species = [...new Set(rules.ENEMIES.map(enemy => enemy.species))];
+  assert.ok(species.length >= 5);
+  for (const name of species) {
+    const key = name.includes("-") ? `"${name}"` : name;
+    assert.match(game, new RegExp(`${key.replace("-", "\\-")}: Object\\.freeze\\(\\{ key: "`), `espécie ${name} sem perfil visual em game.js`);
+  }
+  for (const name of ["scavenger", "mutant"]) {
+    assert.ok(species.includes(name), `${name} deve existir nas regras`);
+    const asset = `assets/enemies/${name}/idle.png`;
+    assert.ok(exists(asset), `faltando ${asset}`);
+    assert.ok(shell.includes(asset), `${asset} não está no cache offline`);
+    assert.ok(exists(`assets/enemies/${name}/idle.json`), `faltando metadados de ${name}`);
+    assert.match(game, new RegExp(`load\\.spritesheet\\("${name}-idle", "\\./${asset}"`), `${name} não é carregado pela cena`);
+  }
+});
+
+test("enemy sheets follow the rotation frame order confirmed with the maintainer art", () => {
+  const fs2 = fs;
+  const cellOf = (file, size) => {
+    const bytes = fs2.readFileSync(path.join(root, file));
+    assert.equal(bytes.subarray(1, 4).toString("ascii"), "PNG");
+    return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20), size };
+  };
+  for (const [file, size, columns, rows] of [
+    ["assets/enemies/zombie-rat/Um_rato_zombie-Idle.png", 32, 8, 1],
+    ["assets/enemies/zombie-wolf/idle.png", 32, 8, 1],
+    ["assets/enemies/slow-zombie/idle.png", 48, 8, 1],
+    ["assets/enemies/scavenger/idle.png", 32, 8, 1],
+    ["assets/enemies/mutant/idle.png", 32, 8, 1]
+  ]) {
+    const png = cellOf(file, size);
+    assert.equal(png.width, size * columns, `${file} deve ter ${columns} colunas de ${size}px`);
+    assert.equal(png.height, size * rows, `${file} deve ter ${rows} linha(s) de ${size}px`);
+  }
+  for (const name of ["scavenger", "mutant"]) {
+    const meta = JSON.parse(read(`assets/enemies/${name}/idle.json`));
+    assert.equal(meta.spritesheet.columns, 8);
+    assert.equal(meta.spritesheet.cell_size.width, 32);
+    assert.deepEqual(meta.meta.directionOrder, ["south", "south-east", "east", "north-east", "north", "north-west", "west", "south-west"]);
+    assert.match(meta.meta.animationNote, /poses paradas/);
+  }
+  const game = read("src/game.js");
+  assert.match(game, /enemy\.setFrame\(\[2, 1, 0, 7, 6, 5, 4, 3\]\[angleSector\]\)/);
+});
+
+test("no enemy can reach the refuge line from its spawn", () => {
+  const rules = require("../src/enemy-rules.js");
+  const world = require("../src/world-config.js");
+  const game = read("src/game.js");
+  const contactBySpecies = {};
+  const profilePattern = /(?:"([a-z-]+)"|([a-z-]+)): Object\.freeze\(\{ key: "[a-z-]+", scale: [\d.]+, offset: \d+, contact: (\d+)/g;
+  for (const match of game.matchAll(profilePattern)) {
+    contactBySpecies[match[1] || match[2]] = Number(match[3]);
+  }
+  assert.ok(Object.keys(contactBySpecies).length >= 5, "não foi possível ler ENEMY_VISUALS de game.js");
+  for (const spawn of world.enemySpawns) {
+    const definition = rules.definition(spawn.id);
+    const contact = contactBySpecies[definition.species];
+    assert.ok(Number.isFinite(contact), `espécie ${definition.species} sem área de contato`);
+    assert.ok(spawn.x + contact <= world.safeZoneX, `${spawn.id} alcança a clareira segura`);
+  }
+});

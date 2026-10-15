@@ -1,0 +1,109 @@
+{
+  "character": {
+    "id": "saqueador-apocalipse",
+    "name": "Saqueador - Idle",
+    "prompt": "Sobrevivente saqueador com capuz, máscara de gás, colete, mochila e facão enferrujado",
+    "size": {
+      "width": 32,
+      "height": 32
+    },
+    "directions": 8,
+    "view": "low top-down"
+  },
+  "spritesheet": {
+    "path": "idle.png",
+    "cell_size": {
+      "width": 32,
+      "height": 32
+    },
+    "sheet_size": {
+      "width": 256,
+      "height": 32
+    },
+    "columns": 8,
+    "pivot": "cell-center",
+    "rows": [
+      {
+        "row": 0,
+        "type": "rotations",
+        "frame_count": 8,
+        "directions": [
+          "south",
+          "south-east",
+          "east",
+          "north-east",
+          "north",
+          "north-west",
+          "west",
+          "south-west"
+        ]
+      }
+    ]
+  },
+  "frames": {
+    "south": {
+      "x": 0,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "south-east": {
+      "x": 32,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "east": {
+      "x": 64,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "north-east": {
+      "x": 96,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "north": {
+      "x": 128,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "north-west": {
+      "x": 160,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "west": {
+      "x": 192,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "south-west": {
+      "x": 224,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    }
+  },
+  "export_version": "1.0",
+  "meta": {
+    "directionOrder": [
+      "south",
+      "south-east",
+      "east",
+      "north-east",
+      "north",
+      "north-west",
+      "west",
+      "south-west"
+    ],
+    "gameFrameTable": "O jogo usa os quadros 0..7 nesta ordem (rotações); moveEnemy escolhe o quadro pelo ângulo do movimento.",
+    "animationNote": "Somente poses paradas por direção: não existe ciclo de caminhada, ataque ou morte nesta arte.",
+    "source": "saqueador.zip em docs/"
+  }
+}

@@ -11,8 +11,16 @@
 - Uma cena Phaser 3 local com mapa linear de 2500×900, câmera ampliada para exploração, movimento por teclado, toque no mapa e joystick virtual. Em telas horizontais, o zoom mostra cerca de 22% mais mundo enquanto os personagens recebem escala compensatória para manter o tamanho visual. Vida, XP e carregador ficam sobre o canto superior esquerdo, e um minimapa circular dinâmico ocupa o canto superior direito. Inimigos vivos podem ser selecionados diretamente por clique/toque; um marcador dourado identifica o alvo no mundo e no minimapa, e os ataques passam a respeitar essa seleção. O terreno combina tiles autorizados e formas simples para a estrada e colisões.
 - Colisão manual do jogador com retângulos de cenário. A perseguição dos inimigos usa os mesmos obstáculos e limites do mundo.
 - Animações direcionais de ataque do jogador: a faca usa `assets/characters/male/Attack/knife-attack.png` (12 quadros por direção, gerada de `docs/source-art/male-slash-source.jpeg` por `tools/build-slash-sheet.py`) e as armas de fogo usam `assets/characters/male/Shoot/pistol-shoot.png` (8 quadros por direção). As duas folhas seguem a ordem de linhas de `src/animation-rules.js` (down, left-down, left-up, up, right-up, right-down), a mesma do idle, walk e death. Cada golpe vira o personagem para o alvo, troca o sprite durante a janela da arma (a recarga, limitada a 260–620 ms) com `timeScale` calculado por arma e devolve o controle depois para walk/idle. O mesmo arquivo de regras corrigiu a leitura da linha `up` (linha 3) nas folhas de idle/walk/death, que antes usava a arte de `right-down`.
+- Cinco espécies de inimigo com arte própria, todas com poses direcionais de 8 rotações: rato zumbi (32×32),
+  lobo zumbi (32×32), zumbi lento (48×48), saqueador humano (32×32, de `docs/Saqueador-32x32.zip`) e mutante
+  (32×32, de `docs/Mutante-32x32.zip`). Cada espécie tem um perfil visual em `ENEMY_VISUALS` (`src/game.js`)
+  com escala, altura dos indicadores, área de contato, balanço, largura da barra de vida, raio do marcador de
+  alvo e caixa de colisão própria; antes esses valores eram escolhidos por `if` de espécie espalhados pelo código.
+  O saqueador (níveis 18 e 20) e o mutante (nível 30) são a faixa de elite que guarda o portão do refúgio: os
+  saqueadores são os inimigos mais rápidos e agressivos do mapa e o mutante é o mais lento e resistente.
+  Nenhum spawn alcança a clareira segura (`x + área de contato <= safeZoneX`, coberto por teste).
 - Sprites direcionais do jogador e poses direcionais dos inimigos. As folhas foram conferidas: personagem combinado 384×384 (6 linhas de 8 quadros de 48×64); rato e lobo zumbi têm 8 direções de 32×32; zumbi lento tem 8 direções de 48×48; mercador tem 8 direções de 32×32. Os inimigos não possuem ciclo de caminhada nos assets atuais.
-- Seis encontros persistentes antes da clareira: ratos níveis 1–2, lobos zumbis níveis 5–6 e zumbis lentos níveis 10 e 12. Cada definição configura vida, dano, velocidade, território, recarga, XP, ouro e respawn independentemente em `src/enemy-rules.js`.
+- Quinze encontros persistentes antes da clareira: ratos níveis 1–2, lobos zumbis níveis 5–6 e zumbis lentos níveis 10 e 12. Cada definição configura vida, dano, velocidade, território, recarga, XP, ouro e respawn independentemente em `src/enemy-rules.js`.
 
 | Inimigo | Nível | Vida | Dano | XP | Ouro | Respawn |
 |---|---:|---:|---:|---:|---:|---:|
@@ -43,7 +51,7 @@
 
 ### Parcial ou provisório
 
-- O mapa autoral de 2500×900 segue uma progressão linear: subúrbio com quatro ratos, mata/ruínas com quatro lobos, zona urbana com quatro zumbis lentos e refúgio a leste com fogueira e mercador. Inimigos podem derrubar núcleos do próprio nível; a chance e o valor de venda aumentam com o nível. Ao interagir, o mercador compra todos os núcleos carregados e abre sua lista de equipamentos. A morte usa as seis direções do spritesheet original, retorna o jogador ao início com metade da vida e remove 10 XP geral e 10% do requisito atual de cada skill, permitindo regressão de nível. Terrenos e props selecionados do pack autorizado foram integrados; a estrada e as colisões estruturais ainda usam formas simples.
+- O mapa autoral de 2500×900 segue uma progressão linear: subúrbio com quatro ratos, mata/ruínas com quatro lobos, zona urbana com quatro zumbis lentos mais dois saqueadores e o mutante, e refúgio a leste com fogueira e mercador. Inimigos podem derrubar núcleos do próprio nível; a chance e o valor de venda aumentam com o nível. Ao interagir, o mercador compra todos os núcleos carregados e abre sua lista de equipamentos. A morte usa as seis direções do spritesheet original, retorna o jogador ao início com metade da vida e remove 10 XP geral e 10% do requisito atual de cada skill, permitindo regressão de nível. Terrenos e props selecionados do pack autorizado foram integrados; a estrada e as colisões estruturais ainda usam formas simples.
 - Combate respeita alcance, cadência, carregador e recarga e reproduz efeitos distintos por categoria. Armas de fogo têm 94% de precisão parado e 76% em movimento. A música `Wasteland`, de We Are All Astronauts, começa em volume baixo após a primeira interação e repete em loop. Ainda não há controles de volume, projétil visível, sangramento, fio da faca ou sujeira do revólver; o impacto continua sendo aplicado no início do golpe, não no quadro de clarão da animação.
 - A morte anima o spritesheet direcional real, recupera metade da vida, reposiciona o jogador e aplica perda regressiva de XP geral e de skills.
 - XP geral e skills independentes de Lâminas e Armas de Fogo existem e são salvas. Cada acerto válido concede 4 XP à skill usada; o requisito parte de 20 e cresce por fator aproximado de 1,45 por nível. Cada nível adiciona 4% à faixa de dano-base da categoria; cada nível geral adiciona 1,5%, mantendo a skill como influência principal. A vida máxima do jogador parte de 100 e cresce 12 por nível. Esses números receberam testes de coerência, mas ainda não foram validados por playtest prolongado.
@@ -53,7 +61,10 @@
 
 ### Ausente em relação ao MVP do GDD
 
-- Estados e animações dedicadas de ataque/morte para as três espécies de inimigo (o jogador já tem as suas).
+- Estados e animações dedicadas de ataque/morte para as cinco espécies de inimigo (o jogador já tem as suas).
+- Comportamento próprio do saqueador (patrulha, tiro à distância) e do mutante (investida, garra, ataque em área):
+  os dois são hoje perseguidores corpo a corpo com corpo a corpo idêntico ao dos zumbis.
+- Tabelas de drop por espécie: o saqueador e o mutante usam a rolagem genérica de núcleos.
 - Projétil visível e sincronização do dano com o quadro de clarão do disparo.
 - Drops representados fisicamente no mundo e tabelas distintas por espécie.
 - Medicamentos e munição encontrada/comprada; a recarga com reserva de desenvolvimento já existe.
@@ -76,7 +87,7 @@
 2. **Validar balanceamento dos inimigos em playtest:** as definições e testes puros existem; medir tempo para matar, dano recebido, progressão e espaço de perseguição no Android.
 3. **Materializar drops no mundo:** transformar a rolagem persistente de núcleos em coleta explícita sem quebrar a venda já funcional.
 4. **Ampliar o comerciante:** adicionar compra de munição/medicamentos, estoque e testes de transações inválidas.
-5. **Diferenciar IA e animações dos inimigos:** ratos, lobos e zumbis já têm faixas próprias, mas ainda precisam de estados visuais de ataque/morte e comportamentos mais distintos.
+5. **Diferenciar IA e animações dos inimigos:** as cinco espécies já têm faixas, perfis visuais e arte próprias, mas ainda precisam de estados visuais de ataque/morte e comportamentos distintos — em especial o saqueador (patrulha/tiro) e o mutante (investida ou ataque em área), que hoje perseguem como zumbis.
 6. **Refinar feedback de combate:** as animações direcionais de ataque existem; falta projétil visível e alinhar impacto/clarão sem comprometer cadência, seleção e multitoque.
 7. **Manutenção e balanceamento das skills:** implementar fio e sujeira após inventário estável; validar em playtest a curva e os bônus já configuráveis.
 
@@ -85,6 +96,10 @@
 - As ações de curta e longa distância representam os slots de Lâminas e Armas de Fogo. Faca e revólver `.38` são o equipamento inicial; os demais itens precisam ser comprados. Revólver usa 6 tiros e pistola 12, ambos com carregador consumível e reserva infinita temporária. Os números ainda não foram promovidos a balanceamento definitivo.
 - As animações de ataque não bloqueiam o movimento: durante a janela de ataque o sprite mantém a pose de golpe/disparo e a caminhada volta quando a janela termina. A duração é a recarga da arma limitada a 260–620 ms (`ATTACK_WINDOW_MS`), para golpes curtos não ficarem lentos nem disparos pesados prenderem o personagem.
 - A folha de faca também representa o ataque de katana e a folha de pistola também representa o disparo do revólver; são as duas únicas artes de ataque disponíveis para o personagem masculino.
+- O saqueador é humano hostil, não zumbi, e por isso está nomeado como espécie `scavenger` em vez de
+  entrar nas faixas zumbis do GDD. Ele não tem script de patrulha ou coleta; o nome descreve a ficção, não IA própria.
+- A faixa de elite fica no fim de `EnemyRules.ENEMIES` e de `World.enemySpawns`, na mesma ordem: o índice da
+  definição é o índice do spawn e é o que o save usa. Reordenar uma lista sem a outra quebra o progresso salvo.
 - A ordem de linhas das folhas direcionais foi confirmada comparando cada linha com os PNGs individuais do pack (`idle_down.png`, `idle_left_down.png`, ...). Antes, a linha `up` lia a arte de `right-down`; `src/animation-rules.js` passou a ser a única fonte da tabela e `test/animation-rules.test.js` protege essa ordem.
 - O save inválido com vida zero é recuperado para um estado jogável; mortes válidas são resolvidas em runtime após a animação e então persistidas com a penalidade aplicada.
 - O balanço do rato é visual e removido antes de calcular movimento/colisão, evitando que a oscilação altere sua posição lógica.

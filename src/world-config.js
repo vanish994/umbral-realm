@@ -21,7 +21,12 @@
     { id: "wolf-5", x: 900, y: 390 }, { id: "wolf-5b", x: 1050, y: 535 },
     { id: "wolf-6", x: 1260, y: 365 }, { id: "wolf-6b", x: 1470, y: 500 },
     { id: "slow-zombie-10", x: 1660, y: 380 }, { id: "slow-zombie-10b", x: 1810, y: 540 },
-    { id: "slow-zombie-11", x: 1990, y: 360 }, { id: "slow-zombie-12", x: 2140, y: 500 }
+    { id: "slow-zombie-11", x: 1990, y: 360 }, { id: "slow-zombie-12", x: 2140, y: 500 },
+    // Faixa de elite: dois saqueadores acampados nos flancos da estrada e o mutante guardando o portão.
+    // O mutante fica a oeste de safeZoneX menos sua área de contato, para o refúgio continuar seguro.
+    // A ordem desta lista precisa continuar igual à ordem de EnemyRules.ENEMIES (índice usado pelo save).
+    { id: "scavenger-18", x: 2060, y: 620 }, { id: "scavenger-20", x: 2105, y: 300 },
+    { id: "mutant-30", x: 2155, y: 400 }
   ];
 
   const solids = [

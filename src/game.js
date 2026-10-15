@@ -17,6 +17,27 @@
   const touch = { x: 0, y: 0 };
   const el = id => document.getElementById(id);
 
+  // Perfil visual por espécie: textura, escala, altura dos indicadores, alcance de contato, balanço,
+  // largura da barra de vida, raio do marcador de alvo e caixa de colisão. Cada espécie declarada em
+  // src/enemy-rules.js precisa de uma entrada aqui; o teste estático cobre essa correspondência.
+  const ENEMY_VISUALS = Object.freeze({
+    rat: Object.freeze({ key: "zombie-rat-idle", scale: 1, offset: 27, contact: 27, bob: 1.15, barWidth: 38, radius: 19, solid: Object.freeze({ w: 8, h: 6 }) }),
+    wolf: Object.freeze({ key: "zombie-wolf-idle", scale: 1.25, offset: 31, contact: 27, bob: 1.15, barWidth: 38, radius: 23, solid: Object.freeze({ w: 8, h: 6 }) }),
+    "slow-zombie": Object.freeze({ key: "slow-zombie-idle", scale: 1.2, offset: 43, contact: 31, bob: 0.45, barWidth: 44, radius: 27, solid: Object.freeze({ w: 8, h: 6 }) }),
+    // Humano hostil armado: celula 32x32 com corpo de 28 px, escalado para a altura do zumbi humano.
+    // O deslocamento dos indicadores acompanha o topo do corpo desenhado (ancora em 0.76 da celula).
+    scavenger: Object.freeze({ key: "scavenger-idle", scale: 1.9, offset: 46, contact: 33, bob: 0.6, barWidth: 46, radius: 28, solid: Object.freeze({ w: 10, h: 7 }) }),
+    // Bruto de nivel 30: o maior sprite do mapa, com area de contato equivalente ao tamanho.
+    mutant: Object.freeze({ key: "mutant-idle", scale: 2.15, offset: 56, contact: 40, bob: 0.35, barWidth: 52, radius: 32, solid: Object.freeze({ w: 13, h: 9 }) })
+  });
+  const FALLBACK_VISUAL = ENEMY_VISUALS.rat;
+  function visualFor(definition) {
+    const visual = ENEMY_VISUALS[definition?.species];
+    if (visual) return visual;
+    console.warn(`Sem perfil visual para a espécie ${definition?.species}; usando o do rato.`);
+    return FALLBACK_VISUAL;
+  }
+
   // Mensagens operacionais continuam disponíveis para leitores de tela, sem cobrir o jogo.
   function announce(message) {
     const announcer = el("announcer");
@@ -217,6 +238,8 @@
       this.load.spritesheet("zombie-rat-idle", "./assets/enemies/zombie-rat/Um_rato_zombie-Idle.png", { frameWidth: 32, frameHeight: 32 });
       this.load.spritesheet("zombie-wolf-idle", "./assets/enemies/zombie-wolf/idle.png", { frameWidth: 32, frameHeight: 32 });
       this.load.spritesheet("slow-zombie-idle", "./assets/enemies/slow-zombie/idle.png", { frameWidth: 48, frameHeight: 48 });
+      this.load.spritesheet("scavenger-idle", "./assets/enemies/scavenger/idle.png", { frameWidth: 32, frameHeight: 32 });
+      this.load.spritesheet("mutant-idle", "./assets/enemies/mutant/idle.png", { frameWidth: 32, frameHeight: 32 });
       this.load.spritesheet("merchant-idle", "./assets/npcs/merchant/Um_npc_mercador_estilo_o-Idle.png", { frameWidth: 32, frameHeight: 32 });
       ["ground-dark", "ground-bleak", "ground-detail", "small-oak", "bush", "tires-grass", "tire", "brick-debris", "garbage-bin", "barrel-rust-red", "destroyed-wall-corner", "destroyed-wall", "brick-wall-tile", "brick-ruin-tile"].forEach(key => {
         this.load.image(key, `./assets/environment/trail/${key}.png`);
@@ -432,7 +455,7 @@
       if (!enemy.visible || state.enemies[enemy.enemyIndex].hp <= 0) return;
       const definition = EnemyRules.definition(enemy.definitionId);
       const ratio = CombatFeedback.healthRatio(state.enemies[enemy.enemyIndex].hp, definition.maxHp);
-      const width = definition.species === "slow-zombie" ? 44 : 38;
+      const width = visualFor(definition).barWidth;
       const y = Math.round(enemy.y - enemy.indicatorOffset);
       const x = Math.round(enemy.x - width / 2);
       enemy.healthBar.fillStyle(0x090a0e, 0.92).fillRect(x, y, width, 6);
@@ -445,8 +468,7 @@
       this.targetMarker?.clear();
       const target = selectedEnemy();
       if (!target || !this.targetMarker) return;
-      const definition = EnemyRules.definition(target.definitionId);
-      const radius = definition.species === "slow-zombie" ? 27 : definition.species === "wolf" ? 23 : 19;
+      const radius = visualFor(EnemyRules.definition(target.definitionId)).radius;
       this.targetMarker.lineStyle(3, 0xf2c66d, 0.95);
       this.targetMarker.strokeEllipse(target.x, target.y - 2, radius * 2, Math.round(radius * 0.72));
       this.targetMarker.fillStyle(0xf2c66d, 0.22);
@@ -454,14 +476,9 @@
     }
 
     createEnemies() {
-      const spriteConfig = {
-        rat: { key: "zombie-rat-idle", scale: 1, offset: 27 },
-        wolf: { key: "zombie-wolf-idle", scale: 1.25, offset: 31 },
-        "slow-zombie": { key: "slow-zombie-idle", scale: 1.2, offset: 43 }
-      };
       World.enemySpawns.forEach((spawn, enemyIndex) => {
         const definition = EnemyRules.definition(spawn.id);
-        const visual = spriteConfig[definition.species];
+        const visual = visualFor(definition);
         const enemy = this.add.sprite(spawn.x, spawn.y, visual.key, 4).setScale(visual.scale * this.characterScaleFactor).setOrigin(0.5, 0.76).setDepth(spawn.y);
         enemy.enemyIndex = enemyIndex;
         enemy.definitionId = definition.id;
@@ -604,6 +621,7 @@
       if (playerDying || !enemy.visible || state.enemies[enemy.enemyIndex].hp <= 0) return;
       if (enemy.bobOffset) { enemy.y -= enemy.bobOffset; enemy.bobOffset = 0; }
       const definition = EnemyRules.definition(enemy.definitionId);
+      const visual = visualFor(definition);
       const playerDistance = Phaser.Math.Distance.Between(player.x, player.y, enemy.x, enemy.y);
       const homeDistance = Phaser.Math.Distance.Between(enemy.x, enemy.y, enemy.spawnX, enemy.spawnY);
       let targetX = player.x, targetY = player.y, speed = definition.speed;
@@ -614,7 +632,7 @@
       const distance = Math.hypot(dx, dy);
       const angleSector = (Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) + 8) % 8;
       enemy.setFrame([2, 1, 0, 7, 6, 5, 4, 3][angleSector]);
-      const contactRange = definition.species === "slow-zombie" ? 31 : 27;
+      const contactRange = visual.contact;
       if (targetX === player.x && distance <= contactRange) {
         if (!enemy.attackAt || this.time.now >= enemy.attackAt) {
           enemy.attackAt = this.time.now + definition.attackCooldown;
@@ -631,10 +649,9 @@
         const step = speed * delta / 1000;
         const nx = Phaser.Math.Clamp(enemy.x + dx / distance * step, 12, World.world.width - 12);
         const ny = Phaser.Math.Clamp(enemy.y + dy / distance * step, 12, World.world.height - 12);
-        if (!this.isBlocked(nx, enemy.y, 8, 6)) enemy.x = nx;
-        if (!this.isBlocked(enemy.x, ny, 8, 6)) enemy.y = ny;
-        const bobStrength = definition.species === "slow-zombie" ? 0.45 : 1.15;
-        const bob = Math.sin(this.time.now / 78 + enemy.enemyIndex) * bobStrength;
+        if (!this.isBlocked(nx, enemy.y, visual.solid.w, visual.solid.h)) enemy.x = nx;
+        if (!this.isBlocked(enemy.x, ny, visual.solid.w, visual.solid.h)) enemy.y = ny;
+        const bob = Math.sin(this.time.now / 78 + enemy.enemyIndex) * visual.bob;
         enemy.y += bob; enemy.bobOffset = bob;
       }
       enemy.setDepth(enemy.y);
