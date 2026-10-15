@@ -159,7 +159,22 @@
       cursors=this.input.keyboard.createCursorKeys();moveKeys=this.input.keyboard.addKeys("W,A,S,D,SPACE,E");
       this.input.on("pointerdown",pointer=>{if(pointer.event.target.closest("button"))return;const p=this.cameras.main.getWorldPoint(pointer.x,pointer.y);if(Math.hypot(p.x-player.x,p.y-player.y)>22)player.setData("tapTarget",{x:p.x,y:p.y});});
       updateHud();
-      if(state.defeated||state.enemyHp<=0)enemy.setVisible(false);
+      if(state.defeated||state.enemyHp<=0){enemy.setVisible(false);this.scheduleRatRespawn();}
+    }
+    scheduleRatRespawn(){
+      if(this.ratRespawnTimer)return;
+      say("Rato zumbi derrotado. Ele reaparecerá em 8 segundos.");
+      this.ratRespawnTimer=this.time.delayedCall(8000,()=>{
+        this.ratRespawnTimer=null;
+        state.enemyHp=70;
+        state.defeated=false;
+        enemy.setPosition(555,305).setAlpha(1).setVisible(true).setFrame(4);
+        this.enemyBobOffset=0;
+        this.enemyAttackAt=0;
+        el("quest-text").textContent="O rato zumbi voltou! Derrote-o para ganhar mais XP e moedas.";
+        updateHud();
+        say("Um novo rato zumbi apareceu na Trilha Velha!");
+      });
     }
     drawPerson(container,coat,skin){
       const s=this.add.graphics();s.fillStyle(0x11140f,0.45);s.fillEllipse(0,12,25,9);s.fillStyle(coat);s.fillRect(-8,-9,16,20);s.fillStyle(skin);s.fillRect(-6,-18,12,11);s.fillStyle(0x171a20);s.fillRect(-7,-20,14,5);container.add(s);
@@ -262,6 +277,7 @@
       else say("Rato zumbi derrotado! +50 XP e +8 moedas.");
     }
     updateHud();
+    if(state.enemyHp<=0&&sceneRef)sceneRef.scheduleRatRespawn();
   }
   function interact(){
     if(sceneRef?.merchant&&near(player,sceneRef.merchant,85)){say("Mercador: Tenho suprimentos para quem conseguir moedas. A loja será aberta em uma próxima etapa.");}
