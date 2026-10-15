@@ -9,11 +9,13 @@
   const EnemyRules = window.UmbralEnemyRules;
   const ItemRules = window.UmbralItemRules;
   const AnimationRules = window.UmbralAnimationRules;
-  if (!State || !World || !Targeting || !CombatFeedback || !CombatRules || !EnemyRules || !ItemRules || !AnimationRules) throw new Error("Os módulos do jogo não carregaram.");
+  const DropRules = window.UmbralDropRules;
+  if (!State || !World || !Targeting || !CombatFeedback || !CombatRules || !EnemyRules || !ItemRules || !AnimationRules || !DropRules) throw new Error("Os módulos do jogo não carregaram.");
 
   const state = State.normalize(saved);
   let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeEnemyIndex = null, selectedEnemyIndex = null, menuOpen = false, merchantMode = false, playerDying = false, reloadState = null, attackAnimation = null;
   const enemies = [];
+  const groundDropSprites = [];
   const touch = { x: 0, y: 0 };
   const el = id => document.getElementById(id);
 
@@ -140,9 +142,11 @@
     el("equipped-summary-title").textContent = `${equippedBlade.name.toUpperCase()} + ${equippedFirearm.name.toUpperCase()}`;
     el("equipped-summary-text").textContent = `Defesa equipada: ${Math.round(equippedDefense * 100)}%. Abra Itens para trocar o equipamento.`;
     const coreEntries = Object.entries(state.cores).filter(([, count]) => count > 0);
-    el("core-summary").textContent = coreEntries.length
+    const groundCount = Array.isArray(state.groundDrops) ? state.groundDrops.length : 0;
+    const groundText = groundCount > 0 ? ` ${groundCount} núcleo${groundCount === 1 ? "" : "s"} no chão: passe por cima para coletar.` : "";
+    el("core-summary").textContent = (coreEntries.length
       ? `Núcleos: ${coreEntries.map(([level, count]) => `Nv.${level} ×${count}`).join(" • ")}. ${merchantMode ? "Venda concluída ao falar com o mercador." : "Leve-os ao mercador."}`
-      : `Núcleos: nenhum.${merchantMode ? " Compre equipamentos com ouro." : " O mercador compra os encontrados."}`;
+      : `Núcleos: nenhum.${merchantMode ? " Compre equipamentos com ouro." : " O mercador compra os encontrados."}`) + groundText;
     document.querySelectorAll("[data-equip-item]").forEach(button => {
       const item = ItemRules.ITEMS[button.dataset.equipItem];
       const owned = state.ownedItems.includes(item.id);
@@ -329,6 +333,7 @@
       playPlayerAnimation("player-idle-down");
       this.targetMarker = this.add.graphics().setDepth(998);
       this.createEnemies();
+      this.syncGroundDropVisuals();
 
       this.physics.world.setBounds(0, 0, World.world.width, World.world.height);
       this.cameras.main.setBounds(0, 0, World.world.width, World.world.height);
@@ -532,6 +537,64 @@
       });
     }
 
+    // Núcleos no chão: losango esverdeado pulsante desenhado sem asset novo, para o
+    // loot ser legível em tela pequena sem depender de uma imagem ainda não licenciada.
+    createGroundDropVisual(drop) {
+      const glow = this.add.graphics();
+      glow.fillStyle(0x7dff9a, 0.16);
+      glow.fillCircle(0, 0, 17);
+      glow.fillStyle(0x2fbf71, 1);
+      glow.fillTriangle(0, -11, 9, 0, -9, 0);
+      glow.fillTriangle(-9, 0, 9, 0, 0, 11);
+      glow.lineStyle(2, 0xeaffea, 0.95);
+      glow.strokeTriangle(0, -11, 9, 0, 0, 11);
+      glow.strokeTriangle(0, -11, -9, 0, 0, 11);
+      glow.fillStyle(0xeaffea, 1);
+      glow.fillCircle(0, 0, 3);
+      const label = this.add.text(0, 14, `Nv.${drop.level}`, this.labelStyle("#b8ffd0")).setOrigin(0.5);
+      const container = this.add.container(drop.x, drop.y, [glow, label]).setDepth(drop.y);
+      this.tweens.add({ targets: glow, scale: 1.18, alpha: 0.75, duration: 620, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+      const entry = { drop, container, glow };
+      groundDropSprites.push(entry);
+      return entry;
+    }
+
+    // Reconcilia cena e estado: cria visuais que faltam e destrói os de drops já
+    // coletados ou expulsos pelo teto FIFO. É a única porta de entrada/saída visual.
+    syncGroundDropVisuals() {
+      for (let index = groundDropSprites.length - 1; index >= 0; index -= 1) {
+        const entry = groundDropSprites[index];
+        if (!state.groundDrops.includes(entry.drop)) {
+          entry.container.destroy();
+          groundDropSprites.splice(index, 1);
+        }
+      }
+      state.groundDrops.forEach(drop => {
+        if (!groundDropSprites.some(entry => entry.drop === drop)) this.createGroundDropVisual(drop);
+      });
+    }
+
+    showCorePickupNumber(drop) {
+      const number = this.add.text(player.x, player.y - 48, `+ NÚCLEO Nv.${drop.level}`, {
+        fontFamily: "monospace", fontSize: "13px", fontStyle: "bold", color: "#8dffb0", stroke: "#0c2416", strokeThickness: 4
+      }).setOrigin(0.5).setDepth(2200);
+      this.tweens.add({ targets: number, y: number.y - 22, alpha: 0, duration: 800, ease: "Cubic.easeOut", onComplete: () => number.destroy() });
+    }
+
+    // Coleta por proximidade (sem botão extra no celular): passar por cima basta.
+    tryCollectGroundDrop() {
+      if (!player || playerDying || !state.groundDrops.length) return;
+      const candidate = DropRules.pickupCandidate(state.groundDrops, player.x, player.y);
+      if (!candidate) return;
+      state.groundDrops = DropRules.removeDrop(state.groundDrops, candidate);
+      state.cores[candidate.level] = (state.cores[candidate.level] || 0) + 1;
+      this.syncGroundDropVisuals();
+      this.showCorePickupNumber(candidate);
+      announce(`Núcleo nível ${candidate.level} coletado. Leve-o ao mercador.`);
+      updateHud();
+      persistGame();
+    }
+
     scheduleEnemyRespawn(enemy) {
       if (enemy.respawnTimer) return;
       const definition = EnemyRules.definition(enemy.definitionId);
@@ -718,6 +781,12 @@
         context.arc(mapX(enemy.x), mapY(enemy.y), selected ? 4 : 2.5, 0, Math.PI * 2);
         context.fill();
       });
+      context.fillStyle = "#59e88c";
+      state.groundDrops.forEach(drop => {
+        context.beginPath();
+        context.arc(mapX(drop.x), mapY(drop.y), 2.4, 0, Math.PI * 2);
+        context.fill();
+      });
       context.fillStyle = "#f1bd55";
       context.beginPath(); context.arc(mapX(World.merchant.x), mapY(World.merchant.y), 3.2, 0, Math.PI * 2); context.fill();
       context.fillStyle = "#fff";
@@ -731,6 +800,7 @@
     update(_, delta) {
       if (!player) return;
       this.movePlayer(delta);
+      this.tryCollectGroundDrop();
       enemies.forEach(enemy => {
         this.moveEnemy(enemy, delta);
         this.updateEnemyIndicators(enemy);
@@ -835,12 +905,21 @@
       sceneRef.updateEnemyIndicators(target);
       sceneRef.updateTargetMarker();
       state.coins += defeatedDefinition.coins;
+      // Ouro e XP continuam diretos; só o núcleo vira entidade física, para a coleta
+      // ser uma decisão de movimento (voltar ao local do abate) e não um crédito invisível.
       const coreDrop = EnemyRules.rollCoreDrop(defeatedDefinition);
-      if (coreDrop) state.cores[coreDrop.level] = (state.cores[coreDrop.level] || 0) + 1;
+      let groundDrop = null;
+      if (coreDrop) {
+        groundDrop = DropRules.createDrop(coreDrop.level, target.x, target.y, World.world);
+        if (groundDrop) {
+          state.groundDrops = DropRules.addDrop(state.groundDrops, groundDrop);
+          sceneRef.syncGroundDropVisuals();
+        }
+      }
       const levelsGained = State.grantXp(state, defeatedDefinition.xp);
       if (levelsGained > 0) state.hp = maxHp();
       sceneRef.showExperienceNumber(defeatedDefinition.xp);
-      announce(`+${defeatedDefinition.xp} XP${coreDrop ? ` e núcleo nível ${coreDrop.level}` : ""}.`);
+      announce(`+${defeatedDefinition.xp} XP${groundDrop ? ` e um núcleo nível ${groundDrop.level} caiu no chão: passe por cima para coletar` : ""}.`);
       const remaining = livingEnemyCount();
       el("quest-text").textContent = remaining > 0 ? `Restam ${remaining} inimigos antes da clareira.` : "A trilha está livre. Encontre a fogueira e o mercador.";
       sceneRef.scheduleEnemyRespawn(target);

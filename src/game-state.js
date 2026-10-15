@@ -2,11 +2,12 @@
   const combatRules = root.UmbralCombatRules || (typeof require === "function" ? require("./combat-rules.js") : null);
   const enemyRules = root.UmbralEnemyRules || (typeof require === "function" ? require("./enemy-rules.js") : null);
   const itemRules = root.UmbralItemRules || (typeof require === "function" ? require("./item-rules.js") : null);
-  const api = factory(combatRules, enemyRules, itemRules);
+  const dropRules = root.UmbralDropRules || (typeof require === "function" ? require("./drop-rules.js") : null);
+  const api = factory(combatRules, enemyRules, itemRules, dropRules);
   if (typeof module === "object" && module.exports) module.exports = api;
   root.UmbralState = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, (CombatRules, EnemyRules, ItemRules) => {
-  if (!CombatRules || !EnemyRules || !ItemRules) throw new Error("As regras do jogo não carregaram.");
+})(typeof globalThis !== "undefined" ? globalThis : this, (CombatRules, EnemyRules, ItemRules, DropRules) => {
+  if (!CombatRules || !EnemyRules || !ItemRules || !DropRules) throw new Error("As regras do jogo não carregaram.");
 
   const MAX_LEVEL = 1000;
 
@@ -42,6 +43,13 @@
   function normalizeCores(raw = {}) {
     const levels = [...new Set(EnemyRules.ENEMIES.map(enemy => enemy.level))];
     return Object.fromEntries(levels.map(level => [level, integer(raw[level], 0, 0, Number.MAX_SAFE_INTEGER)]));
+  }
+
+  // Núcleos ainda no chão sobrevivem à recarga: sem isto, atualizar a página
+  // faria o loot visível desaparecer. Níveis desconhecidos são descartados.
+  function normalizeGroundDrops(raw) {
+    const levels = [...new Set(EnemyRules.ENEMIES.map(enemy => enemy.level))];
+    return DropRules.normalizeDrops(raw, levels, { width: 2500, height: 900 });
   }
 
   function normalize(raw = {}) {
@@ -90,6 +98,7 @@
       ammo: normalizeAmmo(raw.ammo, raw.charges),
       ownedItems,
       cores: normalizeCores(raw.cores),
+      groundDrops: normalizeGroundDrops(raw.groundDrops),
       skills: {
         blades: CombatRules.normalizeSkill(raw.skills?.blades),
         firearms: CombatRules.normalizeSkill(raw.skills?.firearms)
