@@ -4,7 +4,8 @@
   const State = window.UmbralState;
   const World = window.UmbralWorld;
   const Targeting = window.UmbralTargeting;
-  if (!State || !World || !Targeting) throw new Error("Os módulos do jogo não carregaram.");
+  const CombatFeedback = window.UmbralCombatFeedback;
+  if (!State || !World || !Targeting || !CombatFeedback) throw new Error("Os módulos do jogo não carregaram.");
 
   const state = State.normalize(saved);
   let sceneRef, player, cursors, moveKeys, toastTimer, actionReady = true, pendingMeleeRatId = null;
@@ -179,6 +180,36 @@
       this.anims.create({ key: "player-walk-right-down", frames: this.anims.generateFrameNumbers("player-walk-right-down", { start: 0, end: 7 }), frameRate: 10, repeat: -1 });
     }
 
+    showDamageNumber(target, amount) {
+      const number = this.add.text(target.x, target.y - 34, CombatFeedback.damageLabel(amount), {
+        fontFamily: "monospace",
+        fontSize: "16px",
+        fontStyle: "bold",
+        color: "#ff3b30",
+        stroke: "#260606",
+        strokeThickness: 4
+      }).setOrigin(0.5).setDepth(2200);
+      this.tweens.add({
+        targets: number,
+        y: number.y - 22,
+        alpha: 0,
+        duration: 650,
+        ease: "Cubic.easeOut",
+        onComplete: () => number.destroy()
+      });
+    }
+
+    updateRatIndicators(rat) {
+      rat.healthBar.clear();
+      if (!rat.visible || state.rats[rat.ratId].hp <= 0) return;
+      const ratio = CombatFeedback.healthRatio(state.rats[rat.ratId].hp, State.ENEMY_MAX_HP);
+      const x = Math.round(rat.x - 17), y = Math.round(rat.y - 27);
+      rat.healthBar.fillStyle(0x090a0e, 0.92).fillRect(x, y, 34, 6);
+      rat.healthBar.fillStyle(0x3a1115, 1).fillRect(x + 1, y + 1, 32, 4);
+      rat.healthBar.fillStyle(ratio > 0.45 ? 0xc74646 : 0xf06a3b, 1).fillRect(x + 1, y + 1, Math.round(32 * ratio), 4);
+      rat.nameLabel.setPosition(rat.x, rat.y - 37);
+    }
+
     createRats() {
       World.ratSpawns.forEach((spawn, ratId) => {
         const rat = this.add.sprite(spawn.x, spawn.y, "zombie-rat-idle", 4).setOrigin(0.5).setDepth(spawn.y);
@@ -187,13 +218,15 @@
         rat.spawnY = spawn.y;
         rat.bobOffset = 0;
         rat.attackAt = 0;
-        rat.nameLabel = this.add.text(spawn.x, spawn.y - 25, `RATO ${ratId + 1}`, this.labelStyle("#e6c2ad")).setOrigin(0.5).setDepth(1000);
+        rat.healthBar = this.add.graphics().setDepth(999);
+        rat.nameLabel = this.add.text(spawn.x, spawn.y - 37, `RATO ${ratId + 1}`, this.labelStyle("#e6c2ad")).setOrigin(0.5).setDepth(1000);
         rats.push(rat);
         if (state.rats[ratId].hp <= 0) {
           rat.setVisible(false);
           rat.nameLabel.setVisible(false);
           this.scheduleRatRespawn(rat);
         }
+        this.updateRatIndicators(rat);
       });
     }
 
@@ -206,6 +239,7 @@
         rat.nameLabel.setVisible(true);
         rat.bobOffset = 0;
         rat.attackAt = 0;
+        this.updateRatIndicators(rat);
         updateHud();
         persistGame();
         say("Um rato zumbi voltou à trilha.");
@@ -283,7 +317,8 @@
         if (!rat.attackAt || this.time.now >= rat.attackAt) {
           rat.attackAt = this.time.now + 1150;
           state.hp = Math.max(0, state.hp - 5);
-          say("Um rato zumbi atingiu você: -5 de vitalidade.");
+          this.showDamageNumber(player, 5);
+          el("status").textContent = "Um rato zumbi atingiu você.";
           if (state.hp === 0) {
             state.hp = Math.floor(maxHp() / 2);
             pendingMeleeRatId = null;
@@ -305,13 +340,15 @@
         rat.y += bob; rat.bobOffset = bob;
       }
       rat.setDepth(rat.y);
-      rat.nameLabel.setPosition(rat.x, rat.y - 25);
     }
 
     update(_, delta) {
       if (!player) return;
       this.movePlayer(delta);
-      rats.forEach(rat => this.moveRat(rat, delta));
+      rats.forEach(rat => {
+        this.moveRat(rat, delta);
+        this.updateRatIndicators(rat);
+      });
       if (this.time.now % 250 < delta) updateHud();
     }
   }
@@ -367,9 +404,12 @@
     ratState.hp = Math.max(0, ratState.hp - damage);
     target.setAlpha(0.35);
     setTimeout(() => { if (target.visible) target.setAlpha(1); }, 130);
-    say(`${state.action === "close" ? "Golpe de faca" : "Disparo"}: ${damage} de dano.`);
+    sceneRef.showDamageNumber(target, damage);
+    sceneRef.updateRatIndicators(target);
+    el("status").textContent = `${state.action === "close" ? "Golpe de faca" : "Disparo"} atingiu o Rato ${target.ratId + 1}.`;
     if (ratState.hp === 0) {
       target.setVisible(false); target.nameLabel.setVisible(false);
+      sceneRef.updateRatIndicators(target);
       state.coins += 8;
       const levelsGained = State.grantXp(state, 50);
       if (levelsGained > 0) state.hp = maxHp();
