@@ -131,6 +131,9 @@ test("smartphone inventory exposes all seven equippable items", () => {
   const itemIds = [...html.matchAll(/data-equip-item="([^"]+)"/g)].map(match => match[1]);
   assert.deepEqual(itemIds, ["knife", "katana", "revolver", "pistol", "vest", "helmet", "pants"]);
   assert.match(html, /id="status-defense"/);
+  const css = read("src/style.css");
+  assert.match(css, /\.smartphone-content\{[^}]*overflow:hidden/);
+  assert.match(css, /\.inventory-grid\{[^}]*grid-template-rows:repeat\(4,minmax\(0,1fr\)\)/);
 });
 
 test("landscape scene exposes essential touch commands", () => {
