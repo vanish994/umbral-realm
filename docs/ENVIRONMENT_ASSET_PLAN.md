@@ -38,12 +38,33 @@ Prioridade 3 — ambientação
 - Manter colisões separadas da arte; o desenho de uma parede não cria colisão automaticamente.
 - Não substituir os sprites masculino/feminino já organizados em `assets/characters/`.
 
-## Licença — atenção
+## Licença e autorização do projeto
 
-O ZIP informa uso gratuito apenas em projetos não comerciais, exige pagamento de pelo menos US$ 2 para uso comercial e proíbe redistribuição do pack. Como o repositório é público, **não copiar os PNGs extraídos para o repositório público sem resolver a questão da licença**. O ZIP original já está em `docs/`; esta lista é apenas um inventário de trabalho, não redistribui imagens adicionais.
+O `LICENSE.txt` incluído no ZIP apresenta termos gerais de uso não comercial, pagamento para uso comercial e proibição de redistribuição. Em 14 de outubro de 2026, o mantenedor declarou ser o autor ou titular desses assets e autorizou expressamente seu uso e sua redistribuição no repositório público do Umbral Realm. Esta é uma autorização específica para o projeto; os termos e a autoria originais devem continuar preservados e não se estendem automaticamente a terceiros ou a outros projetos.
 
 Fonte indicada no próprio pack: https://thelazystone.itch.io/post-apocalyptic-pixel-art-asset-pack
 
+## Inspeção técnica realizada
+
+O arquivo contém 1.113 PNGs. Os nove tilesets inicialmente selecionados foram extraídos apenas em diretório temporário, medidos e inspecionados visualmente:
+
+- fundos Dark-Green e Bleak-Yellow: 384×272;
+- edifícios cinza: 208×208;
+- grama superior: 128×96;
+- lixo: 128×64;
+- parede de tijolos: 96×48;
+- cerca de ferro: 48×64;
+- cerca de arame: 80×48;
+- telhado: 256×80.
+
+Todos esses tamanhos são compatíveis com uma grade de 16×16, mas cada índice ainda precisa ser escolhido visualmente; transparência ou dimensão divisível por 16, isoladamente, não comprova que um tile forme uma transição correta.
+
+## Integração inicial concluída
+
+A Trilha dos Infectados agora utiliza uma seleção mínima do pack em `assets/environment/trail/`: terreno escuro, árvores, arbustos, pneus, entulho, lixeira, barril e paredes destruídas. O mapa deixou de distribuir vegetação proceduralmente e passou a ter percurso, marcos, props e colisões definidos em `src/world-config.js`.
+
+A fogueira solicitada não existe no pack inspecionado; por isso ela é desenhada e animada diretamente no Phaser. Não foi usado um sprite de disparo ou outro asset incompatível como substituto.
+
 ## Próximo passo técnico
 
-Medir e inspecionar visualmente os tilesets selecionados; então definir a grade real, recortar os tiles quando necessário e montar uma pequena área de teste antes de substituir o cenário atual.
+Validar visualmente o percurso em Android, principalmente legibilidade dos props em escala 1,5–2,2, passagem entre obstáculos, retorno dos ratos ao território e espaço dos controles sobre a clareira. Só então ampliar ruínas ou trocar mais formas por tiles estruturais.

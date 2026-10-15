@@ -16,10 +16,25 @@ RPG de ação e sobrevivência 2D top-down em um apocalipse zumbi. O desenvolvim
 
 ## Executar
 
-Abra `index.html` por um servidor estático. Para testar pelo celular, publique o repositório no GitHub Pages (Settings → Pages → Deploy from a branch → `main` / root). O Phaser é carregado por CDN, então a primeira abertura precisa de internet.
+Sirva a raiz por HTTP; abrir via `file://` não permite validar o service worker. Por exemplo:
+
+```bash
+python3 -m http.server 8080
+```
+
+Abra `http://localhost:8080`. Para testar pelo celular, publique o repositório no GitHub Pages. O Phaser 3.80.1 está versionado em `vendor/phaser/` com sua licença, e o service worker pré-carrega o motor, o shell e os sprites usados na cena; depois da primeira visita online, o protótipo pode iniciar sem rede.
+
+## Verificação
+
+```bash
+npm test   # integridade dos recursos locais, cache offline e manifesto
+npm run check  # inclui verificação de sintaxe do JavaScript
+```
+
+O teste real de instalação, orientação, controles e retomada offline ainda deve ser feito em um dispositivo Android.
 
 ## Escopo e status
 
-O GDD descreve a direção desejada; ele **não comprova que os sistemas já estejam implementados**. Consulte o código, os testes e os workflows antes de afirmar o estado real. Arte final, colisões refinadas, missões e multiplayer só devem ser considerados prontos após implementação e validação.
+O GDD descreve a direção desejada; ele **não comprova que os sistemas já estejam implementados**. Consulte o código, os testes e os workflows antes de afirmar o estado real. A fotografia técnica revisada e o backlog por dependência estão em [`docs/TECHNICAL_AUDIT.md`](docs/TECHNICAL_AUDIT.md). Arte final, colisões refinadas, missões e multiplayer só devem ser considerados prontos após implementação e validação.
 
 Use somente assets com licença compatível e registre as licenças antes de distribuir.
