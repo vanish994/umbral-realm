@@ -197,3 +197,74 @@ test("manifest exposes installable PNG icon sizes and landscape mode", () => {
     assert.ok(exists(icon.src), `missing icon file ${icon.src}`);
   }
 });
+
+test("attack sheets declared in the animation rules exist, are pre-cached and are loaded by the scene", () => {
+  const rules = require("../src/animation-rules.js");
+  const shell = shellEntries().map(localPath);
+  const game = read("src/game.js");
+  for (const action of ["close", "far"]) {
+    const sheet = rules.sheetFor(action);
+    assert.ok(exists(sheet.file), `missing attack sheet ${sheet.file}`);
+    assert.ok(shell.includes(localPath(sheet.file)), `${sheet.file} is not pre-cached`);
+    assert.match(game, new RegExp(`load\\.spritesheet\\("${sheet.texture}", AnimationRules\\.sheetFor\\("${action}"\\)\\.file`));
+  }
+  assert.match(game, /playAttackAnimation\(action\)/);
+  assert.match(game, /attackAnimationActive\(\)/);
+  assert.match(game, /AnimationRules\.attackKey\(action, direction\)/);
+  assert.match(game, /AnimationRules\.timeScaleFor\(action, weapon\)/);
+  // O timeScale do ataque não pode ficar preso ao sprite depois do golpe.
+  assert.match(game, /function playPlayerAnimation/);
+  assert.match(game, /player\.anims\.timeScale = 1/);
+  assert.doesNotMatch(game, /player\.play\(`player-death-/, "death must go through playPlayerAnimation");
+});
+
+test("directional player sheets share one row order and the correct up row", () => {
+  const game = read("src/game.js");
+  const rules = require("../src/animation-rules.js");
+  assert.match(game, /AnimationRules\.DIRECTIONS\.forEach/);
+  assert.match(game, /AnimationRules\.rowFor\(direction\)/);
+  assert.doesNotMatch(game, /const directions = \[/, "the duplicated direction list must not come back");
+  const serialized = JSON.stringify(rules.DIRECTION_ROW);
+  assert.equal(rules.DIRECTION_ROW.up, 3);
+  assert.match(serialized, /"up":3/);
+});
+
+test("attack animation files record their drawing metadata next to the sheets", () => {
+  const knife = JSON.parse(read("assets/characters/male/Attack/knife-attack.json"));
+  assert.equal(knife.meta.frameWidth, 48);
+  assert.equal(knife.meta.frameHeight, 64);
+  assert.equal(knife.meta.columns, 12);
+  assert.equal(knife.meta.rows, 6);
+  assert.deepEqual(knife.meta.directionOrder, ["down", "left-down", "left-up", "up", "right-up", "right-down"]);
+  const shoot = JSON.parse(read("assets/characters/male/Shoot/pistol-shoot.json"));
+  assert.equal(shoot.meta.frameWidth, 48);
+  assert.equal(shoot.meta.image, "pistol-shoot.png");
+  assert.equal(shoot.meta.frameHeight, 64);
+  assert.equal(shoot.meta.columns, 8);
+  assert.equal(shoot.meta.rows, 6);
+  assert.equal(shoot.fireFrameIndexInAnimation, 4);
+});
+
+test("the knife source art and its converter stay in the repository", () => {
+  assert.ok(exists("docs/source-art/male-slash-source.jpeg"));
+  assert.ok(exists("tools/build-slash-sheet.py"));
+  const converter = read("tools/build-slash-sheet.py");
+  assert.match(converter, /def white_key/);
+  assert.match(converter, /HOLD_SEQUENCE/);
+  assert.match(converter, /DIRECTIONS = \["down", "left-down", "left-up", "up", "right-up", "right-down"\]/);
+});
+
+test("attack sheet PNGs keep the grid declared by the animation rules", () => {
+  const rules = require("../src/animation-rules.js");
+  const header = reference => {
+    const bytes = fs.readFileSync(path.join(root, localPath(reference)));
+    assert.equal(bytes.subarray(1, 4).toString("ascii"), "PNG", `${reference} must be a PNG`);
+    return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
+  };
+  for (const action of ["close", "far"]) {
+    const sheet = rules.sheetFor(action);
+    const size = header(sheet.file);
+    assert.equal(size.width, sheet.frameWidth * sheet.frameCount, `${sheet.file} width must fit ${sheet.frameCount} frames`);
+    assert.equal(size.height, sheet.frameHeight * rules.DIRECTIONS.length, `${sheet.file} height must fit 6 directions`);
+  }
+});

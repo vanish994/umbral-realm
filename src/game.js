@@ -8,10 +8,11 @@
   const CombatRules = window.UmbralCombatRules;
   const EnemyRules = window.UmbralEnemyRules;
   const ItemRules = window.UmbralItemRules;
-  if (!State || !World || !Targeting || !CombatFeedback || !CombatRules || !EnemyRules || !ItemRules) throw new Error("Os módulos do jogo não carregaram.");
+  const AnimationRules = window.UmbralAnimationRules;
+  if (!State || !World || !Targeting || !CombatFeedback || !CombatRules || !EnemyRules || !ItemRules || !AnimationRules) throw new Error("Os módulos do jogo não carregaram.");
 
   const state = State.normalize(saved);
-  let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeEnemyIndex = null, selectedEnemyIndex = null, menuOpen = false, merchantMode = false, playerDying = false, reloadState = null;
+  let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeEnemyIndex = null, selectedEnemyIndex = null, menuOpen = false, merchantMode = false, playerDying = false, reloadState = null, attackAnimation = null;
   const enemies = [];
   const touch = { x: 0, y: 0 };
   const el = id => document.getElementById(id);
@@ -156,6 +157,31 @@
     return Boolean(player.getData("tapTarget") || pendingMeleeEnemyIndex !== null || cursors.left.isDown || cursors.right.isDown || cursors.up.isDown || cursors.down.isDown || moveKeys.A.isDown || moveKeys.D.isDown || moveKeys.W.isDown || moveKeys.S.isDown || Math.abs(touch.x) > 0.05 || Math.abs(touch.y) > 0.05);
   }
 
+  // A animação de ataque assume o sprite durante a janela da arma (a mesma duração da recarga);
+  // quando ela termina, o personagem volta a andar ou a ficar parado na direção em que olha.
+  function attackAnimationActive() {
+    if (!attackAnimation) return false;
+    if (sceneRef && sceneRef.time.now < attackAnimation.endsAt) return true;
+    attackAnimation = null;
+    if (player) player.anims.timeScale = 1;
+    return false;
+  }
+
+  function faceDirection(direction) {
+    if (!player || !AnimationRules.isValidDirection(direction)) return;
+    player.setData("direction", direction);
+    if (!attackAnimationActive() && player.anims.currentAnim?.key?.startsWith("player-idle-")) {
+      playPlayerAnimation(`player-idle-${direction}`, true);
+    }
+  }
+
+  // O timeScale do ataque fica preso ao sprite: idle, walk e death sempre voltam à velocidade normal.
+  function playPlayerAnimation(key, ignoreIfPlaying = false) {
+    if (!player || !key) return;
+    player.anims.timeScale = 1;
+    player.play(key, ignoreIfPlaying);
+  }
+
   function reloadFirearm() {
     const weapon = ItemRules.weaponForAction(state.equipment, "far");
     if (reloadState || state.ammo[weapon.id] >= weapon.magazineSize) return false;
@@ -186,6 +212,8 @@
       this.load.spritesheet("player-idle-right-down", "./assets/characters/male/Idle/idle_right_down.png", { frameWidth: 48, frameHeight: 64 });
       this.load.spritesheet("player-walk-right-down", "./assets/characters/male/Walk/walk_right_down.png", { frameWidth: 48, frameHeight: 64 });
       this.load.spritesheet("player-death", "./assets/characters/male/Death/death_normal.png", { frameWidth: 48, frameHeight: 64 });
+      this.load.spritesheet("player-attack-close", AnimationRules.sheetFor("close").file, { frameWidth: AnimationRules.sheetFor("close").frameWidth, frameHeight: AnimationRules.sheetFor("close").frameHeight });
+      this.load.spritesheet("player-attack-far", AnimationRules.sheetFor("far").file, { frameWidth: AnimationRules.sheetFor("far").frameWidth, frameHeight: AnimationRules.sheetFor("far").frameHeight });
       this.load.spritesheet("zombie-rat-idle", "./assets/enemies/zombie-rat/Um_rato_zombie-Idle.png", { frameWidth: 32, frameHeight: 32 });
       this.load.spritesheet("zombie-wolf-idle", "./assets/enemies/zombie-wolf/idle.png", { frameWidth: 32, frameHeight: 32 });
       this.load.spritesheet("slow-zombie-idle", "./assets/enemies/slow-zombie/idle.png", { frameWidth: 48, frameHeight: 48 });
@@ -253,7 +281,7 @@
 
       player = this.add.sprite(World.playerSpawn.x, World.playerSpawn.y, "player-idle", 0).setScale(1.6 * this.characterScaleFactor).setOrigin(0.5, 0.82).setDepth(World.playerSpawn.y);
       player.setData("direction", "down");
-      player.play("player-idle-down");
+      playPlayerAnimation("player-idle-down");
       this.targetMarker = this.add.graphics().setDepth(998);
       this.createEnemies();
 
@@ -298,16 +326,29 @@
     }
 
     createAnimations() {
-      const directions = ["down", "left-down", "left-up", "right-down", "right-up", "up"];
-      directions.forEach((direction, row) => {
-        if (direction === "right-down") return;
-        this.anims.create({ key: `player-idle-${direction}`, frames: this.anims.generateFrameNumbers("player-idle", { start: row * 8, end: row * 8 + 7 }), frameRate: 7, repeat: -1 });
-        this.anims.create({ key: `player-walk-${direction}`, frames: this.anims.generateFrameNumbers("player-walk", { start: row * 8, end: row * 8 + 7 }), frameRate: 10, repeat: -1 });
+      // As linhas das folhas direcionais seguem AnimationRules.DIRECTION_ROW
+      // (down, left-down, left-up, up, right-up, right-down) para idle, walk, death e ataques.
+      AnimationRules.DIRECTIONS.forEach(direction => {
+        const row = AnimationRules.rowFor(direction);
+        if (direction !== "right-down") {
+          this.anims.create({ key: `player-idle-${direction}`, frames: this.anims.generateFrameNumbers("player-idle", { start: row * 8, end: row * 8 + 7 }), frameRate: 7, repeat: -1 });
+          this.anims.create({ key: `player-walk-${direction}`, frames: this.anims.generateFrameNumbers("player-walk", { start: row * 8, end: row * 8 + 7 }), frameRate: 10, repeat: -1 });
+        }
+        this.anims.create({ key: `player-death-${direction}`, frames: this.anims.generateFrameNumbers("player-death", { start: row * 8, end: row * 8 + 7 }), frameRate: 9, repeat: 0 });
       });
       this.anims.create({ key: "player-idle-right-down", frames: this.anims.generateFrameNumbers("player-idle-right-down", { start: 0, end: 7 }), frameRate: 7, repeat: -1 });
       this.anims.create({ key: "player-walk-right-down", frames: this.anims.generateFrameNumbers("player-walk-right-down", { start: 0, end: 7 }), frameRate: 10, repeat: -1 });
-      directions.forEach((direction, row) => {
-        this.anims.create({ key: `player-death-${direction}`, frames: this.anims.generateFrameNumbers("player-death", { start: row * 8, end: row * 8 + 7 }), frameRate: 9, repeat: 0 });
+      ["close", "far"].forEach(action => {
+        const sheet = AnimationRules.sheetFor(action);
+        AnimationRules.DIRECTIONS.forEach(direction => {
+          const row = AnimationRules.rowFor(direction);
+          this.anims.create({
+            key: AnimationRules.attackKey(action, direction),
+            frames: this.anims.generateFrameNumbers(sheet.texture, { start: row * sheet.frameCount, end: row * sheet.frameCount + sheet.frameCount - 1 }),
+            frameRate: AnimationRules.BASE_FRAME_RATE,
+            repeat: 0
+          });
+        });
       });
     }
 
@@ -321,6 +362,17 @@
       if (!sound) return;
       if (sound.isPlaying) sound.stop();
       sound.play();
+    }
+
+    // Toca a animação direcional do ataque (faca para curta distância, pistola para armas de fogo).
+    playAttackAnimation(action) {
+      if (!player || playerDying) return;
+      const weapon = ItemRules.weaponForAction(state.equipment, action);
+      const direction = AnimationRules.directionOrDefault(player.getData("direction"));
+      const key = AnimationRules.attackKey(action, direction);
+      if (!this.anims.exists(key)) return;
+      player.play({ key, timeScale: AnimationRules.timeScaleFor(action, weapon) });
+      attackAnimation = { key, direction, action, endsAt: this.time.now + AnimationRules.attackWindowMs(action, weapon) };
     }
 
     showDamageNumber(target, amount, critical = false) {
@@ -462,20 +514,22 @@
       if (playerDying) return;
       playerDying = true;
       actionReady = false;
+      attackAnimation = null;
+      player.anims.timeScale = 1;
       pendingMeleeEnemyIndex = null;
       selectedEnemyIndex = null;
       this.updateTargetMarker();
       player.setData("tapTarget", null);
       resetJoystick();
-      const direction = player.getData("direction") || "down";
-      player.play(`player-death-${direction}`, true);
+      const direction = AnimationRules.directionOrDefault(player.getData("direction"));
+      playPlayerAnimation(`player-death-${direction}`, true);
       announce("Você morreu.");
       this.time.delayedCall(950, () => {
         const penalty = State.applyDeathPenalty(state);
         state.hp = Math.max(1, Math.floor(maxHp() / 2));
         player.setPosition(World.playerSpawn.x, World.playerSpawn.y).setData("direction", "down");
         enemies.forEach(other => { other.setPosition(other.spawnX, other.spawnY); other.bobOffset = 0; });
-        player.play("player-idle-down", true);
+        playPlayerAnimation("player-idle-down", true);
         playerDying = false;
         actionReady = true;
         updateHud();
@@ -526,19 +580,22 @@
         if (Math.hypot(dx, dy) < 8) { player.setData("tapTarget", null); dx = dy = 0; }
         else { const length = Math.hypot(dx, dy); dx /= length; dy /= length; }
       }
+      const attacking = attackAnimationActive();
       if (dx || dy) {
-        const diagonal = Math.abs(dx) > 0 && Math.abs(dy) > 0;
-        const direction = diagonal ? (dx < 0 ? (dy < 0 ? "left-up" : "left-down") : (dy < 0 ? "right-up" : "right-down")) : (Math.abs(dx) > 0 ? (dx < 0 ? "left-down" : "right-down") : (dy < 0 ? "up" : "down"));
+        const direction = AnimationRules.directionFor(dx, dy);
         const animation = `player-walk-${direction}`;
         player.setData("direction", direction);
-        if (player.anims.currentAnim?.key !== animation) player.play(animation, true);
+        if (!attacking && player.anims.currentAnim?.key !== animation) playPlayerAnimation(animation, true);
         const length = Math.hypot(dx, dy), step = 145 * delta / 1000;
         const nx = Phaser.Math.Clamp(player.x + dx / length * step, 25, World.world.width - 25);
         const ny = Phaser.Math.Clamp(player.y + dy / length * step, 35, World.world.height - 30);
         if (!this.isBlocked(nx, player.y)) player.x = nx;
         if (!this.isBlocked(player.x, ny)) player.y = ny;
-      } else if (player.anims.currentAnim?.key?.startsWith("player-walk-")) {
-        player.play(player.anims.currentAnim.key.replace("player-walk-", "player-idle-"), true);
+      } else if (!attacking) {
+        const current = player.anims.currentAnim?.key || "";
+        if (current.startsWith("player-walk-") || current.startsWith("player-attack-")) {
+          playPlayerAnimation(`player-idle-${AnimationRules.directionOrDefault(player.getData("direction"))}`, true);
+        }
       }
       player.setDepth(player.y);
     }
@@ -708,7 +765,10 @@
     const cooldown = weapon.cooldown;
     actionReady = false;
     setTimeout(() => { actionReady = true; }, cooldown);
+    // O personagem vira para o alvo antes do golpe, para a animação apontar na direção certa.
+    faceDirection(AnimationRules.directionFor(target.x - player.x, target.y - player.y));
     sceneRef.playAttackSound(action);
+    sceneRef.playAttackAnimation(action);
     if (!CombatRules.rollHit(action, isPlayerMoving())) {
       sceneRef.showMissNumber(target);
       announce("O disparo errou o alvo durante o movimento.");
