@@ -81,6 +81,11 @@
     el("status-xp-bar").style.width = `${state.xp / next * 100}%`;
     const equippedDefense = ItemRules.defense(state.equipment);
     el("status-defense").textContent = `${Math.round(equippedDefense * 100)}%`;
+    const activeWeapon = ItemRules.weaponForAction(state.equipment, state.action);
+    const activeSkill = state.action === "close" ? state.skills.blades : state.skills.firearms;
+    const activeDamage = CombatRules.damageRange(state.action, activeSkill.level, state.level, activeWeapon);
+    el("status-attack").textContent = `${activeDamage.min}–${activeDamage.max}`;
+    el("status-attack-note").textContent = `${activeWeapon.name} · ${state.action === "close" ? "lâminas" : "armas de fogo"}`;
     for (const [slot, itemId] of Object.entries(state.equipment)) {
       const image = el(`equipped-${slot}`);
       if (!image) continue;

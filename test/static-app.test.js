@@ -123,19 +123,22 @@ test("development HUD exposes finite magazines with an infinite reserve", () => 
 test("field terminal menu matches the approved desk composition and exposes four functional pages", () => {
   const html = read("index.html");
   const css = read("src/style.css");
+  const game = read("src/game.js");
   assert.match(html, /id="smartphone-menu"[^>]*role="dialog"/);
   for (const prop of ["desk-paper", "desk-pencil", "desk-drive", "desk-disc", "desk-card"]) assert.match(html, new RegExp(prop));
   assert.match(html, /class="smartphone-device field-phone"/);
-  assert.match(css, /\.smartphone-device\.field-phone\{[^}]*width:min\(92vw,960px\)[^}]*height:min\(84vh,500px\)/);
+  assert.match(css, /\.smartphone-device\.field-phone\{width:min\(78vw,calc\(82vh \* 1\.62\),880px\);height:auto;aspect-ratio:1\.62\/1\}/);
   assert.match(css, /repeating-linear-gradient\(90deg/);
   for (const page of ["character", "status", "skills", "inventory"]) {
     assert.match(html, new RegExp(`data-menu-page="${page}"`));
     assert.match(html, new RegExp(`data-menu-tab="${page}"`));
   }
   for (const removed of ["map", "quests"]) assert.doesNotMatch(html, new RegExp(`data-menu-(?:page|tab)="${removed}"`));
-  for (const id of ["blades-level", "blades-xp", "firearms-level", "firearms-xp", "critical-chance", "critical-multiplier"]) {
+  for (const id of ["blades-level", "blades-xp", "firearms-level", "firearms-xp", "status-attack", "status-defense", "critical-chance", "critical-multiplier"]) {
     assert.match(html, new RegExp(`id="${id}"`));
   }
+  assert.match(html, /<span>ARMADURA<\/span>/);
+  assert.match(game, /status-attack.*activeDamage\.min/);
 });
 
 test("smartphone inventory exposes all seven equippable items", () => {
