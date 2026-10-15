@@ -115,6 +115,7 @@ test("smartphone menu exposes functional status and skills plus planned navigati
   assert.match(html, /class="desk-scene"/);
   assert.match(html, /class="profile-card"/);
   assert.match(css, /smartphone-frame\.png/);
+  assert.match(css, /\.smartphone-device\{[^}]*height:min\(96%,520px\)[^}]*aspect-ratio:3\/5/);
   assert.match(css, /repeating-linear-gradient\(0deg/);
   for (const page of ["status", "skills", "inventory", "map", "quests"]) {
     assert.match(html, new RegExp(`data-menu-page="${page}"`));
