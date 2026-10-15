@@ -11,7 +11,7 @@
 - Uma cena Phaser 3 local com mapa de 960×640 desenhado por `Graphics`, câmera, movimento por teclado, toque no mapa e joystick virtual.
 - Colisão manual do jogador com retângulos de cenário. A perseguição do rato agora usa os mesmos obstáculos e limites do mundo.
 - Sprites direcionais do jogador e poses direcionais do rato. As folhas foram conferidas: personagem combinado 384×384 (6 linhas de 8 quadros de 48×64); rato e mercador 256×32 (8 direções de 32×32). O rato não possui ciclo de caminhada no asset atual.
-- Um rato zumbi com perseguição, dano por contato, vida, recompensa direta e respawn de oito segundos.
+- Quatro ratos zumbis distribuídos antes da clareira, cada um com vida e persistência independentes, perseguição com território, dano por contato, recompensa direta e respawn de doze segundos.
 - Faca e revólver `.38` representados pelas duas ações de combate preexistentes. O revólver começa com sete munições e sem reserva; os valores de dano continuam provisórios.
 - HUD de vida, XP, nível, moedas, munição e inimigo; controles de arma, ataque e interação acessíveis sobre a cena na orientação horizontal.
 - Mercador visível e diálogo simples, mas sem loja.
@@ -22,7 +22,7 @@
 
 ### Parcial ou provisório
 
-- O mapa tem obstáculos e identidade cromática, mas é composto por formas. O mantenedor declarou ser autor ou titular do pack de ambiente e autorizou seu uso no repositório; nove tilesets já foram medidos e inspecionados, mas ainda não foram integrados à cena.
+- A Trilha dos Infectados é um mapa inicial autoral de 1280×720: saída a oeste, quatro territórios de ratos, ruínas e uma clareira segura a leste com fogueira e mercador. Terreno e props selecionados do pack autorizado foram integrados; algumas estruturas continuam desenhadas com formas enquanto seus tiles não forem montados e validados.
 - Combate respeita alcance e recarga, mas não tem animações de ataque, projétil, chance de acerto, sangramento, fio da faca ou sujeira do revólver.
 - A “morte” recupera metade da vida e reposiciona o jogador; perda/recuperação ainda é uma decisão aberta no GDD.
 - XP e nível existem, mas skills independentes ainda não. Os números atuais não foram validados por balanceamento.

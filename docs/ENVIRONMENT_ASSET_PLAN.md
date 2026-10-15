@@ -59,6 +59,12 @@ O arquivo contém 1.113 PNGs. Os nove tilesets inicialmente selecionados foram e
 
 Todos esses tamanhos são compatíveis com uma grade de 16×16, mas cada índice ainda precisa ser escolhido visualmente; transparência ou dimensão divisível por 16, isoladamente, não comprova que um tile forme uma transição correta.
 
+## Integração inicial concluída
+
+A Trilha dos Infectados agora utiliza uma seleção mínima do pack em `assets/environment/trail/`: terreno escuro, árvores, arbustos, pneus, entulho, lixeira, barril e paredes destruídas. O mapa deixou de distribuir vegetação proceduralmente e passou a ter percurso, marcos, props e colisões definidos em `src/world-config.js`.
+
+A fogueira solicitada não existe no pack inspecionado; por isso ela é desenhada e animada diretamente no Phaser. Não foi usado um sprite de disparo ou outro asset incompatível como substituto.
+
 ## Próximo passo técnico
 
-Montar uma pequena área de teste com poucos tiles de chão, ruína e entulho, mantendo colisões separadas da arte. Comparar essa área com o cenário atual antes de substituir o mapa inteiro.
+Validar visualmente o percurso em Android, principalmente legibilidade dos props em escala 1,5–2,2, passagem entre obstáculos, retorno dos ratos ao território e espaço dos controles sobre a clareira. Só então ampliar ruínas ou trocar mais formas por tiles estruturais.
