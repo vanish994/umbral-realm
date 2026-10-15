@@ -50,6 +50,7 @@
     el("coins").textContent = String(state.coins);
     if (player) el("location-label").textContent = World.areaAt(player.x).name;
     el("charge-label").textContent = `${equippedFirearm.name}: ${loadedAmmo} / ${equippedFirearm.magazineSize}${CombatRules.DEVELOPMENT_INFINITE_RESERVE ? " • reserva ∞" : ""}${isReloading ? " • recarregando" : ""}`;
+    el("world-ammo").textContent = `${equippedFirearm.name.toUpperCase()} • ${loadedAmmo}/${equippedFirearm.magazineSize}${CombatRules.DEVELOPMENT_INFINITE_RESERVE ? " • RESERVA ∞" : ""}${isReloading ? " • RECARREGANDO" : ""}`;
     ["action-close", "touch-action-close"].forEach(id => el(id)?.classList.toggle("selected", state.action === "close"));
     ["action-far", "touch-action-far"].forEach(id => el(id)?.classList.toggle("selected", state.action === "far"));
     ["action-close", "touch-action-close"].forEach(id => el(id)?.setAttribute("aria-pressed", String(state.action === "close")));
@@ -176,6 +177,8 @@
 
     create() {
       sceneRef = this;
+      this.wideViewport = this.scale.width > this.scale.height;
+      this.characterScaleFactor = this.wideViewport ? 1.22 : 1;
       this.solids = World.solids.map(solid => ({ ...solid }));
       this.cameras.main.setBackgroundColor("#17231c");
       World.areas.forEach(area => {
@@ -223,10 +226,10 @@
       this.backgroundMusic.loop = true;
       this.backgroundMusic.volume = 0.16;
       this.backgroundMusic.preload = "none";
-      this.merchant = this.add.sprite(World.merchant.x, World.merchant.y, "merchant-idle", 0).setScale(1.6).setOrigin(0.5, 0.82).setDepth(World.merchant.y);
+      this.merchant = this.add.sprite(World.merchant.x, World.merchant.y, "merchant-idle", 0).setScale(1.6 * this.characterScaleFactor).setOrigin(0.5, 0.82).setDepth(World.merchant.y);
       this.merchantName = this.add.text(World.merchant.x, World.merchant.y - 35, "MERCADOR", this.labelStyle("#f0d7a0")).setOrigin(0.5).setDepth(1000);
 
-      player = this.add.sprite(World.playerSpawn.x, World.playerSpawn.y, "player-idle", 0).setScale(1.6).setOrigin(0.5, 0.82).setDepth(World.playerSpawn.y);
+      player = this.add.sprite(World.playerSpawn.x, World.playerSpawn.y, "player-idle", 0).setScale(1.6 * this.characterScaleFactor).setOrigin(0.5, 0.82).setDepth(World.playerSpawn.y);
       player.setData("direction", "down");
       player.play("player-idle-down");
       this.createEnemies();
@@ -234,7 +237,11 @@
       this.physics.world.setBounds(0, 0, World.world.width, World.world.height);
       this.cameras.main.setBounds(0, 0, World.world.width, World.world.height);
       this.cameras.main.startFollow(player, true, 0.12, 0.12);
-      this.cameras.main.setZoom(Math.min(1.25, this.scale.width / 390));
+      const wideViewport = this.scale.width > this.scale.height;
+      this.cameras.main.setZoom(wideViewport ? 1.02 : Math.min(1, this.scale.width / 390));
+      this.minimapCanvas = el("minimap-canvas");
+      this.minimapContext = this.minimapCanvas?.getContext("2d");
+      this.drawMinimap();
       cursors = this.input.keyboard.createCursorKeys();
       moveKeys = this.input.keyboard.addKeys("W,A,S,D,SPACE,E");
       this.input.on("pointerdown", pointer => {
@@ -366,12 +373,12 @@
       World.enemySpawns.forEach((spawn, enemyIndex) => {
         const definition = EnemyRules.definition(spawn.id);
         const visual = spriteConfig[definition.species];
-        const enemy = this.add.sprite(spawn.x, spawn.y, visual.key, 4).setScale(visual.scale).setOrigin(0.5, 0.76).setDepth(spawn.y);
+        const enemy = this.add.sprite(spawn.x, spawn.y, visual.key, 4).setScale(visual.scale * this.characterScaleFactor).setOrigin(0.5, 0.76).setDepth(spawn.y);
         enemy.enemyIndex = enemyIndex;
         enemy.definitionId = definition.id;
         enemy.spawnX = spawn.x;
         enemy.spawnY = spawn.y;
-        enemy.indicatorOffset = visual.offset;
+        enemy.indicatorOffset = Math.round(visual.offset * this.characterScaleFactor);
         enemy.bobOffset = 0;
         enemy.attackAt = 0;
         enemy.healthBar = this.add.graphics().setDepth(999);
@@ -526,6 +533,51 @@
       enemy.setDepth(enemy.y);
     }
 
+    drawMinimap() {
+      const context = this.minimapContext;
+      const canvas = this.minimapCanvas;
+      if (!context || !canvas || !player) return;
+      const width = canvas.width, height = canvas.height;
+      const margin = 13;
+      const mapX = x => margin + x / World.world.width * (width - margin * 2);
+      const mapY = y => margin + y / World.world.height * (height - margin * 2);
+      context.clearRect(0, 0, width, height);
+      context.save();
+      context.beginPath();
+      context.arc(width / 2, height / 2, width / 2 - 3, 0, Math.PI * 2);
+      context.clip();
+      context.fillStyle = "#091017";
+      context.fillRect(0, 0, width, height);
+      const areaColors = ["#6d6339", "#253d2d", "#514638", "#294335"];
+      World.areas.forEach((area, index) => {
+        context.fillStyle = areaColors[index];
+        context.fillRect(mapX(area.startX), margin, mapX(area.endX) - mapX(area.startX), height - margin * 2);
+      });
+      context.strokeStyle = "#9a7950";
+      context.lineWidth = 8;
+      context.beginPath();
+      context.moveTo(mapX(0), mapY(450));
+      context.lineTo(mapX(World.world.width), mapY(450));
+      context.stroke();
+      context.fillStyle = "#9ba2a6";
+      World.solids.forEach(solid => context.fillRect(mapX(solid.x), mapY(solid.y), Math.max(1, solid.w / World.world.width * (width - margin * 2)), Math.max(1, solid.h / World.world.height * (height - margin * 2))));
+      enemies.forEach(enemy => {
+        if (!enemy.visible || state.enemies[enemy.enemyIndex].hp <= 0) return;
+        context.fillStyle = "#dc4d4d";
+        context.beginPath();
+        context.arc(mapX(enemy.x), mapY(enemy.y), 2.5, 0, Math.PI * 2);
+        context.fill();
+      });
+      context.fillStyle = "#f1bd55";
+      context.beginPath(); context.arc(mapX(World.merchant.x), mapY(World.merchant.y), 3.2, 0, Math.PI * 2); context.fill();
+      context.fillStyle = "#fff";
+      context.beginPath(); context.arc(mapX(player.x), mapY(player.y), 4.2, 0, Math.PI * 2); context.fill();
+      context.strokeStyle = "#132330";
+      context.lineWidth = 2;
+      context.stroke();
+      context.restore();
+    }
+
     update(_, delta) {
       if (!player) return;
       this.movePlayer(delta);
@@ -533,7 +585,7 @@
         this.moveEnemy(enemy, delta);
         this.updateEnemyIndicators(enemy);
       });
-      if (this.time.now % 250 < delta) updateHud();
+      if (this.time.now % 250 < delta) { updateHud(); this.drawMinimap(); }
     }
   }
 

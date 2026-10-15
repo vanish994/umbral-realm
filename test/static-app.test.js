@@ -166,6 +166,18 @@ test("merchant trade exposes core inventory and equipment prices", () => {
   assert.match(game, /merchantMode/);
 });
 
+test("exploration HUD overlays health, XP, ammunition, and a circular minimap", () => {
+  const html = read("index.html");
+  const css = read("src/style.css");
+  const game = read("src/game.js");
+  assert.match(html, /class="hud world-hud"/);
+  assert.match(html, /id="world-ammo"/);
+  assert.match(html, /id="minimap-canvas"/);
+  assert.match(css, /\.minimap\{[^}]*border-radius:50%/);
+  assert.match(game, /drawMinimap\(\)/);
+  assert.match(game, /wideViewport \? 1\.02/);
+});
+
 test("manifest exposes installable PNG icon sizes and landscape mode", () => {
   const manifest = JSON.parse(read("manifest.webmanifest"));
   assert.equal(manifest.orientation, "landscape");
