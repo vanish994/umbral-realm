@@ -12,7 +12,7 @@
 - Colisão manual do jogador com retângulos de cenário. A perseguição do rato agora usa os mesmos obstáculos e limites do mundo.
 - Sprites direcionais do jogador e poses direcionais do rato. As folhas foram conferidas: personagem combinado 384×384 (6 linhas de 8 quadros de 48×64); rato e mercador 256×32 (8 direções de 32×32). O rato não possui ciclo de caminhada no asset atual.
 - Quatro ratos zumbis distribuídos antes da clareira, cada um com vida e persistência independentes, perseguição com território, dano por contato, recompensa direta e respawn de doze segundos.
-- Faca e revólver `.38` representados pelas duas ações de combate preexistentes. O revólver começa com sete munições e sem reserva; os valores de dano continuam provisórios.
+- Faca e revólver `.38` representados pelas duas ações de combate preexistentes. Ao atacar com a faca fora do alcance, o personagem segue o rato vivo mais próximo e executa um golpe ao alcançá-lo; joystick, teclado, toque no mapa ou troca de arma cancelam a aproximação. O revólver começa com sete munições e sem reserva; os valores de dano continuam provisórios.
 - HUD de vida, XP, nível, moedas, munição e inimigo; controles de arma, ataque e interação acessíveis sobre a cena na orientação horizontal. Molduras, barras, botões e ícones selecionados do `UI Package.zip` foram integrados sem substituir a estrutura HTML acessível.
 - Mercador visível e diálogo simples, mas sem loja.
 - Salvamento local do estado numérico, agora normalizado contra campos ausentes/corrompidos e acionado também após alterações relevantes e ao ocultar/sair da página.

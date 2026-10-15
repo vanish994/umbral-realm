@@ -5,6 +5,6 @@
   "description": "Protótipo PWA local do Umbral Realm",
   "scripts": {
     "test": "node --test",
-    "check": "node --check src/game-state.js && node --check src/world-config.js && node --check src/game.js && node --check service-worker.js && node --test"
+    "check": "node --check src/game-state.js && node --check src/world-config.js && node --check src/targeting.js && node --check src/game.js && node --check service-worker.js && node --test"
   }
 }

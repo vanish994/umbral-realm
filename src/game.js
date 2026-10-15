@@ -3,10 +3,11 @@
   const saved = (() => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { return {}; } })();
   const State = window.UmbralState;
   const World = window.UmbralWorld;
-  if (!State || !World) throw new Error("Os módulos do jogo não carregaram.");
+  const Targeting = window.UmbralTargeting;
+  if (!State || !World || !Targeting) throw new Error("Os módulos do jogo não carregaram.");
 
   const state = State.normalize(saved);
-  let sceneRef, player, cursors, moveKeys, toastTimer, actionReady = true;
+  let sceneRef, player, cursors, moveKeys, toastTimer, actionReady = true, pendingMeleeRatId = null;
   const rats = [];
   const touch = { x: 0, y: 0 };
   const el = id => document.getElementById(id);
@@ -23,17 +24,13 @@
   function livingRatCount() { return state.rats.filter(rat => rat.hp > 0).length; }
   function nearestRat(maxRange = Infinity) {
     if (!player) return null;
-    let nearest = null;
-    let nearestDistance = maxRange;
-    for (const rat of rats) {
-      if (!rat.visible || state.rats[rat.ratId].hp <= 0) continue;
-      const distance = Phaser.Math.Distance.Between(player.x, player.y, rat.x, rat.y);
-      if (distance < nearestDistance) {
-        nearest = rat;
-        nearestDistance = distance;
-      }
-    }
-    return nearest;
+    const candidates = rats.map(rat => ({
+      x: rat.x,
+      y: rat.y,
+      rat,
+      available: rat.visible && state.rats[rat.ratId].hp > 0
+    }));
+    return Targeting.findNearest(player, candidates, maxRange)?.rat || null;
   }
 
   function updateHud() {
@@ -146,7 +143,10 @@
       this.input.on("pointerdown", pointer => {
         if (pointer.event.target.closest("button,.game-controls")) return;
         const point = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
-        if (Math.hypot(point.x - player.x, point.y - player.y) > 22) player.setData("tapTarget", { x: point.x, y: point.y });
+        if (Math.hypot(point.x - player.x, point.y - player.y) > 22) {
+          pendingMeleeRatId = null;
+          player.setData("tapTarget", { x: point.x, y: point.y });
+        }
       });
       updateHud();
     }
@@ -220,8 +220,32 @@
       let dx = 0, dy = 0;
       if (cursors.left.isDown || moveKeys.A.isDown) dx = -1; else if (cursors.right.isDown || moveKeys.D.isDown) dx = 1; else dx = touch.x;
       if (cursors.up.isDown || moveKeys.W.isDown) dy = -1; else if (cursors.down.isDown || moveKeys.S.isDown) dy = 1; else dy = touch.y;
+      const manualInput = Boolean(dx || dy);
+      if (manualInput) {
+        pendingMeleeRatId = null;
+        player.setData("tapTarget", null);
+      }
+
+      if (!manualInput && pendingMeleeRatId !== null) {
+        const meleeTarget = rats.find(rat => rat.ratId === pendingMeleeRatId);
+        if (!meleeTarget?.visible || state.rats[pendingMeleeRatId].hp <= 0 || state.action !== "close") {
+          pendingMeleeRatId = null;
+        } else {
+          const approach = Targeting.approachVector(player, meleeTarget, 52);
+          if (approach.reached) {
+            if (actionReady) {
+              pendingMeleeRatId = null;
+              resolveAction(false, meleeTarget);
+            }
+          } else {
+            dx = approach.x;
+            dy = approach.y;
+          }
+        }
+      }
+
       const target = player.getData("tapTarget");
-      if (!dx && !dy && target) {
+      if (!dx && !dy && pendingMeleeRatId === null && target) {
         dx = target.x - player.x; dy = target.y - player.y;
         if (Math.hypot(dx, dy) < 8) { player.setData("tapTarget", null); dx = dy = 0; }
         else { const length = Math.hypot(dx, dy); dx /= length; dy /= length; }
@@ -262,6 +286,7 @@
           say("Um rato zumbi atingiu você: -5 de vitalidade.");
           if (state.hp === 0) {
             state.hp = Math.floor(maxHp() / 2);
+            pendingMeleeRatId = null;
             player.setPosition(World.playerSpawn.x, World.playerSpawn.y).setData("tapTarget", null);
             rats.forEach(other => { other.setPosition(other.spawnX, other.spawnY); other.bobOffset = 0; });
             say("Você recuou para o início da trilha e recuperou o fôlego.");
@@ -307,15 +332,29 @@
 
   function near(a, b, range = 75) { return a && b && Phaser.Math.Distance.Between(a.x, a.y, b.x, b.y) <= range; }
   function selectAction(action) {
+    pendingMeleeRatId = null;
     state.action = action; updateHud(); persistGame();
-    say(action === "close" ? "Faca selecionada: aproxime-se para atacar." : "Revólver .38 selecionado: cada disparo consome uma munição.");
+    say(action === "close" ? "Faca selecionada: atacar aproxima você do rato mais próximo." : "Revólver .38 selecionado: cada disparo consome uma munição.");
   }
 
-  function resolveAction() {
+  function resolveAction(allowApproach = true, forcedTarget = null) {
     if (!actionReady || state.hp <= 0) return;
     const range = state.action === "close" ? 58 : 285;
-    const target = nearestRat(range);
-    if (!target) { say(state.action === "close" ? "Nenhum rato ao alcance da faca." : "Nenhum rato ao alcance do revólver."); return; }
+    let target = forcedTarget;
+    if (target && (!target.visible || state.rats[target.ratId].hp <= 0 || Targeting.distanceBetween(player, target) > range)) target = null;
+    if (!target) target = nearestRat(range);
+
+    if (!target && state.action === "close" && allowApproach) {
+      const approachTarget = nearestRat();
+      if (!approachTarget) { say("Não há ratos vivos para atacar."); return; }
+      pendingMeleeRatId = approachTarget.ratId;
+      player.setData("tapTarget", null);
+      say(`Aproximando da faca até o Rato ${approachTarget.ratId + 1}. Use o joystick para cancelar.`);
+      return;
+    }
+    if (!target) { say(state.action === "close" ? "Não foi possível alcançar o rato com a faca." : "Nenhum rato ao alcance do revólver."); return; }
+
+    pendingMeleeRatId = null;
     let damage, cooldown;
     if (state.action === "close") { damage = 13; cooldown = 500; }
     else {
