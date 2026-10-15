@@ -151,7 +151,7 @@
       player=this.add.sprite(470,305,"player-idle",0).setScale(1.25).setOrigin(0.5,0.82);player.play("player-idle-down");
       // A folha do rato contém 8 poses direcionais (não 8 quadros de caminhada).
       // O frame é escolhido pela direção do alvo; nunca animamos a folha inteira em loop.
-      enemy=this.add.sprite(555,305,"zombie-rat-idle",4).setFrame(4).setScale(0.72).setOrigin(0.5,0.5).setFlipX(true).setFlipY(true);
+      enemy=this.add.sprite(555,305,"zombie-rat-idle",4).setFrame(4).setScale(0.72).setOrigin(0.5,0.5);
       this.enemyBobOffset=0;
       this.enemyName=this.add.text(0,0,"RATO ZUMBI",{fontFamily:"monospace",fontSize:"10px",color:"#e6c2ad",stroke:"#141719",strokeThickness:3}).setOrigin(0.5);
       this.physics.world.setBounds(0,0,960,640);
