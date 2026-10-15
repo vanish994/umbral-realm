@@ -151,7 +151,7 @@
       player=this.add.sprite(470,305,"player-idle",0).setScale(1.25).setOrigin(0.5,0.82);player.play("player-idle-down");
       // A folha do rato contém 8 poses direcionais (não 8 quadros de caminhada).
       // O frame é escolhido pela direção do alvo; nunca animamos a folha inteira em loop.
-      enemy=this.add.sprite(555,305,"zombie-rat-idle",4).setFrame(4).setScale(0.72).setOrigin(0.5,0.5);
+      enemy=this.add.sprite(555,305,"zombie-rat-idle",4).setFrame(4).setScale(0.55).setOrigin(0.5,0.5);
       this.enemyBobOffset=0;
       this.enemyName=this.add.text(0,0,"RATO ZUMBI",{fontFamily:"monospace",fontSize:"10px",color:"#e6c2ad",stroke:"#141719",strokeThickness:3}).setOrigin(0.5);
       this.physics.world.setBounds(0,0,960,640);
@@ -194,39 +194,19 @@
       if(enemy&&enemy.visible&&!state.defeated&&state.hp>0){
         const distance=Phaser.Math.Distance.Between(player.x,player.y,enemy.x,enemy.y);
         if(distance<185){
-          // Mesma lógica direcional do personagem: primeiro calcula o vetor
-          // até o alvo e classifica horizontal/vertical/diagonal.
+          // O JSON original define a ordem real dos quadros:
+          // 0 sul, 1 sudeste, 2 leste, 3 nordeste,
+          // 4 norte, 5 noroeste, 6 oeste, 7 sudoeste.
+          // Calculamos o ângulo até o jogador e escolhemos a pose correspondente.
           const toPlayerX = player.x - enemy.x;
           const toPlayerY = player.y - enemy.y;
-          const horizontal = Math.abs(toPlayerX) > Math.abs(toPlayerY) * 0.414;
-          const vertical = Math.abs(toPlayerY) > Math.abs(toPlayerX) * 0.414;
-          let dirKey;
-          if (horizontal && vertical) {
-            dirKey = toPlayerX < 0
-              ? (toPlayerY < 0 ? "left-up" : "left-down")
-              : (toPlayerY < 0 ? "right-up" : "right-down");
-          } else if (horizontal) {
-            dirKey = toPlayerX < 0 ? "left-down" : "right-down";
-          } else {
-            dirKey = toPlayerY < 0 ? "up" : "down";
-          }
-          // Os nomes seguem a mesma classificação do personagem; os índices
-          // apontam para as 8 poses fixas do spritesheet do rato.
-          const ratFrameByDirection = {
-            "right-down": 7,
-            "right-up": 5,
-            "left-up": 3,
-            "left-down": 1,
-            "up": 4,
-            "down": 0
-          };
-          // A folha tem uma pose lateral para cada lado, sem duplicar animações.
-          // Usa a direção horizontal dominante para não selecionar a pose oposta.
-          let ratFrame = ratFrameByDirection[dirKey];
-          if (dirKey === "right-down" && toPlayerY < 0) ratFrame = 5;
-          if (dirKey === "left-down" && toPlayerY < 0) ratFrame = 3;
+          const angle = Math.atan2(toPlayerY, toPlayerX);
+          // Setores angulares: direita, baixo-direita, baixo, baixo-esquerda,
+          // esquerda, cima-esquerda, cima, cima-direita.
+          const angleSector = (Math.round(angle / (Math.PI / 4)) + 8) % 8;
+          const ratFrameByAngle = [2, 1, 0, 7, 6, 5, 4, 3];
           enemy.anims.stop();
-          enemy.setFrame(ratFrame);
+          enemy.setFrame(ratFrameByAngle[angleSector]);
           if(distance>27){
             const a = Math.atan2(toPlayerY, toPlayerX);
             enemy.x+=Math.cos(a)*24*delta/1000;
