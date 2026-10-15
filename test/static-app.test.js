@@ -53,7 +53,7 @@ test("all Phaser preload assets are available offline", () => {
 
 test("every integrated environment and UI asset is available offline", () => {
   const shell = shellEntries().map(localPath);
-  for (const directory of ["assets/environment/trail", "assets/ui", "assets/ui-smart"]) {
+  for (const directory of ["assets/environment/trail", "assets/environment/border", "assets/environment/street", "assets/ui", "assets/ui-smart"]) {
     const assets = fs.readdirSync(path.join(root, directory)).filter(file => file.endsWith(".png"));
     assert.ok(assets.length > 0);
     for (const asset of assets) {
@@ -333,5 +333,64 @@ test("no enemy can reach the refuge line from its spawn", () => {
     const contact = contactBySpecies[definition.species];
     assert.ok(Number.isFinite(contact), `espécie ${definition.species} sem área de contato`);
     assert.ok(spawn.x + contact <= world.safeZoneX, `${spawn.id} alcança a clareira segura`);
+  }
+});
+
+test("todo prop do mapa tem PNG, carregamento na cena e cópia offline", () => {
+  const world = require("../src/world-config.js");
+  const game = read("src/game.js");
+  const shell = shellEntries().map(localPath);
+  const loaded = new Set([...game.matchAll(/this\.load\.image\(key,\s*`[^`]*\/\$\{key\}\.png`/g)].length ? [] : []);
+  const keyLists = ["BORDER_ASSETS", "STREET_ASSETS"];
+  const declared = new Set();
+  for (const name of keyLists) {
+    const match = game.match(new RegExp(`const ${name} = \\[([\\s\\S]*?)\\];`));
+    assert.ok(match, `${name} precisa existir em game.js`);
+    for (const item of match[1].matchAll(/"([^"]+)"/g)) declared.add(item[1]);
+  }
+  const trailMatch = game.match(/\["ground-dark"[\s\S]*?\]\.forEach\(key => \{\s*this\.load\.image\(key, `\.\/assets\/environment\/trail\/\$\{key\}\.png`\)/);
+  assert.ok(trailMatch, "a lista de assets da trilha precisa carregar por chave");
+  for (const key of trailMatch[0].matchAll(/"([^"]+)"/g)) declared.add(key[1]);
+  assert.ok(declared.size > 60, `poucos assets de ambiente declarados: ${declared.size}`);
+
+  const used = new Set([
+    ...world.props.map(prop => prop.key),
+    ...world.areas.map(area => area.ground),
+    ...world.areaEdges.map(edge => edge.key),
+    world.road.key,
+    "wall-brick",
+    "ground-detail"
+  ]);
+  for (const key of used) {
+    assert.ok(declared.has(key), `${key} é usado no mapa mas não é carregado pela cena`);
+    const folder = ["border", "street", "trail"].find(candidate =>
+      fs.existsSync(path.join(root, "assets", "environment", candidate, `${key}.png`)));
+    assert.ok(folder, `faltando PNG de ${key}`);
+    assert.ok(shell.includes(`assets/environment/${folder}/${key}.png`), `${key} não está no cache offline`);
+  }
+  for (const key of declared) {
+    const folder = ["border", "street", "trail"].find(candidate =>
+      fs.existsSync(path.join(root, "assets", "environment", candidate, `${key}.png`)));
+    assert.ok(folder, `a cena carrega ${key}, mas o PNG não existe`);
+  }
+});
+
+test("os pisos das áreas, a estrada e a parede têm as medidas que o mapa assume", () => {
+  const sizeOf = file => {
+    const header = fs.readFileSync(path.join(root, file));
+    return { width: header.readUInt32BE(16), height: header.readUInt32BE(20) };
+  };
+  for (const file of [
+    "assets/environment/trail/ground-dark.png",
+    "assets/environment/trail/ground-bleak.png",
+    "assets/environment/trail/ground-urban.png",
+    "assets/environment/trail/ground-refuge.png"
+  ]) {
+    assert.deepEqual(sizeOf(file), { width: 512, height: 512 }, `${file} deve ser uma lâmina 512x512 (16x16 tiles a 2x)`);
+  }
+  assert.deepEqual(sizeOf("assets/environment/trail/road.png"), { width: 64, height: 128 }, "a estrada precisa ter a altura declarada em World.road");
+  assert.deepEqual(sizeOf("assets/environment/trail/wall-brick.png"), { width: 32, height: 32 }, "o tijolo da parede é 1 tile a 2x");
+  for (const edge of require("../src/world-config.js").areaEdges) {
+    assert.deepEqual(sizeOf(`assets/environment/trail/${edge.key}.png`), { width: edge.width, height: 64 });
   }
 });

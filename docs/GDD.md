@@ -50,6 +50,10 @@ A sociedade entrou em colapso devido a uma infecção que transforma pessoas e a
 
 Nomes específicos de cidades, facções e regiões serão definidos mais tarde. A ambientação deve permanecer pós-apocalíptica, sem magia ou criaturas de fantasia tradicional.
 
+### Limites da área jogável
+
+A área jogável termina em mata cerrada em toda a volta: a vegetação e a colisão impedem o jogador de alcançar as beiradas do mapa, e a estrada atravessa o maciço como se continuasse para fora da região. Ampliar o mapa significa abrir novas passagens entre maciços, nunca afrouxar essa barreira.
+
 ## 4. Personagem e progressão
 
 ### Sem classes fixas

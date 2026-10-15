@@ -38,6 +38,23 @@
     return FALLBACK_VISUAL;
   }
 
+  // Assets de ambiente gerados por tools/build-environment-assets.py a partir do pack
+  // do mantenedor. A mata fecha as bordas (árvores, arbustos, capim, pedras e tocos) e
+  // o cenário urbano cobre a estrada (carros, postes, bancos, entulho).
+  const BORDER_ASSETS = [
+    "tree-spruce", "tree-spruce-sparse", "tree-normal", "tree-big", "tree-big-pine",
+    "tree-birch", "tree-birch-small", "tree-oak", "tree-oak-small", "tree-trunk",
+    "bush", "bush-wide", "grass-tuft-small", "grass-tuft", "grass-tuft-low",
+    "grass-tuft-tall", "rock-grass", "stump", "stump-mushrooms"
+  ];
+  const STREET_ASSETS = [
+    "car-wreck", "car-overturned", "car-scrap", "van-wreck", "truck-wreck", "motorcycle-wreck",
+    "street-light-side", "street-light-up", "street-light-overgrown", "bench", "hydrant",
+    "trash-can", "trash-bag", "traffic-cone", "stop-sign", "manhole", "metal-plates",
+    "iron-beam", "pallet", "cardboard", "shopping-cart", "refrigerator", "washing-machine",
+    "vending-machine", "gray-brick", "gray-brick-debris", "container", "exhaust-pipe"
+  ];
+
   // Mensagens operacionais continuam disponíveis para leitores de tela, sem cobrir o jogo.
   function announce(message) {
     const announcer = el("announcer");
@@ -241,9 +258,15 @@
       this.load.spritesheet("scavenger-idle", "./assets/enemies/scavenger/idle.png", { frameWidth: 32, frameHeight: 32 });
       this.load.spritesheet("mutant-idle", "./assets/enemies/mutant/idle.png", { frameWidth: 32, frameHeight: 32 });
       this.load.spritesheet("merchant-idle", "./assets/npcs/merchant/Um_npc_mercador_estilo_o-Idle.png", { frameWidth: 32, frameHeight: 32 });
-      ["ground-dark", "ground-bleak", "ground-detail", "small-oak", "bush", "tires-grass", "tire", "brick-debris", "garbage-bin", "barrel-rust-red", "destroyed-wall-corner", "destroyed-wall", "brick-wall-tile", "brick-ruin-tile"].forEach(key => {
+      // Pisos 512x512 a 2x, estrada, transicoes de area, parede e props da trilha.
+      ["ground-dark", "ground-bleak", "ground-urban", "ground-refuge", "ground-detail", "road",
+        "edge-bleak-dark", "edge-dark-urban", "edge-urban-refuge", "wall-brick",
+        "bush", "tires-grass", "tire", "brick-debris", "garbage-bin", "barrel-rust-red",
+        "destroyed-wall-corner", "destroyed-wall"].forEach(key => {
         this.load.image(key, `./assets/environment/trail/${key}.png`);
       });
+      BORDER_ASSETS.forEach(key => this.load.image(key, `./assets/environment/border/${key}.png`));
+      STREET_ASSETS.forEach(key => this.load.image(key, `./assets/environment/street/${key}.png`));
       this.load.audio("knife-stab", "./assets/audio/knife-stab.mp3");
       this.load.audio("revolver-shot", "./assets/audio/revolver-shot.mp3");
     }
@@ -259,25 +282,24 @@
       });
       World.groundDetails.forEach(([x, y]) => this.add.image(x, y, "ground-detail").setScale(2).setAlpha(0.7).setDepth(1));
 
-      const g = this.add.graphics().setDepth(1);
-      // Estrada linear conecta as três áreas hostis ao refúgio no extremo leste.
-      g.fillStyle(0x55483a, 1);
-      g.fillRoundedRect(-35, 355, World.world.width + 70, 190, 70);
-      g.lineStyle(3, 0x75624b, 0.7);
-      g.strokeRoundedRect(-35, 355, World.world.width + 70, 190, 70);
-      World.areas.slice(1).forEach(area => {
-        g.lineStyle(4, 0x17191a, 0.42);
-        g.lineBetween(area.startX, 0, area.startX, World.world.height);
+      // Divisas de área: dither de 96 px centrado no limite, no lugar de linhas pretas.
+      World.areaEdges.forEach(edge => {
+        this.add.tileSprite(edge.x - edge.width / 2, 0, edge.width, World.world.height, edge.key).setOrigin(0).setDepth(1);
       });
 
-      // Ruínas fixas ajudam a orientar o jogador e correspondem aos retângulos de colisão.
-      g.fillStyle(0x4a4c4d, 1);
-      World.solids.forEach(solid => g.fillRect(solid.x, solid.y, solid.w, solid.h));
-      g.lineStyle(2, 0x777064, 1);
-      World.solids.forEach(solid => g.strokeRect(solid.x, solid.y, solid.w, solid.h));
+      // Estrada linear conecta as três áreas hostis ao refúgio no extremo leste.
+      this.add.tileSprite(World.road.x, World.road.y, World.road.width, World.road.height, World.road.key).setOrigin(0).setDepth(1);
+
+      // Ruínas: paredes de tijolo do pack desenhadas sobre os retângulos de colisão.
+      // A profundidade y + h faz a parede cobrir o que está atrás dela.
+      World.solids.forEach(solid => {
+        if (solid.border) return;
+        this.add.tileSprite(solid.x, solid.y, solid.w, solid.h, "wall-brick").setOrigin(0).setDepth(solid.y + solid.h);
+      });
 
       World.props.forEach(prop => {
-        const sprite = this.add.image(prop.x, prop.y, prop.key).setScale(prop.scale).setOrigin(0.5, 1).setDepth(prop.y);
+        // Props "flat" são detalhes rentes ao chão (bueiro, placas): ficam abaixo dos personagens.
+        const sprite = this.add.image(prop.x, prop.y, prop.key).setScale(prop.scale).setOrigin(0.5, 1).setDepth(prop.flat ? 2 : prop.y);
         if (prop.solid) {
           this.solids.push({ x: prop.x - prop.solid.w / 2, y: prop.y - prop.solid.h, w: prop.solid.w, h: prop.solid.h });
         }
@@ -286,7 +308,7 @@
 
       World.areas.forEach((area, index) => {
         const color = index === World.areas.length - 1 ? "#f0d7a0" : "#d6c49f";
-        this.add.text((area.startX + area.endX) / 2, 58, area.name, this.labelStyle(color)).setOrigin(0.5).setDepth(900);
+        this.add.text((area.startX + area.endX) / 2, 170, area.name, this.labelStyle(color)).setOrigin(0.5).setDepth(900);
       });
 
       this.createCampfire();
@@ -683,8 +705,11 @@
       context.moveTo(mapX(0), mapY(450));
       context.lineTo(mapX(World.world.width), mapY(450));
       context.stroke();
+      // Mata das bordas: o anel escuro mostra onde o mapa termina.
+      context.fillStyle = "#1d3323";
+      World.borderBands.forEach(band => context.fillRect(mapX(band.x), mapY(band.y), Math.max(1, band.w / World.world.width * (width - margin * 2)), Math.max(1, band.h / World.world.height * (height - margin * 2))));
       context.fillStyle = "#9ba2a6";
-      World.solids.forEach(solid => context.fillRect(mapX(solid.x), mapY(solid.y), Math.max(1, solid.w / World.world.width * (width - margin * 2)), Math.max(1, solid.h / World.world.height * (height - margin * 2))));
+      World.solids.filter(solid => !solid.border).forEach(solid => context.fillRect(mapX(solid.x), mapY(solid.y), Math.max(1, solid.w / World.world.width * (width - margin * 2)), Math.max(1, solid.h / World.world.height * (height - margin * 2))));
       enemies.forEach(enemy => {
         if (!enemy.visible || state.enemies[enemy.enemyIndex].hp <= 0) return;
         const selected = enemy.enemyIndex === selectedEnemyIndex;
