@@ -44,7 +44,7 @@
     el("xp-label").textContent = `${state.xp} / ${next} XP`;
     el("xp-bar").style.width = `${state.xp / next * 100}%`;
     el("level").textContent = `Nv. ${state.level}`;
-    el("coins").textContent = `◈ ${state.coins}`;
+    el("coins").textContent = String(state.coins);
     el("charge-label").textContent = `Munição .38: ${state.charges} / ${State.MAX_AMMO}`;
     ["action-close", "touch-action-close"].forEach(id => el(id)?.classList.toggle("selected", state.action === "close"));
     ["action-far", "touch-action-far"].forEach(id => el(id)?.classList.toggle("selected", state.action === "far"));

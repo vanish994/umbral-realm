@@ -1,11 +1,11 @@
-const CACHE = "umbral-realm-playtest-v33";
+const CACHE = "umbral-realm-playtest-v34";
 const SHELL = [
   "./",
   "./index.html",
-  "./src/style.css?v=33",
-  "./src/game-state.js?v=33",
-  "./src/world-config.js?v=33",
-  "./src/game.js?v=33",
+  "./src/style.css?v=34",
+  "./src/game-state.js?v=34",
+  "./src/world-config.js?v=34",
+  "./src/game.js?v=34",
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./icons/icon-192.png",
@@ -31,7 +31,12 @@ const SHELL = [
   "./assets/environment/trail/garbage-bin.png",
   "./assets/environment/trail/barrel-rust-red.png",
   "./assets/environment/trail/destroyed-wall-corner.png",
-  "./assets/environment/trail/destroyed-wall.png"
+  "./assets/environment/trail/destroyed-wall.png",
+  "./assets/ui/panel-border.png",
+  "./assets/ui/button-frame.png",
+  "./assets/ui/status-bar-frame.png",
+  "./assets/ui/vitality-heart.png",
+  "./assets/ui/coin.png"
 ];
 
 self.addEventListener("install", event => {

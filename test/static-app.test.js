@@ -51,14 +51,25 @@ test("all Phaser preload assets are available offline", () => {
   }
 });
 
-test("every integrated environment asset is available offline", () => {
+test("every integrated environment and UI asset is available offline", () => {
   const shell = shellEntries().map(localPath);
-  const environmentDir = path.join(root, "assets/environment/trail");
-  const assets = fs.readdirSync(environmentDir).filter(file => file.endsWith(".png"));
-  assert.ok(assets.length > 0);
-  for (const asset of assets) {
-    const reference = `assets/environment/trail/${asset}`;
-    assert.ok(shell.includes(reference), `${reference} is not pre-cached`);
+  for (const directory of ["assets/environment/trail", "assets/ui"]) {
+    const assets = fs.readdirSync(path.join(root, directory)).filter(file => file.endsWith(".png"));
+    assert.ok(assets.length > 0);
+    for (const asset of assets) {
+      const reference = `${directory}/${asset}`;
+      assert.ok(shell.includes(reference), `${reference} is not pre-cached`);
+    }
+  }
+});
+
+test("all local CSS image references exist", () => {
+  const css = read("src/style.css");
+  const references = [...css.matchAll(/url\(["']?(\.\.\/[^"')]+)["']?\)/g)].map(match => match[1]);
+  assert.ok(references.length > 0);
+  for (const reference of references) {
+    const fromRoot = reference.replace(/^\.\.\//, "");
+    assert.ok(exists(fromRoot), `missing CSS asset ${reference}`);
   }
 });
 

@@ -31,3 +31,14 @@
 @media (orientation:portrait){.rotate-overlay{display:flex}}
 @media (orientation:landscape){.rotate-overlay{display:none}}
 @media (max-width:440px){.fullscreen-button{font-size:8px;padding:6px;letter-spacing:0}.brand strong{letter-spacing:1px}}
+
+/* Componentes selecionados do UI Package: molduras escaláveis e ícones de status. */
+.hud,.bottom-panel,.enemy-panel,.location-pill{position:relative;isolation:isolate}
+.hud::before,.bottom-panel::before,.enemy-panel::before,.location-pill::before{content:"";position:absolute;inset:-2px;z-index:0;pointer-events:none;background:url("../assets/ui/panel-border.png") center/100% 100% no-repeat;image-rendering:pixelated}
+.hud>* ,.bottom-panel>* ,.enemy-panel>* ,.location-pill>*{position:relative;z-index:1}
+.weapon,.touch-command,.save,.fullscreen-button,#rotate-fullscreen,.action.secondary{border:6px solid transparent;border-image:url("../assets/ui/button-frame.png") 21 fill stretch;background-color:#25242c;image-rendering:pixelated}
+.weapon.selected,.touch-command.selected{background-color:#62402f;filter:brightness(1.12)}
+.meter{height:12px;border:0;border-radius:0;padding:3px 8px;background:#090a0e url("../assets/ui/status-bar-frame.png") center/100% 100% no-repeat;image-rendering:pixelated}
+.meter.xp{height:10px;margin-top:3px;padding:3px 8px}.enemy-meter{height:11px;padding:3px 7px}.meter-fill{border-radius:1px}
+.status-title,.coin-stat{display:inline-flex;align-items:center;gap:5px}.status-title img,.coin-stat img{image-rendering:pixelated}.player-stats{align-items:center}.coin-stat{color:var(--gold)}.topbar{position:relative}
+@media (orientation:landscape) and (max-height:600px){.topbar::after{content:"";position:absolute;left:3px;right:3px;bottom:-2px;height:5px;background:url("../assets/ui/status-bar-frame.png") center/100% 100% no-repeat;opacity:.72;image-rendering:pixelated}}
