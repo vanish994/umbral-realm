@@ -3,6 +3,8 @@
   if (typeof module === "object" && module.exports) module.exports = api;
   root.UmbralCombatRules = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, () => {
+  // Flag temporária do playtest: desligar quando economia e recarga forem implementadas.
+  const DEVELOPMENT_INFINITE_AMMO = true;
   const MAX_SKILL_LEVEL = 100;
   const SKILL_XP_PER_HIT = 4;
   const CRITICAL_CHANCE = 0.08;
@@ -70,6 +72,7 @@
   }
 
   return {
+    DEVELOPMENT_INFINITE_AMMO,
     MAX_SKILL_LEVEL,
     SKILL_XP_PER_HIT,
     CRITICAL_CHANCE,

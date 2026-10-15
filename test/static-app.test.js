@@ -101,6 +101,13 @@ test("operational notices remain accessible without visual toast overlays", () =
   assert.doesNotMatch(read("src/style.css"), /#toast/);
 });
 
+test("development HUD clearly exposes infinite revolver ammunition", () => {
+  const html = read("index.html");
+  const game = read("src/game.js");
+  assert.match(html, /Munição \.38: ∞ \(DESENVOLVIMENTO\)/);
+  assert.match(game, /DEVELOPMENT_INFINITE_AMMO/);
+});
+
 test("complete character status exposes both weapon skills and combat stats", () => {
   const html = read("index.html");
   assert.match(html, /id="status-panel"[^>]*role="dialog"/);

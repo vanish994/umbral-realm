@@ -42,7 +42,7 @@
     el("xp-bar").style.width = `${state.xp / next * 100}%`;
     el("level").textContent = `Nv. ${state.level}`;
     el("coins").textContent = String(state.coins);
-    el("charge-label").textContent = `Munição .38: ${state.charges} / ${State.MAX_AMMO}`;
+    el("charge-label").textContent = CombatRules.DEVELOPMENT_INFINITE_AMMO ? "Munição .38: ∞ (DESENVOLVIMENTO)" : `Munição .38: ${state.charges} / ${State.MAX_AMMO}`;
     ["action-close", "touch-action-close"].forEach(id => el(id)?.classList.toggle("selected", state.action === "close"));
     ["action-far", "touch-action-far"].forEach(id => el(id)?.classList.toggle("selected", state.action === "far"));
     ["action-close", "touch-action-close"].forEach(id => el(id)?.setAttribute("aria-pressed", String(state.action === "close")));
@@ -51,7 +51,7 @@
     el("status-level").textContent = String(state.level);
     el("status-hp").textContent = `${state.hp} / ${maxHp()}`;
     el("status-coins").textContent = String(state.coins);
-    el("status-ammo").textContent = `${state.charges} / ${State.MAX_AMMO}`;
+    el("status-ammo").textContent = CombatRules.DEVELOPMENT_INFINITE_AMMO ? "∞" : `${state.charges} / ${State.MAX_AMMO}`;
     el("status-xp").textContent = `${state.xp} / ${next}`;
     for (const [skillName, action] of [["blades", "close"], ["firearms", "far"]]) {
       const skill = state.skills[skillName];
@@ -445,7 +445,7 @@
     if (statusOpen) return;
     pendingMeleeRatId = null;
     state.action = action; updateHud(); persistGame();
-    announce(action === "close" ? "Faca selecionada: atacar aproxima você do rato mais próximo." : "Revólver .38 selecionado: cada disparo consome uma munição.");
+    announce(action === "close" ? "Faca selecionada: atacar aproxima você do rato mais próximo." : CombatRules.DEVELOPMENT_INFINITE_AMMO ? "Revólver .38 selecionado com munição infinita durante o desenvolvimento." : "Revólver .38 selecionado: cada disparo consome uma munição.");
   }
 
   function resolveAction(allowApproach = true, forcedTarget = null) {
@@ -470,8 +470,9 @@
     let cooldown;
     if (action === "close") cooldown = 500;
     else {
-      if (state.charges <= 0) { announce("O revólver está sem munição. Selecione a faca."); return; }
-      state.charges -= 1; cooldown = 700;
+      if (!CombatRules.DEVELOPMENT_INFINITE_AMMO && state.charges <= 0) { announce("O revólver está sem munição. Selecione a faca."); return; }
+      if (!CombatRules.DEVELOPMENT_INFINITE_AMMO) state.charges -= 1;
+      cooldown = 700;
     }
     const skillName = CombatRules.WEAPONS[action].skill;
     const roll = CombatRules.rollDamage(action, state.skills[skillName].level);

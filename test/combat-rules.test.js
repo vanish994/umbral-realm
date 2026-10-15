@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const {
   CRITICAL_CHANCE,
+  DEVELOPMENT_INFINITE_AMMO,
   SKILL_XP_PER_HIT,
   damageRange,
   grantSkillXp,
@@ -9,6 +10,10 @@ const {
   rollDamage,
   skillXpNeeded
 } = require("../src/combat-rules.js");
+
+test("development playtest keeps revolver ammunition infinite", () => {
+  assert.equal(DEVELOPMENT_INFINITE_AMMO, true);
+});
 
 test("skill requirements grow increasingly difficult", () => {
   assert.equal(skillXpNeeded(1), 20);
