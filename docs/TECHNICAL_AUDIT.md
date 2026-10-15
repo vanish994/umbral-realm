@@ -1,6 +1,6 @@
 # Auditoria técnica do protótipo
 
-**Data da revisão:** 2026-10-15  
+**Data da revisão:** 2026-10-14
 **Base analisada:** `9083e56` e assets versionados no repositório  
 **Escopo:** estado real do protótipo local/PWA; o GDD continua sendo a fonte da direção de design.
 
@@ -22,7 +22,7 @@
 
 ### Parcial ou provisório
 
-- O mapa tem obstáculos e identidade cromática, mas é composto por formas; o pack de ambiente não pode ser redistribuído no repositório público segundo a licença registrada em `docs/ENVIRONMENT_ASSET_PLAN.md`.
+- O mapa tem obstáculos e identidade cromática, mas é composto por formas. O mantenedor declarou ser autor ou titular do pack de ambiente e autorizou seu uso no repositório; nove tilesets já foram medidos e inspecionados, mas ainda não foram integrados à cena.
 - Combate respeita alcance e recarga, mas não tem animações de ataque, projétil, chance de acerto, sangramento, fio da faca ou sujeira do revólver.
 - A “morte” recupera metade da vida e reposiciona o jogador; perda/recuperação ainda é uma decisão aberta no GDD.
 - XP e nível existem, mas skills independentes ainda não. Os números atuais não foram validados por balanceamento.
@@ -47,7 +47,7 @@
 3. **Save não confiável:** números inválidos podiam produzir `NaN`, vida zero carregada podia bloquear ações, e alterações só eram persistidas pelo botão oculto no modo horizontal. Corrigido com normalização testável e autosave dos eventos atuais.
 4. **Inimigo atravessava cenário:** a perseguição alterava coordenadas sem consultar obstáculos ou limites. Corrigido usando colisão por eixo e limites do mundo; falta teste visual em navegador/dispositivo.
 5. **Arquitetura concentrada:** cena, IA, combate, DOM, entrada e persistência permanecem em `src/game.js`. `src/game-state.js` é o primeiro recorte testável; novas extrações devem ocorrer apenas junto de funcionalidades concretas.
-6. **Licenças incompletas:** Phaser tem licença versionada, e o ambiente tem restrição documentada. A origem/licença dos sprites de personagem, rato, mercador e pacotes de armas precisa ser consolidada antes de distribuição ampla.
+6. **Proveniência incompleta:** Phaser tem licença versionada, e a autorização específica do titular para o ambiente está documentada. A origem/autorização dos sprites de personagem, rato, mercador e pacotes de armas ainda precisa ser consolidada antes de distribuição ampla.
 7. **Workflow de assets escreve em `main`:** o job extrai e tenta commitar em todo push para `main`. A proteção contra loop existe, mas conceder `contents: write` e manter arquivos compactados duplicados aumenta risco e tamanho; revisar somente após confirmar o fluxo desejado pelo mantenedor.
 
 ## Backlog ordenado por dependência
