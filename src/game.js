@@ -8,7 +8,7 @@
     enemyHp: Number(saved.enemyHp ?? 70), action: saved.action === "far" ? "far" : "close"
   };
   let sceneRef, player, enemy, cursors, moveKeys, toastTimer, actionReady = true;
-  const touch = {up:false,down:false,left:false,right:false};
+  const touch = {x:0,y:0};
   const el = id => document.getElementById(id);
   function say(message) {
     el("status").textContent = message;
@@ -157,7 +157,7 @@
       this.physics.world.setBounds(0,0,960,640);
       this.cameras.main.setBounds(0,0,960,640);this.cameras.main.startFollow(player,true,0.12,0.12);this.cameras.main.setZoom(Math.min(1.25,this.scale.width/390));
       cursors=this.input.keyboard.createCursorKeys();moveKeys=this.input.keyboard.addKeys("W,A,S,D,SPACE,E");
-      this.input.on("pointerdown",pointer=>{if(pointer.event.target.closest("button"))return;const p=this.cameras.main.getWorldPoint(pointer.x,pointer.y);if(Math.hypot(p.x-player.x,p.y-player.y)>22)player.setData("tapTarget",{x:p.x,y:p.y});});
+      this.input.on("pointerdown",pointer=>{if(pointer.event.target.closest("button,.game-controls"))return;const p=this.cameras.main.getWorldPoint(pointer.x,pointer.y);if(Math.hypot(p.x-player.x,p.y-player.y)>22)player.setData("tapTarget",{x:p.x,y:p.y});});
       updateHud();
       if(state.defeated||state.enemyHp<=0){enemy.setVisible(false);this.scheduleRatRespawn();}
     }
@@ -182,8 +182,8 @@
     update(_,delta){
       if(!player)return;
       let dx=0,dy=0;
-      if(cursors.left.isDown||moveKeys.A.isDown||touch.left)dx=-1;else if(cursors.right.isDown||moveKeys.D.isDown||touch.right)dx=1;
-      if(cursors.up.isDown||moveKeys.W.isDown||touch.up)dy=-1;else if(cursors.down.isDown||moveKeys.S.isDown||touch.down)dy=1;
+      if(cursors.left.isDown||moveKeys.A.isDown)dx=-1;else if(cursors.right.isDown||moveKeys.D.isDown)dx=1;else dx=touch.x;
+      if(cursors.up.isDown||moveKeys.W.isDown)dy=-1;else if(cursors.down.isDown||moveKeys.S.isDown)dy=1;else dy=touch.y;
       const target=player.getData("tapTarget");
       if(!dx&&!dy&&target){dx=target.x-player.x;dy=target.y-player.y;if(Math.hypot(dx,dy)<8){player.setData("tapTarget",null);dx=dy=0;}else{const l=Math.hypot(dx,dy);dx/=l;dy/=l;}}
       if(dx||dy){
@@ -284,10 +284,23 @@
     else if(near(player,enemy,100)&&!state.defeated)say("Um rato zumbi bloqueia a trilha. Escolha uma ação e pressione AGIR.");
     else say("Não há ninguém por perto para conversar.");
   }
-  document.querySelectorAll("[data-dir]").forEach(button=>{
-    const dir=button.dataset.dir;const down=e=>{e.preventDefault();touch[dir]=true;};const up=()=>{touch[dir]=false;};
-    button.addEventListener("pointerdown",down);["pointerup","pointercancel","pointerleave"].forEach(ev=>button.addEventListener(ev,up));
-  });
+  const joystick=el("joystick"),joystickKnob=el("joystick-knob");
+  let joystickPointer=null;
+  function resetJoystick(){touch.x=0;touch.y=0;joystickPointer=null;joystickKnob.style.transform="translate(0px, 0px)";}
+  function moveJoystick(event){
+    if(joystickPointer!==event.pointerId)return;
+    const rect=joystick.getBoundingClientRect();
+    const cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+    const max=Math.min(rect.width,rect.height)*0.30;
+    let x=event.clientX-cx,y=event.clientY-cy;
+    const length=Math.hypot(x,y);
+    if(length>max){x=x/length*max;y=y/length*max;}
+    touch.x=x/max;touch.y=y/max;
+    joystickKnob.style.transform="translate("+x+"px, "+y+"px)";
+  }
+  joystick.addEventListener("pointerdown",event=>{event.preventDefault();joystickPointer=event.pointerId;joystick.setPointerCapture(event.pointerId);moveJoystick(event);});
+  joystick.addEventListener("pointermove",moveJoystick);
+  ["pointerup","pointercancel","lostpointercapture"].forEach(name=>joystick.addEventListener(name,event=>{if(joystickPointer===event.pointerId)resetJoystick();}));
   el("action-close").addEventListener("click",()=>selectAction("close"));
   el("action-far").addEventListener("click",()=>selectAction("far"));
   el("interact").addEventListener("click",interact);el("attack").addEventListener("click",resolveAction);el("save").addEventListener("click",saveGame);
