@@ -10,7 +10,8 @@
   const ItemRules = window.UmbralItemRules;
   const AnimationRules = window.UmbralAnimationRules;
   const DropRules = window.UmbralDropRules;
-  if (!State || !World || !Targeting || !CombatFeedback || !CombatRules || !EnemyRules || !ItemRules || !AnimationRules || !DropRules) throw new Error("Os módulos do jogo não carregaram.");
+  const ControlRules = window.UmbralControlRules;
+  if (!State || !World || !Targeting || !CombatFeedback || !CombatRules || !EnemyRules || !ItemRules || !AnimationRules || !DropRules || !ControlRules) throw new Error("Os módulos do jogo não carregaram.");
 
   const state = State.normalize(saved);
   let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeEnemyIndex = null, selectedEnemyIndex = null, menuOpen = false, merchantMode = false, playerDying = false, reloadState = null, attackAnimation = null;
@@ -91,6 +92,32 @@
     return nearestEnemy(maxRange);
   }
 
+  // Os botões touch têm ícone + rótulo: trocar só o texto preserva a estrutura visual.
+  function setButtonLabel(button, text) {
+    if (!button) return;
+    const label = button.querySelector("[data-control-label]");
+    if (label) label.textContent = text;
+    else button.textContent = text;
+  }
+
+  // FALAR/FOGUEIRA só existe na tela quando há interação ao alcance, com o mesmo
+  // alcance que `interact()` usa (fonte única em ControlRules). Fora dele o botão
+  // some e fica desabilitado — nada de botão decorativo que só anuncia "nada aqui".
+  function updateInteractControls() {
+    const target = player ? ControlRules.interactionFor(player, World.merchant, World.campfire) : null;
+    ["touch-interact", "interact"].forEach(id => {
+      const button = el(id);
+      if (!button) return;
+      button.hidden = !target;
+      button.disabled = !target;
+      button.classList.toggle("is-available", Boolean(target));
+      setButtonLabel(button, target?.label || "FALAR");
+      const hint = button.querySelector("[data-interact-hint]");
+      if (hint) hint.textContent = target?.hint || "";
+      button.setAttribute("aria-label", target ? `${target.label}: ${target.hint.toLowerCase()}` : "Interagir (indisponível)");
+    });
+  }
+
   function updateHud() {
     state.hp = Math.max(0, Math.min(maxHp(), state.hp));
     el("hp-label").textContent = `${state.hp} / ${maxHp()}`;
@@ -158,15 +185,25 @@
       button.querySelector("b").textContent = equipped ? "EQUIPADO" : owned ? "EQUIPAR" : merchantMode ? `COMPRAR ${item.price}` : `${item.price} OURO`;
     });
     el("action-close").textContent = equippedBlade.name.toUpperCase();
-    el("touch-action-close").textContent = equippedBlade.name.toUpperCase();
     el("action-far").textContent = equippedFirearm.name.toUpperCase();
-    el("touch-action-far").textContent = equippedFirearm.id === "revolver" ? ".38" : "PISTOLA";
+    setButtonLabel(el("touch-action-close"), equippedBlade.name.toUpperCase());
+    setButtonLabel(el("touch-action-far"), equippedFirearm.id === "revolver" ? ".38" : "PISTOLA");
+    for (const [buttonId, item] of [["touch-action-close", equippedBlade], ["touch-action-far", equippedFirearm]]) {
+      const button = el(buttonId);
+      const icon = button?.querySelector(".touch-weapon-icon");
+      if (icon && icon.getAttribute("src") !== item.image) icon.src = item.image;
+      const detail = button?.querySelector("[data-weapon-detail]");
+      if (detail) detail.textContent = item.action === "far" ? `${loadedAmmo}/${item.magazineSize}` : "CURTO ALCANCE";
+    }
     ["reload", "touch-reload"].forEach(id => {
       const button = el(id);
       if (!button) return;
       button.disabled = Boolean(reloadState) || loadedAmmo >= equippedFirearm.magazineSize;
-      button.textContent = isReloading ? "RECARREGANDO…" : "RECARREGAR";
+      setButtonLabel(button, isReloading ? "RECARREGANDO…" : "RECARREGAR");
+      const detail = button.querySelector("[data-reload-detail]");
+      if (detail) detail.textContent = isReloading ? "…" : loadedAmmo >= equippedFirearm.magazineSize ? "CARREGADO" : `${equippedFirearm.magazineSize - loadedAmmo} VAGAS`;
     });
+    updateInteractControls();
     for (const [skillName, action] of [["blades", "close"], ["firearms", "far"]]) {
       const skill = state.skills[skillName];
       const required = CombatRules.skillXpNeeded(skill.level);
@@ -650,8 +687,14 @@
     movePlayer(delta) {
       if (playerDying) return;
       let dx = 0, dy = 0;
-      if (cursors.left.isDown || moveKeys.A.isDown) dx = -1; else if (cursors.right.isDown || moveKeys.D.isDown) dx = 1; else dx = touch.x;
-      if (cursors.up.isDown || moveKeys.W.isDown) dy = -1; else if (cursors.down.isDown || moveKeys.S.isDown) dy = 1; else dy = touch.y;
+      // Analógico de verdade: a inclinação define a velocidade (inclinar pouco = andar
+      // devagar para ajuste fino; inclinar tudo = velocidade máxima). Teclado, toque no
+      // mapa e perseguição automática continuam em velocidade cheia (speedScale 1).
+      let speedScale = 1;
+      const keyboardX = cursors.left.isDown || moveKeys.A.isDown ? -1 : cursors.right.isDown || moveKeys.D.isDown ? 1 : 0;
+      const keyboardY = cursors.up.isDown || moveKeys.W.isDown ? -1 : cursors.down.isDown || moveKeys.S.isDown ? 1 : 0;
+      if (keyboardX || keyboardY) { dx = keyboardX; dy = keyboardY; }
+      else { dx = touch.x; dy = touch.y; speedScale = Math.min(1, Math.hypot(dx, dy)); }
       const manualInput = Boolean(dx || dy);
       if (manualInput) {
         pendingMeleeEnemyIndex = null;
@@ -672,6 +715,7 @@
           } else {
             dx = approach.x;
             dy = approach.y;
+            speedScale = 1;
           }
         }
       }
@@ -679,6 +723,7 @@
       const target = player.getData("tapTarget");
       if (!dx && !dy && pendingMeleeEnemyIndex === null && target) {
         dx = target.x - player.x; dy = target.y - player.y;
+        speedScale = 1;
         if (Math.hypot(dx, dy) < 8) { player.setData("tapTarget", null); dx = dy = 0; }
         else { const length = Math.hypot(dx, dy); dx /= length; dy /= length; }
       }
@@ -688,7 +733,8 @@
         const animation = `player-walk-${direction}`;
         player.setData("direction", direction);
         if (!attacking && player.anims.currentAnim?.key !== animation) playPlayerAnimation(animation, true);
-        const length = Math.hypot(dx, dy), step = 145 * delta / 1000;
+        if (!attacking && player.anims.currentAnim?.key === animation) player.anims.timeScale = 0.55 + 0.45 * speedScale;
+        const length = Math.hypot(dx, dy), step = 145 * speedScale * delta / 1000;
         const nx = Phaser.Math.Clamp(player.x + dx / length * step, 25, World.world.width - 25);
         const ny = Phaser.Math.Clamp(player.y + dy / length * step, 35, World.world.height - 30);
         if (!this.isBlocked(nx, player.y)) player.x = nx;
@@ -833,7 +879,6 @@
   document.addEventListener("pointerdown", startMusic);
   document.addEventListener("keydown", startMusic);
 
-  function near(a, b, range = 75) { return a && b && Phaser.Math.Distance.Between(a.x, a.y, b.x, b.y) <= range; }
   function selectAction(action) {
     if (menuOpen || playerDying) return;
     pendingMeleeEnemyIndex = null;
@@ -996,7 +1041,10 @@
 
   function interact() {
     if (menuOpen || playerDying) return;
-    if (sceneRef?.merchant && near(player, sceneRef.merchant, 85)) {
+    // O alvo vem da mesma regra que libera o botão FALAR: se o botão não apareceu,
+    // não há interação escondida esperando nesta posição.
+    const target = player ? ControlRules.interactionFor(player, World.merchant, World.campfire) : null;
+    if (target?.kind === "merchant" && sceneRef?.merchant) {
       state.talked = true;
       const sale = sellAllCores();
       merchantMode = true;
@@ -1007,7 +1055,7 @@
       announce(sale.amount > 0
         ? `Mercador comprou ${sale.amount} núcleo${sale.amount === 1 ? "" : "s"} por ${sale.total} de ouro. Equipamentos disponíveis para compra.`
         : "Mercador: Não há núcleos para vender. Veja os equipamentos disponíveis.");
-    } else if (sceneRef?.campfire && Phaser.Math.Distance.Between(player.x, player.y, World.campfire.x, World.campfire.y) <= 75) {
+    } else if (target?.kind === "campfire" && sceneRef?.campfire) {
       announce("A fogueira marca a clareira segura. O mercador está logo adiante.");
     } else if (nearestEnemy(100)) announce("Um inimigo zumbi bloqueia a trilha. Selecione uma arma e ataque.");
     else announce("Não há nada para interagir por perto.");
@@ -1015,7 +1063,7 @@
 
   const joystick = el("joystick"), joystickKnob = el("joystick-knob");
   let joystickPointer = null;
-  function resetJoystick() { touch.x = 0; touch.y = 0; joystickPointer = null; joystickKnob.style.transform = "translate(0px, 0px)"; }
+  function resetJoystick() { touch.x = 0; touch.y = 0; joystickPointer = null; joystickKnob.style.transform = "translate(0px, 0px)"; joystick.classList.remove("is-active"); }
   function moveJoystick(event) {
     if (joystickPointer !== event.pointerId) return;
     const rect = joystick.getBoundingClientRect();
@@ -1024,8 +1072,13 @@
     let x = event.clientX - cx, y = event.clientY - cy;
     const length = Math.hypot(x, y);
     if (length > max) { x = x / length * max; y = y / length * max; }
-    touch.x = x / max; touch.y = y / max;
+    // O knob mostra a deflexão bruta; o vetor de movimento passa pela zona morta e
+    // pela curva de precisão (ControlRules), então tremor central não anda e a
+    // inclinação leve anda devagar.
+    const analog = ControlRules.analogVector(x / max, y / max);
+    touch.x = analog.x; touch.y = analog.y;
     joystickKnob.style.transform = `translate(${x}px, ${y}px)`;
+    joystick.classList.toggle("is-active", analog.magnitude > 0);
   }
   joystick.addEventListener("pointerdown", event => { event.preventDefault(); joystickPointer = event.pointerId; joystick.setPointerCapture(event.pointerId); moveJoystick(event); });
   joystick.addEventListener("pointermove", moveJoystick);

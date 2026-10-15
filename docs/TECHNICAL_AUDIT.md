@@ -43,6 +43,7 @@
 | Calça tática | Pernas | 7% de defesa |
 
 - Sete itens equipáveis e persistentes: o personagem começa somente com faca e revólver `.38`; katana, pistola, colete, capacete e calça tática são comprados do mercador e ficam permanentemente disponíveis. Faca/katana usam Lâminas; revólver/pistola usam Armas de Fogo. A aproximação automática funciona com a arma branca equipada. Armas de fogo usam carregadores persistentes (6 no revólver e 12 na pistola), recarga manual/automática e reserva infinita temporária pela flag `DEVELOPMENT_INFINITE_RESERVE`; a precisão cai durante o movimento. Colete, capacete e calça somam até 30% de redução de dano; nenhum equipamento é desenhado sobre o personagem no mundo.
+- Controles touch reformulados (v58): analógico maior (116 px em landscape baixo, contra 88 px antes) e afastado da borda (20/18 px na diagonal direita-cima), com zona morta de 0,12, curva de precisão e velocidade proporcional à inclinação (`src/control-rules.js`); cluster de armas como seletor segmentado com ícone da arma equipada, nome e detalhe vivo (alcance/munição); recarregar com vagas restantes; botão de ataque circular com mira. O botão FALAR (ou FOGUEIRA na clareira) só aparece e só fica habilitado dentro do alcance real de interação (mercador 85 px, fogueira 75 px, fonte única em `ControlRules.interactionFor`, usada também por `interact()`).
 - HUD de vida, XP, nível, moedas e munição; controles de arma, ataque e interação acessíveis sobre a cena na orientação horizontal. O botão MENU pausa a cena e abre o terminal de campo horizontal aprovado: mesa de madeira com papéis, lápis, USB, cartão médico e disco, aparelho central largo e quatro páginas fixas sem rolagem — Personagem, Status, Habilidades e Equipamentos. Todos os dados exibidos vêm do estado real, e a página Equipamentos preserva compra, posse, troca e remoção dos sete itens. Cada inimigo exibe nome, nível e barra de vida individual no mundo. Dano comum aparece em vermelho e crítico em dourado com texto, flash e tremor; XP geral ganho aparece em branco sobre o jogador e ouro atualiza silenciosamente. Avisos visuais e toast foram removidos, mantendo somente uma região invisível para leitores de tela.
 - Mercador funcional: vende cinco equipamentos, compra automaticamente os núcleos carregados e persiste saldo e propriedade.
 - Salvamento local do estado numérico, agora normalizado contra campos ausentes/corrompidos e acionado também após alterações relevantes e ao ocultar/sair da página.
@@ -56,7 +57,7 @@
   coordenadas corrompidas, com teto FIFO de 40) e sobrevivem à recarga da página. Ouro e XP
   continuam creditados diretamente na morte — decisão deliberada para não mudar a economia já
   testada; tabelas de drop por espécie continuam pendentes.
-- Setenta e oito testes Node (`npm run check`) cobrindo estado, regras de combate, drops físicos
+- Oitenta e quatro testes Node (`npm run check`) cobrindo estado, regras de combate, drops físicos
   (`src/drop-rules.js` e persistência em `game-state`), referências estáticas, shell offline,
   requisitos do manifesto, folhas de animação, perfis de espécie e a geometria do mapa (contenção
   das bordas, alcance do mercador e dos spawns, medidas dos pisos, estrada e parede).
