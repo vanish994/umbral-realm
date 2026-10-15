@@ -35,6 +35,6 @@ O teste real de instalação, orientação, controles e retomada offline ainda d
 
 ## Escopo e status
 
-O GDD descreve a direção desejada; ele **não comprova que os sistemas já estejam implementados**. Consulte o código, os testes e os workflows antes de afirmar o estado real. Arte final, colisões refinadas, missões e multiplayer só devem ser considerados prontos após implementação e validação.
+O GDD descreve a direção desejada; ele **não comprova que os sistemas já estejam implementados**. Consulte o código, os testes e os workflows antes de afirmar o estado real. A fotografia técnica revisada e o backlog por dependência estão em [`docs/TECHNICAL_AUDIT.md`](docs/TECHNICAL_AUDIT.md). Arte final, colisões refinadas, missões e multiplayer só devem ser considerados prontos após implementação e validação.
 
 Use somente assets com licença compatível e registre as licenças antes de distribuir.
