@@ -5,6 +5,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, () => {
   const MAX_LEVEL = 1000;
   const ENEMY_MAX_HP = 70;
+  const RAT_COUNT = 4;
   const MAX_AMMO = 7;
 
   function integer(value, fallback, min, max) {
@@ -17,27 +18,39 @@
     return 100 + (level - 1) * 10;
   }
 
+  function normalizeRat(raw) {
+    return { hp: integer(raw?.hp, ENEMY_MAX_HP, 0, ENEMY_MAX_HP) };
+  }
+
   function normalize(raw = {}) {
     let level = integer(raw.level, 1, 1, MAX_LEVEL);
     let xp = integer(raw.xp, 0, 0, Number.MAX_SAFE_INTEGER);
 
-    // Recupera saves antigos que ficaram com experiência acima do limite.
     while (level < MAX_LEVEL && xp >= level * 100) {
       xp -= level * 100;
       level += 1;
     }
     if (level === MAX_LEVEL) xp = Math.min(xp, level * 100 - 1);
 
-    const enemyHp = integer(raw.enemyHp, ENEMY_MAX_HP, 0, ENEMY_MAX_HP);
+    let rats;
+    if (Array.isArray(raw.rats)) {
+      rats = Array.from({ length: RAT_COUNT }, (_, index) => normalizeRat(raw.rats[index]));
+    } else {
+      // Migração do save v6, que possuía somente um rato.
+      const legacyHp = integer(raw.enemyHp, ENEMY_MAX_HP, 0, ENEMY_MAX_HP);
+      rats = Array.from({ length: RAT_COUNT }, (_, index) => ({
+        hp: index === 0 && (raw.defeated || legacyHp === 0) ? 0 : index === 0 ? legacyHp : ENEMY_MAX_HP
+      }));
+    }
+
     return {
       hp: integer(raw.hp, maxHp(level), 1, maxHp(level)),
       xp,
       level,
       coins: integer(raw.coins, 0, 0, Number.MAX_SAFE_INTEGER),
       talked: Boolean(raw.talked),
-      defeated: Boolean(raw.defeated) || enemyHp === 0,
       charges: integer(raw.charges, MAX_AMMO, 0, MAX_AMMO),
-      enemyHp,
+      rats,
       action: raw.action === "far" ? "far" : "close"
     };
   }
@@ -54,5 +67,5 @@
     return levelsGained;
   }
 
-  return { ENEMY_MAX_HP, MAX_AMMO, maxHp, normalize, grantXp };
+  return { ENEMY_MAX_HP, RAT_COUNT, MAX_AMMO, maxHp, normalize, grantXp };
 });

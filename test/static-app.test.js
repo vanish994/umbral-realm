@@ -51,6 +51,17 @@ test("all Phaser preload assets are available offline", () => {
   }
 });
 
+test("every integrated environment asset is available offline", () => {
+  const shell = shellEntries().map(localPath);
+  const environmentDir = path.join(root, "assets/environment/trail");
+  const assets = fs.readdirSync(environmentDir).filter(file => file.endsWith(".png"));
+  assert.ok(assets.length > 0);
+  for (const asset of assets) {
+    const reference = `assets/environment/trail/${asset}`;
+    assert.ok(shell.includes(reference), `${reference} is not pre-cached`);
+  }
+});
+
 test("landscape scene exposes essential touch commands", () => {
   const html = read("index.html");
   for (const id of ["joystick", "touch-action-close", "touch-action-far", "touch-interact", "attack"]) {

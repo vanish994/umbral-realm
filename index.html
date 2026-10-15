@@ -7,13 +7,13 @@
   <meta name="description" content="Protótipo jogável de sobrevivência zumbi em Umbral Realm.">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./src/style.css?v=32">
+  <link rel="stylesheet" href="./src/style.css?v=33">
   <title>Umbral Realm — Protótipo jogável</title>
 </head>
 <body>
   <main id="app">
     <header class="topbar">
-      <div class="brand"><span class="sigil">✦</span><div><strong>UMBRAL REALM</strong><small>Sobreviva à trilha • BUILD 20</small></div></div>
+      <div class="brand"><span class="sigil">✦</span><div><strong>UMBRAL REALM</strong><small>Sobreviva à trilha • BUILD 21</small></div></div>
       <div class="player-stats"><span id="level">Nv. 1</span><span id="coins">◈ 0</span><button id="fullscreen" class="fullscreen-button" type="button" aria-label="Ativar tela cheia">⛶ TELA CHEIA</button></div>
     </header>
     <section class="hud" aria-label="Status do personagem">
@@ -24,8 +24,8 @@
     </section>
     <section id="game-wrap" aria-label="Mundo do jogo">
       <div id="game"></div>
-      <div class="location-pill"><span class="dot"></span><span>Trilha Velha</span></div>
-      <div class="enemy-panel"><div class="enemy-title"><span id="enemy-label">RATO ZUMBI</span><span id="enemy-hp-label">70 / 70</span></div><div class="meter enemy-meter"><div id="enemy-hp-bar" class="meter-fill enemy-fill"></div></div></div>
+      <div class="location-pill"><span class="dot"></span><span>Trilha dos Infectados</span></div>
+      <div class="enemy-panel"><div class="enemy-title"><span id="enemy-label">RATOS ZUMBIS • 4 RESTANTES</span><span id="enemy-hp-label">70 / 70</span></div><div class="meter enemy-meter"><div id="enemy-hp-bar" class="meter-fill enemy-fill"></div></div></div>
       <div id="toast" role="status" aria-live="polite"></div>
       <div class="game-controls" aria-label="Controles do jogo">
         <div id="joystick" class="joystick" role="application" aria-label="Joystick virtual para movimentar o personagem"><div class="joystick-ring"><div id="joystick-knob" class="joystick-knob"></div></div></div>
@@ -40,7 +40,7 @@
       </div>
     </section>
     <section class="bottom-panel">
-      <div class="quest"><span class="quest-mark">!</span><div><small>OBJETIVO DO TESTE</small><strong id="quest-text">Derrote o rato zumbi e receba sua recompensa.</strong></div></div>
+      <div class="quest"><span class="quest-mark">!</span><div><small>OBJETIVO DO TESTE</small><strong id="quest-text">Atravesse a trilha, enfrente os ratos e encontre a clareira.</strong></div></div>
       <div class="weapon-status"><span id="combat-info">Faca de cozinha • alcance curto</span><span id="charge-label">Munição .38: 7 / 7</span></div>
       <div class="controls">
         <div class="actions">
@@ -52,9 +52,10 @@
     </section>
   </main>
   <script src="./vendor/phaser/phaser-3.80.1.min.js"></script>
-  <script src="./src/game-state.js?v=32"></script>
+  <script src="./src/game-state.js?v=33"></script>
+  <script src="./src/world-config.js?v=33"></script>
   <div id="rotate-overlay" class="rotate-overlay" role="dialog" aria-modal="true" aria-label="Gire o dispositivo"><div class="rotate-card"><span class="rotate-icon">↻</span><strong>JOGUE NA HORIZONTAL</strong><p>Gire o celular para a horizontal para entrar no Umbral Realm.</p><button id="rotate-fullscreen" type="button">TELA CHEIA</button></div></div>
-  <script src="./src/game.js?v=32"></script>
-  <script>if ('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js?v=32').catch(()=>{}));</script>
+  <script src="./src/game.js?v=33"></script>
+  <script>if ('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js?v=33').catch(()=>{}));</script>
 </body>
 </html>

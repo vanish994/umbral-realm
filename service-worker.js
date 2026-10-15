@@ -1,10 +1,11 @@
-const CACHE = "umbral-realm-playtest-v32";
+const CACHE = "umbral-realm-playtest-v33";
 const SHELL = [
   "./",
   "./index.html",
-  "./src/style.css?v=32",
-  "./src/game-state.js?v=32",
-  "./src/game.js?v=32",
+  "./src/style.css?v=33",
+  "./src/game-state.js?v=33",
+  "./src/world-config.js?v=33",
+  "./src/game.js?v=33",
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./icons/icon-192.png",
@@ -19,7 +20,18 @@ const SHELL = [
   "./assets/characters/female/Idle/Idle_Right_Down.png",
   "./assets/characters/female/Walk/walk_Right_Down.png",
   "./assets/enemies/zombie-rat/Um_rato_zombie-Idle.png",
-  "./assets/npcs/merchant/Um_npc_mercador_estilo_o-Idle.png"
+  "./assets/npcs/merchant/Um_npc_mercador_estilo_o-Idle.png",
+  "./assets/environment/trail/ground-dark.png",
+  "./assets/environment/trail/ground-detail.png",
+  "./assets/environment/trail/small-oak.png",
+  "./assets/environment/trail/bush.png",
+  "./assets/environment/trail/tires-grass.png",
+  "./assets/environment/trail/tire.png",
+  "./assets/environment/trail/brick-debris.png",
+  "./assets/environment/trail/garbage-bin.png",
+  "./assets/environment/trail/barrel-rust-red.png",
+  "./assets/environment/trail/destroyed-wall-corner.png",
+  "./assets/environment/trail/destroyed-wall.png"
 ];
 
 self.addEventListener("install", event => {
