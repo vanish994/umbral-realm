@@ -298,7 +298,10 @@
         this.load.spritesheet(`player-attack-close-${dir}`, `./assets/characters/male-64/ataque_faca_64x64/character_${dir}_knife_attack.png`, { frameWidth: 64, frameHeight: 64 });
         this.load.spritesheet(`player-attack-far-${dir}`, `./assets/characters/male-64/tiro_pistola_64x64/character_${dir}_shoot_pistol.png`, { frameWidth: 64, frameHeight: 64 });
       });
-      this.load.spritesheet("player-death", "./assets/characters/male/Death/death_normal.png", { frameWidth: 48, frameHeight: 64 });
+      const playerDirs2 = AnimationRules.PLAYER_DIRECTIONS;
+      playerDirs2.forEach(dir => {
+        this.load.spritesheet(`player-death-${dir}`, `./assets/characters/male-64/pacote_animacoes_64x64/hit_dano/character_${dir}_hit.png`, { frameWidth: 64, frameHeight: 64 });
+      });
       this.load.spritesheet("zombie-rat-idle", "./assets/enemies/zombie-rat/Um_rato_zombie-Idle.png", { frameWidth: 32, frameHeight: 32 });
       this.load.spritesheet("zombie-wolf-idle", "./assets/enemies/zombie-wolf/idle.png", { frameWidth: 32, frameHeight: 32 });
       this.load.spritesheet("slow-zombie-idle", "./assets/enemies/slow-zombie/idle.png", { frameWidth: 48, frameHeight: 48 });
@@ -464,10 +467,8 @@
         this.anims.create({ key: `player-attack-close-${direction}`, frames: this.anims.generateFrameNumbers(`player-attack-close-${direction}`, { start: 0, end: 5 }), frameRate: AnimationRules.BASE_FRAME_RATE, repeat: 0 });
         this.anims.create({ key: `player-attack-far-${direction}`, frames: this.anims.generateFrameNumbers(`player-attack-far-${direction}`, { start: 0, end: 5 }), frameRate: AnimationRules.BASE_FRAME_RATE, repeat: 0 });
       });
-      // Morte mantém a folha antiga (6 direções) por compatibilidade.
-      AnimationRules.DIRECTIONS.forEach(direction => {
-        const row = AnimationRules.rowFor(direction);
-        this.anims.create({ key: `player-death-${direction}`, frames: this.anims.generateFrameNumbers("player-death", { start: row * 8, end: row * 8 + 7 }), frameRate: 9, repeat: 0 });
+      AnimationRules.PLAYER_DIRECTIONS.forEach(direction => {
+        this.anims.create({ key: `player-death-${direction}`, frames: this.anims.generateFrameNumbers(`player-death-${direction}`, { start: 0, end: 5 }), frameRate: 9, repeat: 0 });
       });
     }
 
@@ -689,7 +690,7 @@
       this.updateTargetMarker();
       player.setData("tapTarget", null);
       resetJoystick();
-      const direction = AnimationRules.directionOrDefault(player.getData("direction"));
+      const direction = AnimationRules.playerDirectionOrDefault(player.getData("direction"));
       playPlayerAnimation(`player-death-${direction}`, true);
       announce("Você morreu.");
       this.time.delayedCall(950, () => {
