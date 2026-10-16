@@ -38,6 +38,7 @@ test("joystick is bigger, inset from the corner, and precise with proportional s
   assert.match(css, /@media \(orientation:landscape\) and \(max-height:600px\)\{\.joystick\{left:20px;bottom:18px;width:116px/);
   assert.match(css, /\.joystick\{left:24px;bottom:22px;width:132px/);
   const game = read("src/game.js");
-  assert.match(game, /ControlRules\.analogVector/);
+  const joystick = read("src/joystick.js");
+  assert.match(joystick, /ControlRules\.analogVector|analogVector/);
   assert.match(game, /145 \* speedScale/, "inclinar pouco anda devagar; inclinar tudo, rápido");
 });

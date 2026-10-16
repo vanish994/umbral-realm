@@ -110,3 +110,27 @@ test("death penalties never reduce level or XP below their minimum", () => {
   assert.deepEqual({ level: state.level, xp: state.xp }, { level: 1, xp: 0 });
   assert.deepEqual(state.skills, { blades: { level: 1, xp: 0 }, firearms: { level: 1, xp: 0 } });
 });
+
+test("removeProgress is exported and clamps at the minimum level", () => {
+  const { removeProgress } = require("../src/game-state.js");
+  assert.deepEqual(removeProgress(1, 5, 100, level => level * 100), { level: 1, xp: 0, levelsLost: 0 });
+  assert.deepEqual(removeProgress(3, 4, 10, level => level * 100), { level: 2, xp: 194, levelsLost: 1 });
+});
+
+test("grantXp stops at MAX_LEVEL without overflowing XP", () => {
+  const state = normalize({ level: 999, xp: 99999 });
+  assert.equal(state.level, 1000);
+  assert.ok(state.xp < 100000);
+  const gained = grantXp(state, 1000000);
+  assert.equal(gained, 0);
+  assert.equal(state.level, 1000);
+});
+
+test("normalize warns about unknown save fields", () => {
+  const originalWarn = console.warn;
+  let warned = false;
+  console.warn = (...args) => { warned = warned || String(args.join(" ")).includes("desconhecido"); };
+  normalize({ totallyUnknownField: 1 });
+  console.warn = originalWarn;
+  assert.equal(warned, true);
+});

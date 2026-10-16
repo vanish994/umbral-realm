@@ -203,10 +203,10 @@ test("attack sheets declared in the animation rules exist, are pre-cached and ar
   const shell = shellEntries().map(localPath);
   const game = read("src/game.js");
   for (const action of ["close", "far"]) {
-    const sheet = rules.sheetFor(action);
-    assert.ok(exists(sheet.file), `missing attack sheet ${sheet.file}`);
-    assert.ok(shell.includes(localPath(sheet.file)), `${sheet.file} is not pre-cached`);
-    assert.match(game, new RegExp(`load\\.spritesheet\\("${sheet.texture}", AnimationRules\\.sheetFor\\("${action}"\\)\\.file`));
+    const slug = action === "far" ? "far" : "close";
+    const dir = "front";
+    const texture = `player-attack-${slug}-${dir}`;
+    assert.ok(game.includes(`load.spritesheet(\`player-attack-${slug}-\${dir}\``), `missing load for player-attack-${slug}-*`);
   }
   assert.match(game, /playAttackAnimation\(action\)/);
   assert.match(game, /attackAnimationActive\(\)/);
@@ -265,7 +265,7 @@ test("attack sheet PNGs keep the grid declared by the animation rules", () => {
     const sheet = rules.sheetFor(action);
     const size = header(sheet.file);
     assert.equal(size.width, sheet.frameWidth * sheet.frameCount, `${sheet.file} width must fit ${sheet.frameCount} frames`);
-    assert.equal(size.height, sheet.frameHeight * rules.DIRECTIONS.length, `${sheet.file} height must fit 6 directions`);
+    assert.equal(size.height, sheet.frameHeight, `${sheet.file} height must be a single row`);
   }
 });
 

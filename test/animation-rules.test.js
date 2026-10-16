@@ -34,19 +34,19 @@ test("attack sheets describe the supplied knife and pistol artwork", () => {
   const close = rules.sheetFor("close");
   const far = rules.sheetFor("far");
   assert.equal(close.texture, "player-attack-close");
-  assert.equal(close.file, "./assets/characters/male/Attack/knife-attack.png");
-  assert.equal(close.frameCount, 12);
+  assert.equal(close.file, "./assets/characters/male-64/ataque_faca_64x64/character_front_knife_attack.png");
+  assert.equal(close.frameCount, 6);
   assert.equal(far.texture, "player-attack-far");
-  assert.equal(far.file, "./assets/characters/male/Shoot/pistol-shoot.png");
-  assert.equal(far.frameCount, 8);
+  assert.equal(far.file, "./assets/characters/male-64/tiro_pistola_64x64/character_front_shoot_pistol.png");
+  assert.equal(far.frameCount, 6);
   for (const sheet of [close, far]) {
-    assert.equal(sheet.frameWidth, 48);
+    assert.equal(sheet.frameWidth, 64);
     assert.equal(sheet.frameHeight, 64);
   }
   assert.equal(rules.sheetFor("close"), rules.sheetFor("qualquer"), "unknown actions use the melee sheet");
-  assert.equal(rules.attackKey("close", "left-up"), "player-attack-close-left-up");
-  assert.equal(rules.attackKey("far", "right-up"), "player-attack-far-right-up");
-  assert.equal(rules.attackKey("far", "x"), "player-attack-far-down");
+  assert.equal(rules.attackKey("close", "front-left"), "player-attack-close-front-left");
+  assert.equal(rules.attackKey("far", "front-right"), "player-attack-far-front-right");
+  assert.equal(rules.attackKey("far", "x"), "player-attack-far-front");
 });
 
 test("attack window follows the weapon cooldown inside safe limits", () => {
@@ -66,5 +66,5 @@ test("animation speed stretches the sheet over the attack window", () => {
   assert.ok(Math.abs(rules.timeScaleFor("close", knife) - still) < 1e-9);
   assert.ok(rules.timeScaleFor("close", knife) > rules.timeScaleFor("close", katana), "the knife plays faster than the katana");
   assert.ok(rules.timeScaleFor("far", { cooldown: 450 }) > rules.timeScaleFor("far", { cooldown: 700 }));
-  assert.equal(rules.baseDurationMs("far"), 8 / rules.BASE_FRAME_RATE * 1000);
+  assert.equal(rules.baseDurationMs("far"), 6 / rules.BASE_FRAME_RATE * 1000);
 });

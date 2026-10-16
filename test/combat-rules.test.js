@@ -59,3 +59,16 @@ test("damage rolls vary inside the range and can critically strike", () => {
   assert.equal(critical.damage, 49);
   assert.equal(critical.critical, true);
 });
+
+test("grantSkillXp does not overflow past MAX_SKILL_LEVEL", () => {
+  const skill = normalizeSkill({ level: 100, xp: 0 });
+  assert.equal(grantSkillXp(skill, 1000), 0);
+  assert.equal(skill.level, 100);
+});
+
+test("rollDamage is deterministic with an injected RNG", () => {
+  const rng = (() => { const values = [0.5, 0.1]; return () => values.shift(); })();
+  const result = rollDamage("close", 2, 2, null, rng);
+  assert.equal(result.critical, false);
+  assert.ok(result.damage >= result.baseDamage);
+});

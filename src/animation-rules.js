@@ -7,6 +7,8 @@
   // ordem de linhas. Ela foi conferida comparando cada linha com os PNGs individuais do pack:
   // down, left-down, left-up, up, right-up, right-down.
   const DIRECTIONS = Object.freeze(["down", "left-down", "left-up", "up", "right-up", "right-down"]);
+  // Novo personagem 64x64: 8 direções (sprites individuais por direção).
+  const PLAYER_DIRECTIONS = Object.freeze(["front", "front-right", "right", "back-right", "back", "back-left", "left", "front-left"]);
   const DIRECTION_ROW = Object.freeze({
     down: 0,
     "left-down": 1,
@@ -22,18 +24,18 @@
     close: Object.freeze({
       action: "close",
       texture: "player-attack-close",
-      file: "./assets/characters/male/Attack/knife-attack.png",
-      frameWidth: 48,
+      file: "./assets/characters/male-64/ataque_faca_64x64/character_front_knife_attack.png",
+      frameWidth: 64,
       frameHeight: 64,
-      frameCount: 12
+      frameCount: 6
     }),
     far: Object.freeze({
       action: "far",
       texture: "player-attack-far",
-      file: "./assets/characters/male/Shoot/pistol-shoot.png",
-      frameWidth: 48,
+      file: "./assets/characters/male-64/tiro_pistola_64x64/character_front_shoot_pistol.png",
+      frameWidth: 64,
       frameHeight: 64,
-      frameCount: 8
+      frameCount: 6
     })
   });
 
@@ -57,6 +59,25 @@
     return "right-up";
   }
 
+  function playerDirectionFor(dx, dy) {
+    const x = Number(dx) || 0;
+    const y = Number(dy) || 0;
+    if (x === 0 && y === 0) return "front";
+    const degrees = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+    if (degrees < 22.5 || degrees >= 337.5) return "right";
+    if (degrees < 67.5) return "front-right";
+    if (degrees < 112.5) return "front";
+    if (degrees < 157.5) return "front-left";
+    if (degrees < 202.5) return "left";
+    if (degrees < 247.5) return "back-left";
+    if (degrees < 292.5) return "back";
+    return "back-right";
+  }
+
+  function isPlayerDirection(direction) {
+    return PLAYER_DIRECTIONS.indexOf(direction) !== -1;
+  }
+
   function isValidDirection(direction) {
     return Object.prototype.hasOwnProperty.call(DIRECTION_ROW, direction);
   }
@@ -69,9 +90,13 @@
     return isValidDirection(direction) ? direction : "down";
   }
 
+  function playerDirectionOrDefault(direction) {
+    return isPlayerDirection(direction) ? direction : "front";
+  }
+
   function attackKey(action, direction) {
-    const sheet = sheetFor(action);
-    return `${sheet.texture}-${directionOrDefault(direction)}`;
+    const slug = action === "far" ? "far" : "close";
+    return `player-attack-${slug}-${playerDirectionOrDefault(direction)}`;
   }
 
   // A janela visível do ataque acompanha a recarga da arma: golpes curtos ficam rápidos e
@@ -92,6 +117,7 @@
 
   return Object.freeze({
     DIRECTIONS,
+    PLAYER_DIRECTIONS,
     DIRECTION_ROW,
     ATTACK_SHEETS,
     ATTACK_WINDOW_MS,
@@ -100,7 +126,10 @@
     rowFor,
     isValidDirection,
     directionOrDefault,
+    playerDirectionOrDefault,
     directionFor,
+    playerDirectionFor,
+    isPlayerDirection,
     attackKey,
     attackWindowMs,
     baseDurationMs,
