@@ -3,20 +3,39 @@
   if (typeof module === "object" && module.exports) module.exports = api;
   root.UmbralCombatRules = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, () => {
-  // Flag temporária: carregadores precisam recarregar, mas a reserva não se esgota no playtest.
-  const DEVELOPMENT_INFINITE_RESERVE = true;
-  const MAX_SKILL_LEVEL = 100;
-  const SKILL_XP_PER_HIT = 4;
-  const CRITICAL_CHANCE = 0.08;
-  const CRITICAL_MULTIPLIER = 1.75;
-  const FIREARM_ACCURACY_STILL = 0.94;
-  const FIREARM_ACCURACY_MOVING = 0.76;
-  const DAMAGE_PER_SKILL_LEVEL = 0.04;
-  const DAMAGE_PER_PLAYER_LEVEL = 0.015;
-  const WEAPONS = Object.freeze({
-    close: Object.freeze({ skill: "blades", minDamage: 9, maxDamage: 13 }),
-    far: Object.freeze({ skill: "firearms", minDamage: 20, maxDamage: 28 })
-  });
+  // Parâmetros de balanceamento dirigíveis por dados: valores padrão podem ser
+  // sobrescritos em tempo de execução por window.UmbralBalance (útil para testes
+  // e ajuste rápido), mantendo fallback aos números atuais.
+  const DEFAULT_BALANCE = {
+    developmentInfiniteReserve: true,
+    maxSkillLevel: 100,
+    skillXpPerHit: 4,
+    criticalChance: 0.08,
+    criticalMultiplier: 1.75,
+    firearmAccuracyStill: 0.94,
+    firearmAccuracyMoving: 0.76,
+    damagePerSkillLevel: 0.04,
+    damagePerPlayerLevel: 0.015,
+    weapons: {
+      close: { skill: "blades", minDamage: 9, maxDamage: 13 },
+      far: { skill: "firearms", minDamage: 20, maxDamage: 28 }
+    }
+  };
+  const override = (typeof globalThis !== "undefined" && globalThis && globalThis.UmbralBalance && typeof globalThis.UmbralBalance === "object") ? globalThis.UmbralBalance : {};
+  const BALANCE = Object.freeze(Object.assign({}, DEFAULT_BALANCE, override, {
+    weapons: Object.freeze(Object.assign({}, DEFAULT_BALANCE.weapons, override.weapons || {}))
+  }));
+  const DEVELOPMENT_INFINITE_RESERVE = BALANCE.developmentInfiniteReserve;
+  const MAX_SKILL_LEVEL = BALANCE.maxSkillLevel;
+  const SKILL_XP_PER_HIT = BALANCE.skillXpPerHit;
+  const CRITICAL_CHANCE = BALANCE.criticalChance;
+  const CRITICAL_MULTIPLIER = BALANCE.criticalMultiplier;
+  const FIREARM_ACCURACY_STILL = BALANCE.firearmAccuracyStill;
+  const FIREARM_ACCURACY_MOVING = BALANCE.firearmAccuracyMoving;
+  const DAMAGE_PER_SKILL_LEVEL = BALANCE.damagePerSkillLevel;
+  const DAMAGE_PER_PLAYER_LEVEL = BALANCE.damagePerPlayerLevel;
+  const WEAPONS = Object.freeze(Object.fromEntries(Object.entries(BALANCE.weapons).map(([key, value]) => [key, Object.freeze(Object.assign({}, value))])));
+
 
   function whole(value, fallback, min, max) {
     const parsed = Number(value);
@@ -84,6 +103,8 @@
   }
 
   return {
+    BALANCE,
+    DEFAULT_BALANCE,
     DEVELOPMENT_INFINITE_RESERVE,
     MAX_SKILL_LEVEL,
     SKILL_XP_PER_HIT,

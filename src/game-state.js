@@ -10,6 +10,16 @@
   if (!CombatRules || !EnemyRules || !ItemRules || !DropRules) throw new Error("As regras do jogo não carregaram.");
 
   const MAX_LEVEL = 1000;
+  const balanceOverride = (typeof globalThis !== "undefined" && globalThis && globalThis.UmbralBalance && typeof globalThis.UmbralBalance === "object") ? globalThis.UmbralBalance : {};
+  const GENERAL_XP_PER_LEVEL = Number.isFinite(balanceOverride.generalXpPerLevel) ? balanceOverride.generalXpPerLevel : 100;
+  const DEATH_GENERAL_XP_LOSS = Number.isFinite(balanceOverride.deathGeneralXpLoss) ? balanceOverride.deathGeneralXpLoss : 10;
+  const DEATH_SKILL_XP_PERCENT = Number.isFinite(balanceOverride.deathSkillXpPercent) ? balanceOverride.deathSkillXpPercent : 0.1;
+  const SAVE_VERSION = 1;
+  const KNOWN_SAVE_KEYS = new Set([
+    "hp", "xp", "level", "coins", "talked", "ammo", "charges", "ownedItems",
+    "cores", "groundDrops", "skills", "equipment", "enemies", "rats",
+    "enemyHp", "defeated", "action", "saveVersion"
+  ]);
 
   function integer(value, fallback, min, max) {
     const parsed = Number(value);
@@ -17,6 +27,7 @@
     return Math.min(max, Math.max(min, Math.floor(parsed)));
   }
 
+  /** @param {number} level @returns {number} */
   function maxHp(level) {
     return EnemyRules.playerMaxHp(level);
   }
@@ -52,15 +63,21 @@
     return DropRules.normalizeDrops(raw, levels, { width: 4300, height: 1500 });
   }
 
+  /** @param {any} [raw] @returns {any} */
   function normalize(raw = {}) {
+    if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+      Object.keys(raw).forEach(key => {
+        if (!KNOWN_SAVE_KEYS.has(key)) console.warn(`[UmbralState] campo de save desconhecido ignorado: ${key}`);
+      });
+    }
     let level = integer(raw.level, 1, 1, MAX_LEVEL);
     let xp = integer(raw.xp, 0, 0, Number.MAX_SAFE_INTEGER);
 
-    while (level < MAX_LEVEL && xp >= level * 100) {
-      xp -= level * 100;
+    while (level < MAX_LEVEL && xp >= level * GENERAL_XP_PER_LEVEL) {
+      xp -= level * GENERAL_XP_PER_LEVEL;
       level += 1;
     }
-    if (level === MAX_LEVEL) xp = Math.min(xp, level * 100 - 1);
+    if (level === MAX_LEVEL) xp = Math.min(xp, level * GENERAL_XP_PER_LEVEL - 1);
 
     let enemies;
     if (Array.isArray(raw.enemies)) {
@@ -105,22 +122,25 @@
       },
       equipment,
       enemies,
-      action: raw.action === "far" ? "far" : "close"
+      action: raw.action === "far" ? "far" : "close",
+      saveVersion: SAVE_VERSION
     };
   }
 
+  /** @param {any} state @param {number} [amount] @returns {number} */
   function grantXp(state, amount) {
     let levelsGained = 0;
     state.xp += integer(amount, 0, 0, Number.MAX_SAFE_INTEGER);
-    while (state.level < MAX_LEVEL && state.xp >= state.level * 100) {
-      state.xp -= state.level * 100;
+    while (state.level < MAX_LEVEL && state.xp >= state.level * GENERAL_XP_PER_LEVEL) {
+      state.xp -= state.level * GENERAL_XP_PER_LEVEL;
       state.level += 1;
       levelsGained += 1;
     }
-    if (state.level === MAX_LEVEL) state.xp = Math.min(state.xp, state.level * 100 - 1);
+    if (state.level === MAX_LEVEL) state.xp = Math.min(state.xp, state.level * GENERAL_XP_PER_LEVEL - 1);
     return levelsGained;
   }
 
+  /** @param {number} level @param {number} xp @param {number} amount @param {Function} requirementForLevel @returns {{level:number,xp:number,levelsLost:number}} */
   function removeProgress(level, xp, amount, requirementForLevel) {
     let safeLevel = integer(level, 1, 1, MAX_LEVEL);
     let safeXp = integer(xp, 0, 0, Number.MAX_SAFE_INTEGER);
@@ -136,21 +156,22 @@
     return { level: safeLevel, xp: safeXp, levelsLost };
   }
 
+  /** @param {any} state @returns {any} */
   function applyDeathPenalty(state) {
-    const general = removeProgress(state.level, state.xp, 10, level => level * 100);
+    const general = removeProgress(state.level, state.xp, DEATH_GENERAL_XP_LOSS, level => level * GENERAL_XP_PER_LEVEL);
     state.level = general.level;
     state.xp = general.xp;
     const skills = {};
     for (const name of ["blades", "firearms"]) {
       const skill = state.skills[name];
-      const loss = Math.ceil(CombatRules.skillXpNeeded(skill.level) * 0.1);
+      const loss = Math.ceil(CombatRules.skillXpNeeded(skill.level) * DEATH_SKILL_XP_PERCENT);
       const result = removeProgress(skill.level, skill.xp, loss, CombatRules.skillXpNeeded);
       skill.level = result.level;
       skill.xp = result.xp;
       skills[name] = { xpLost: loss, levelsLost: result.levelsLost };
     }
-    return { generalXpLost: 10, generalLevelsLost: general.levelsLost, skills };
+    return { generalXpLost: DEATH_GENERAL_XP_LOSS, generalLevelsLost: general.levelsLost, skills };
   }
 
-  return { maxHp, normalize, grantXp, applyDeathPenalty };
+  return { maxHp, normalize, grantXp, applyDeathPenalty, removeProgress, SAVE_VERSION };
 });

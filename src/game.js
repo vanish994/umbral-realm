@@ -11,7 +11,8 @@
   const AnimationRules = window.UmbralAnimationRules;
   const DropRules = window.UmbralDropRules;
   const ControlRules = window.UmbralControlRules;
-  if (!State || !World || !Targeting || !CombatFeedback || !CombatRules || !EnemyRules || !ItemRules || !AnimationRules || !DropRules || !ControlRules) throw new Error("Os módulos do jogo não carregaram.");
+  const FloatingText = window.UmbralFloatingText;
+  if (!State || !World || !Targeting || !CombatFeedback || !CombatRules || !EnemyRules || !ItemRules || !AnimationRules || !DropRules || !ControlRules || !FloatingText) throw new Error("Os módulos do jogo não carregaram.");
 
   const state = State.normalize(saved);
   let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeEnemyIndex = null, selectedEnemyIndex = null, menuOpen = false, merchantMode = false, playerDying = false, reloadState = null, attackAnimation = null;
@@ -517,14 +518,12 @@
         if (typeof target.setTintFill === "function") target.setTintFill(0xffd166);
         setTimeout(() => { if (target.active && typeof target.clearTint === "function") target.clearTint(); }, 140);
       }
-      this.tweens.add({
-        targets: number,
+      FloatingText.floatAndFade(this, number, {
         y: number.y - (critical ? 30 : 22),
         scale: critical ? 0.95 : 1,
         alpha: 0,
         duration: critical ? 900 : 650,
-        ease: "Cubic.easeOut",
-        onComplete: () => number.destroy()
+        ease: "Cubic.easeOut"
       });
     }
 
@@ -532,7 +531,7 @@
       const number = this.add.text(target.x, target.y - 34, "ERROU", {
         fontFamily: "monospace", fontSize: "14px", fontStyle: "bold", color: "#d7dce2", stroke: "#101820", strokeThickness: 4
       }).setOrigin(0.5).setDepth(2200);
-      this.tweens.add({ targets: number, y: number.y - 20, alpha: 0, duration: 600, ease: "Cubic.easeOut", onComplete: () => number.destroy() });
+      FloatingText.floatAndFade(this, number, { y: number.y - 20, alpha: 0, duration: 600, ease: "Cubic.easeOut" });
     }
 
     showExperienceNumber(amount) {
@@ -544,13 +543,11 @@
         stroke: "#101820",
         strokeThickness: 4
       }).setOrigin(0.5).setDepth(2200);
-      this.tweens.add({
-        targets: number,
+      FloatingText.floatAndFade(this, number, {
         y: number.y - 24,
         alpha: 0,
         duration: 850,
-        ease: "Cubic.easeOut",
-        onComplete: () => number.destroy()
+        ease: "Cubic.easeOut"
       });
     }
 
@@ -656,7 +653,7 @@
       const number = this.add.text(player.x, player.y - 48, `+ NÚCLEO Nv.${drop.level}`, {
         fontFamily: "monospace", fontSize: "13px", fontStyle: "bold", color: "#8dffb0", stroke: "#0c2416", strokeThickness: 4
       }).setOrigin(0.5).setDepth(2200);
-      this.tweens.add({ targets: number, y: number.y - 22, alpha: 0, duration: 800, ease: "Cubic.easeOut", onComplete: () => number.destroy() });
+      FloatingText.floatAndFade(this, number, { y: number.y - 22, alpha: 0, duration: 800, ease: "Cubic.easeOut" });
     }
 
     // Coleta por proximidade (sem botão extra no celular): passar por cima basta.

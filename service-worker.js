@@ -1,3 +1,7 @@
+/* Estratégia de cache do Umbral Realm:
+   - Cache-first para o shell e assets estáticos (Phaser, sprites, CSS).
+   - O cache é versionado por CACHE; incrementar ao alterar o shell.
+   - Recursos não listados no SHELL não são pré-carregados. */
 const CACHE = "umbral-realm-playtest-v61";
 const SHELL = [
   "./",
@@ -11,6 +15,7 @@ const SHELL = [
   "./src/world-config.js?v=61",
   "./src/targeting.js?v=61",
   "./src/combat-feedback.js?v=61",
+  "./src/floating-text.js?v=61",
   "./src/animation-rules.js?v=61",
   "./src/control-rules.js?v=61",
   "./src/game.js?v=61",
