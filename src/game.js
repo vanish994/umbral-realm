@@ -382,7 +382,7 @@
       this.merchant = this.add.sprite(World.merchant.x, World.merchant.y, "merchant-idle", 0).setScale(1.6 * this.characterScaleFactor).setOrigin(0.5, 0.82).setDepth(World.merchant.y);
       this.merchantName = this.add.text(World.merchant.x, World.merchant.y - 35, "MERCADOR", this.labelStyle("#f0d7a0")).setOrigin(0.5).setDepth(1000);
 
-      player = this.add.sprite(World.playerSpawn.x, World.playerSpawn.y, "player-idle-front", 0).setScale(1.35 * this.characterScaleFactor).setOrigin(0.5, 0.82).setDepth(World.playerSpawn.y);
+      player = this.add.sprite(World.playerSpawn.x, World.playerSpawn.y, "player-idle-front", 0).setScale(0.75 * this.characterScaleFactor).setOrigin(0.5, 0.82).setDepth(World.playerSpawn.y);
       player.setData("direction", "front");
       playPlayerAnimation("player-idle-front");
       this.targetMarker = this.add.graphics().setDepth(998);
@@ -459,8 +459,8 @@
       // As linhas das folhas direcionais seguem AnimationRules.DIRECTION_ROW
       // (down, left-down, left-up, up, right-up, right-down) para idle, walk, death e ataques.
       AnimationRules.PLAYER_DIRECTIONS.forEach(direction => {
-        this.anims.create({ key: `player-idle-${direction}`, frames: this.anims.generateFrameNumbers(`player-idle-${direction}`, { start: 0, end: 5 }), frameRate: 7, repeat: -1 });
-        this.anims.create({ key: `player-walk-${direction}`, frames: this.anims.generateFrameNumbers(`player-walk-${direction}`, { start: 0, end: 5 }), frameRate: 10, repeat: -1 });
+        this.anims.create({ key: `player-idle-${direction}`, frames: this.anims.generateFrameNumbers(`player-idle-${direction}`, { start: 0, end: 5 }), frameRate: 8, repeat: -1 });
+        this.anims.create({ key: `player-walk-${direction}`, frames: this.anims.generateFrameNumbers(`player-walk-${direction}`, { start: 0, end: 5 }), frameRate: 14, repeat: -1 });
         this.anims.create({ key: `player-attack-close-${direction}`, frames: this.anims.generateFrameNumbers(`player-attack-close-${direction}`, { start: 0, end: 5 }), frameRate: AnimationRules.BASE_FRAME_RATE, repeat: 0 });
         this.anims.create({ key: `player-attack-far-${direction}`, frames: this.anims.generateFrameNumbers(`player-attack-far-${direction}`, { start: 0, end: 5 }), frameRate: AnimationRules.BASE_FRAME_RATE, repeat: 0 });
       });
