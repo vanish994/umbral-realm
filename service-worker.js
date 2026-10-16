@@ -18,6 +18,7 @@ const SHELL = [
   "./src/floating-text.js?v=61",
   "./src/animation-rules.js?v=61",
   "./src/control-rules.js?v=61",
+  "./src/joystick.js?v=61",
   "./src/game.js?v=61",
   "./manifest.webmanifest",
   "./icons/icon.svg",

@@ -11,8 +11,9 @@
   const AnimationRules = window.UmbralAnimationRules;
   const DropRules = window.UmbralDropRules;
   const ControlRules = window.UmbralControlRules;
+  const Joystick = window.UmbralJoystick;
   const FloatingText = window.UmbralFloatingText;
-  if (!State || !World || !Targeting || !CombatFeedback || !CombatRules || !EnemyRules || !ItemRules || !AnimationRules || !DropRules || !ControlRules || !FloatingText) throw new Error("Os módulos do jogo não carregaram.");
+  if (!State || !World || !Targeting || !CombatFeedback || !CombatRules || !EnemyRules || !ItemRules || !AnimationRules || !DropRules || !ControlRules || !FloatingText || !Joystick) throw new Error("Os módulos do jogo não carregaram.");
 
   const state = State.normalize(saved);
   let sceneRef, player, cursors, moveKeys, actionReady = true, pendingMeleeEnemyIndex = null, selectedEnemyIndex = null, menuOpen = false, merchantMode = false, playerDying = false, reloadState = null, attackAnimation = null;
@@ -1104,27 +1105,8 @@
   }
 
   const joystick = el("joystick"), joystickKnob = el("joystick-knob");
-  let joystickPointer = null;
-  function resetJoystick() { touch.x = 0; touch.y = 0; joystickPointer = null; joystickKnob.style.transform = "translate(0px, 0px)"; joystick.classList.remove("is-active"); }
-  function moveJoystick(event) {
-    if (joystickPointer !== event.pointerId) return;
-    const rect = joystick.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
-    const max = Math.min(rect.width, rect.height) * 0.30;
-    let x = event.clientX - cx, y = event.clientY - cy;
-    const length = Math.hypot(x, y);
-    if (length > max) { x = x / length * max; y = y / length * max; }
-    // O knob mostra a deflexão bruta; o vetor de movimento passa pela zona morta e
-    // pela curva de precisão (ControlRules), então tremor central não anda e a
-    // inclinação leve anda devagar.
-    const analog = ControlRules.analogVector(x / max, y / max);
-    touch.x = analog.x; touch.y = analog.y;
-    joystickKnob.style.transform = `translate(${x}px, ${y}px)`;
-    joystick.classList.toggle("is-active", analog.magnitude > 0);
-  }
-  joystick.addEventListener("pointerdown", event => { event.preventDefault(); joystickPointer = event.pointerId; joystick.setPointerCapture(event.pointerId); moveJoystick(event); });
-  joystick.addEventListener("pointermove", moveJoystick);
-  ["pointerup", "pointercancel", "lostpointercapture"].forEach(name => joystick.addEventListener(name, event => { if (joystickPointer === event.pointerId) resetJoystick(); }));
+  const joystickApi = Joystick.setup({ joystick, joystickKnob, controlRules: ControlRules, touch });
+  const resetJoystick = () => joystickApi.reset();
   ["action-close", "touch-action-close"].forEach(id => el(id)?.addEventListener("click", () => selectAction("close")));
   ["action-far", "touch-action-far"].forEach(id => el(id)?.addEventListener("click", () => selectAction("far")));
   ["interact", "touch-interact"].forEach(id => el(id)?.addEventListener("click", interact));
