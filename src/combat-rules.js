@@ -43,11 +43,13 @@
     return Math.min(max, Math.max(min, Math.floor(parsed)));
   }
 
+  /** @param {number} level @returns {number} */
   function skillXpNeeded(level) {
     const safeLevel = whole(level, 1, 1, MAX_SKILL_LEVEL);
     return Math.min(Number.MAX_SAFE_INTEGER, Math.round(20 * Math.pow(1.45, safeLevel - 1)));
   }
 
+  /** @param {any} [raw] @returns {{level:number,xp:number}} */
   function normalizeSkill(raw = {}) {
     let level = whole(raw.level, 1, 1, MAX_SKILL_LEVEL);
     let xp = whole(raw.xp, 0, 0, Number.MAX_SAFE_INTEGER);
@@ -59,6 +61,7 @@
     return { level, xp };
   }
 
+  /** @param {any} skill @param {number} [amount] @returns {number} */
   function grantSkillXp(skill, amount = SKILL_XP_PER_HIT) {
     let levelsGained = 0;
     skill.xp += whole(amount, 0, 0, Number.MAX_SAFE_INTEGER);
@@ -71,6 +74,7 @@
     return levelsGained;
   }
 
+  /** @param {string} action @param {number} skillLevel @param {number} [playerLevel] @param {any} [weaponStats] @returns {{min:number,max:number}} */
   function damageRange(action, skillLevel, playerLevel = 1, weaponStats = null) {
     const weapon = weaponStats?.minDamage && weaponStats?.maxDamage ? weaponStats : WEAPONS[action] || WEAPONS.close;
     const level = whole(skillLevel, 1, 1, MAX_SKILL_LEVEL);
@@ -82,14 +86,17 @@
     };
   }
 
+  /** @param {string} action @param {boolean} moving @returns {number} */
   function hitChance(action, moving) {
     return action === "far" ? (moving ? FIREARM_ACCURACY_MOVING : FIREARM_ACCURACY_STILL) : 1;
   }
 
+  /** @param {string} action @param {boolean} moving @param {Function} [random] @returns {boolean} */
   function rollHit(action, moving, random = Math.random) {
     return (Number(random()) || 0) < hitChance(action, moving);
   }
 
+  /** @param {string} action @param {number} skillLevel @param {number} [playerLevel] @param {any} [weaponStats] @param {Function} [random] @returns {{damage:number,baseDamage:number,critical:boolean}} */
   function rollDamage(action, skillLevel, playerLevel = 1, weaponStats = null, random = Math.random) {
     const range = damageRange(action, skillLevel, playerLevel, weaponStats);
     const baseRoll = Math.max(0, Math.min(0.999999, Number(random()) || 0));
