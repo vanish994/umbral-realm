@@ -252,7 +252,7 @@
   }
 
   function faceDirection(direction) {
-    if (!player || !AnimationRules.isValidDirection(direction)) return;
+    if (!player || !AnimationRules.isPlayerDirection(direction)) return;
     player.setData("direction", direction);
     if (!attackAnimationActive() && player.anims.currentAnim?.key?.startsWith("player-idle-")) {
       playPlayerAnimation(`player-idle-${direction}`, true);
@@ -291,13 +291,14 @@
     constructor() { super("world"); }
 
     preload() {
-      this.load.spritesheet("player-idle", "./assets/characters/male/Idle/idle.png", { frameWidth: 48, frameHeight: 64 });
-      this.load.spritesheet("player-walk", "./assets/characters/male/Walk/walk.png", { frameWidth: 48, frameHeight: 64 });
-      this.load.spritesheet("player-idle-right-down", "./assets/characters/male/Idle/idle_right_down.png", { frameWidth: 48, frameHeight: 64 });
-      this.load.spritesheet("player-walk-right-down", "./assets/characters/male/Walk/walk_right_down.png", { frameWidth: 48, frameHeight: 64 });
+      const playerDirs = AnimationRules.PLAYER_DIRECTIONS;
+      playerDirs.forEach(dir => {
+        this.load.spritesheet(`player-idle-${dir}`, `./assets/characters/male-64/pacote_animacoes_64x64/idle/character_${dir}_idle.png`, { frameWidth: 64, frameHeight: 64 });
+        this.load.spritesheet(`player-walk-${dir}`, `./assets/characters/male-64/pacote_animacoes_64x64/corrida/character_${dir}_run.png`, { frameWidth: 64, frameHeight: 64 });
+        this.load.spritesheet(`player-attack-close-${dir}`, `./assets/characters/male-64/ataque_faca_64x64/character_${dir}_knife_attack.png`, { frameWidth: 64, frameHeight: 64 });
+        this.load.spritesheet(`player-attack-far-${dir}`, `./assets/characters/male-64/tiro_pistola_64x64/character_${dir}_shoot_pistol.png`, { frameWidth: 64, frameHeight: 64 });
+      });
       this.load.spritesheet("player-death", "./assets/characters/male/Death/death_normal.png", { frameWidth: 48, frameHeight: 64 });
-      this.load.spritesheet("player-attack-close", AnimationRules.sheetFor("close").file, { frameWidth: AnimationRules.sheetFor("close").frameWidth, frameHeight: AnimationRules.sheetFor("close").frameHeight });
-      this.load.spritesheet("player-attack-far", AnimationRules.sheetFor("far").file, { frameWidth: AnimationRules.sheetFor("far").frameWidth, frameHeight: AnimationRules.sheetFor("far").frameHeight });
       this.load.spritesheet("zombie-rat-idle", "./assets/enemies/zombie-rat/Um_rato_zombie-Idle.png", { frameWidth: 32, frameHeight: 32 });
       this.load.spritesheet("zombie-wolf-idle", "./assets/enemies/zombie-wolf/idle.png", { frameWidth: 32, frameHeight: 32 });
       this.load.spritesheet("slow-zombie-idle", "./assets/enemies/slow-zombie/idle.png", { frameWidth: 48, frameHeight: 48 });
@@ -381,9 +382,9 @@
       this.merchant = this.add.sprite(World.merchant.x, World.merchant.y, "merchant-idle", 0).setScale(1.6 * this.characterScaleFactor).setOrigin(0.5, 0.82).setDepth(World.merchant.y);
       this.merchantName = this.add.text(World.merchant.x, World.merchant.y - 35, "MERCADOR", this.labelStyle("#f0d7a0")).setOrigin(0.5).setDepth(1000);
 
-      player = this.add.sprite(World.playerSpawn.x, World.playerSpawn.y, "player-idle", 0).setScale(1.6 * this.characterScaleFactor).setOrigin(0.5, 0.82).setDepth(World.playerSpawn.y);
-      player.setData("direction", "down");
-      playPlayerAnimation("player-idle-down");
+      player = this.add.sprite(World.playerSpawn.x, World.playerSpawn.y, "player-idle-front", 0).setScale(1.35 * this.characterScaleFactor).setOrigin(0.5, 0.82).setDepth(World.playerSpawn.y);
+      player.setData("direction", "front");
+      playPlayerAnimation("player-idle-front");
       this.targetMarker = this.add.graphics().setDepth(998);
       this.createEnemies();
       this.syncGroundDropVisuals();
@@ -457,27 +458,16 @@
     createAnimations() {
       // As linhas das folhas direcionais seguem AnimationRules.DIRECTION_ROW
       // (down, left-down, left-up, up, right-up, right-down) para idle, walk, death e ataques.
+      AnimationRules.PLAYER_DIRECTIONS.forEach(direction => {
+        this.anims.create({ key: `player-idle-${direction}`, frames: this.anims.generateFrameNumbers(`player-idle-${direction}`, { start: 0, end: 5 }), frameRate: 7, repeat: -1 });
+        this.anims.create({ key: `player-walk-${direction}`, frames: this.anims.generateFrameNumbers(`player-walk-${direction}`, { start: 0, end: 5 }), frameRate: 10, repeat: -1 });
+        this.anims.create({ key: `player-attack-close-${direction}`, frames: this.anims.generateFrameNumbers(`player-attack-close-${direction}`, { start: 0, end: 5 }), frameRate: AnimationRules.BASE_FRAME_RATE, repeat: 0 });
+        this.anims.create({ key: `player-attack-far-${direction}`, frames: this.anims.generateFrameNumbers(`player-attack-far-${direction}`, { start: 0, end: 5 }), frameRate: AnimationRules.BASE_FRAME_RATE, repeat: 0 });
+      });
+      // Morte mantém a folha antiga (6 direções) por compatibilidade.
       AnimationRules.DIRECTIONS.forEach(direction => {
         const row = AnimationRules.rowFor(direction);
-        if (direction !== "right-down") {
-          this.anims.create({ key: `player-idle-${direction}`, frames: this.anims.generateFrameNumbers("player-idle", { start: row * 8, end: row * 8 + 7 }), frameRate: 7, repeat: -1 });
-          this.anims.create({ key: `player-walk-${direction}`, frames: this.anims.generateFrameNumbers("player-walk", { start: row * 8, end: row * 8 + 7 }), frameRate: 10, repeat: -1 });
-        }
         this.anims.create({ key: `player-death-${direction}`, frames: this.anims.generateFrameNumbers("player-death", { start: row * 8, end: row * 8 + 7 }), frameRate: 9, repeat: 0 });
-      });
-      this.anims.create({ key: "player-idle-right-down", frames: this.anims.generateFrameNumbers("player-idle-right-down", { start: 0, end: 7 }), frameRate: 7, repeat: -1 });
-      this.anims.create({ key: "player-walk-right-down", frames: this.anims.generateFrameNumbers("player-walk-right-down", { start: 0, end: 7 }), frameRate: 10, repeat: -1 });
-      ["close", "far"].forEach(action => {
-        const sheet = AnimationRules.sheetFor(action);
-        AnimationRules.DIRECTIONS.forEach(direction => {
-          const row = AnimationRules.rowFor(direction);
-          this.anims.create({
-            key: AnimationRules.attackKey(action, direction),
-            frames: this.anims.generateFrameNumbers(sheet.texture, { start: row * sheet.frameCount, end: row * sheet.frameCount + sheet.frameCount - 1 }),
-            frameRate: AnimationRules.BASE_FRAME_RATE,
-            repeat: 0
-          });
-        });
       });
     }
 
@@ -497,7 +487,7 @@
     playAttackAnimation(action) {
       if (!player || playerDying) return;
       const weapon = ItemRules.weaponForAction(state.equipment, action);
-      const direction = AnimationRules.directionOrDefault(player.getData("direction"));
+      const direction = AnimationRules.playerDirectionOrDefault(player.getData("direction"));
       const key = AnimationRules.attackKey(action, direction);
       if (!this.anims.exists(key)) return;
       player.play({ key, timeScale: AnimationRules.timeScaleFor(action, weapon) });
@@ -705,9 +695,9 @@
       this.time.delayedCall(950, () => {
         const penalty = State.applyDeathPenalty(state);
         state.hp = Math.max(1, Math.floor(maxHp() / 2));
-        player.setPosition(World.playerSpawn.x, World.playerSpawn.y).setData("direction", "down");
+        player.setPosition(World.playerSpawn.x, World.playerSpawn.y).setData("direction", "front");
         enemies.forEach(other => { other.setPosition(other.spawnX, other.spawnY); other.bobOffset = 0; });
-        playPlayerAnimation("player-idle-down", true);
+        playPlayerAnimation("player-idle-front", true);
         playerDying = false;
         actionReady = true;
         updateHud();
@@ -768,7 +758,7 @@
       }
       const attacking = attackAnimationActive();
       if (dx || dy) {
-        const direction = AnimationRules.directionFor(dx, dy);
+        const direction = AnimationRules.playerDirectionFor(dx, dy);
         const animation = `player-walk-${direction}`;
         player.setData("direction", direction);
         if (!attacking && player.anims.currentAnim?.key !== animation) playPlayerAnimation(animation, true);
@@ -781,7 +771,7 @@
       } else if (!attacking) {
         const current = player.anims.currentAnim?.key || "";
         if (current.startsWith("player-walk-") || current.startsWith("player-attack-")) {
-          playPlayerAnimation(`player-idle-${AnimationRules.directionOrDefault(player.getData("direction"))}`, true);
+          playPlayerAnimation(`player-idle-${AnimationRules.playerDirectionOrDefault(player.getData("direction"))}`, true);
         }
       }
       player.setDepth(player.y);
@@ -966,7 +956,7 @@
     actionReady = false;
     setTimeout(() => { actionReady = true; }, cooldown);
     // O personagem vira para o alvo antes do golpe, para a animação apontar na direção certa.
-    faceDirection(AnimationRules.directionFor(target.x - player.x, target.y - player.y));
+    faceDirection(AnimationRules.playerDirectionFor(target.x - player.x, target.y - player.y));
     sceneRef.playAttackSound(action);
     sceneRef.playAttackAnimation(action);
     if (!CombatRules.rollHit(action, isPlayerMoving())) {
