@@ -763,6 +763,8 @@
         player.setData("direction", direction);
         if (!attacking && player.anims.currentAnim?.key !== animation) playPlayerAnimation(animation, true);
         if (!attacking && player.anims.currentAnim?.key === animation) player.anims.timeScale = 0.55 + 0.45 * speedScale;
+        const bob = 1 + Math.sin(this.time.now * 0.025) * 0.07;
+        player.setScale(0.75 * this.characterScaleFactor, 0.75 * this.characterScaleFactor * bob);
         const length = Math.hypot(dx, dy), step = 145 * speedScale * delta / 1000;
         const nx = Phaser.Math.Clamp(player.x + dx / length * step, 25, World.world.width - 25);
         const ny = Phaser.Math.Clamp(player.y + dy / length * step, 35, World.world.height - 30);
@@ -771,6 +773,7 @@
       } else if (!attacking) {
         const current = player.anims.currentAnim?.key || "";
         if (current.startsWith("player-walk-") || current.startsWith("player-attack-")) {
+          player.setScale(0.75 * this.characterScaleFactor);
           playPlayerAnimation(`player-idle-${AnimationRules.playerDirectionOrDefault(player.getData("direction"))}`, true);
         }
       }
